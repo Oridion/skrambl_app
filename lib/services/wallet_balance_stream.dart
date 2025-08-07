@@ -136,7 +136,7 @@ class WalletBalanceStream {
 
   Future<void> refresh(String pubkey) async {
     final latest = await _fetchInitialLamports(pubkey);
-    skrLogger.i('[SKRAMBL] Manual refresh: $latest lamports');
+    //skrLogger.i('[SKRAMBL] Manual refresh: $latest lamports');
     _balanceController?.add(latest);
   }
 
