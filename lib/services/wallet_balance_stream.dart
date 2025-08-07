@@ -14,7 +14,6 @@ class WalletBalanceStream {
   bool _isReconnecting = false;
   String? _currentPubkey;
 
-  //WalletBalanceStream({this.rpcUrl = 'wss://api.mainnet-beta.solana.com/'});
   WalletBalanceStream({
     this.rpcUrl =
         'wss://mainnet.helius-rpc.com/?api-key=e9be3c89-9113-4c5d-be19-4dfc99d8c8f4',

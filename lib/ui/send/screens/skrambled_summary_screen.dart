@@ -62,7 +62,25 @@ class SkrambledSummaryScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 18),
 
-                  Text('Amount:', style: TextStyle(color: Colors.grey[700])),
+                  Text('Delay:', style: TextStyle(color: Colors.grey[700])),
+                  Text(
+                    delayText,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  Divider(thickness: 1.2, color: Colors.grey),
+
+                  const SizedBox(height: 18),
+
+                  Text(
+                    'Transferring:',
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     '$amount SOL',
@@ -71,17 +89,7 @@ class SkrambledSummaryScreen extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 18),
 
-                  Text('Delay:', style: TextStyle(color: Colors.grey[700])),
-                  const SizedBox(height: 4),
-                  Text(
-                    delayText,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
                   const SizedBox(height: 18),
 
                   Text(
@@ -103,7 +111,7 @@ class SkrambledSummaryScreen extends StatelessWidget {
 
                   const SizedBox(height: 18),
                   Text(
-                    'Total Cost:',
+                    'Total Transferring + Fee:',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[700],
@@ -112,7 +120,7 @@ class SkrambledSummaryScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$total SOL',
+                    '~$total SOL',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
