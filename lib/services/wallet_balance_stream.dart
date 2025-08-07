@@ -9,6 +9,10 @@ class WalletBalanceStream {
   WebSocketChannel? _channel;
   StreamController<int>? _balanceController;
   int? _subscriptionId;
+  Timer? _reconnectTimer;
+  int _reconnectAttempts = 0;
+  bool _isReconnecting = false;
+  String? _currentPubkey;
 
   //WalletBalanceStream({this.rpcUrl = 'wss://api.mainnet-beta.solana.com/'});
   WalletBalanceStream({
@@ -40,6 +44,8 @@ class WalletBalanceStream {
   }
 
   Stream<int> start(String pubkey) {
+    _currentPubkey = pubkey;
+
     if (_balanceController != null && !_balanceController!.isClosed) {
       skrLogger.i('[SKRAMBL WS] Reusing existing balance stream');
       return _balanceController!.stream;
@@ -53,7 +59,7 @@ class WalletBalanceStream {
       _balanceController?.add(initialLamports);
     });
 
-    // Start listening to updates
+    // Listen for updates
     _channel!.stream.listen(
       (message) {
         final decoded = jsonDecode(message);
@@ -61,31 +67,31 @@ class WalletBalanceStream {
 
         if (decoded['method'] == 'accountNotification') {
           final value = decoded['params']['result']['value'];
-          if (value != null && value['lamports'] != null) {
-            final lamports = value['lamports'];
-            skrLogger.i('[SKRAMBL WS] New balance: $lamports');
-            _balanceController?.add(lamports);
-          } else {
-            skrLogger.i('[SKRAMBL WS] Account value is null');
-            _balanceController?.add(0);
-          }
+          final lamports = value?['lamports'] ?? 0;
+          skrLogger.i('[SKRAMBL WS] New balance: $lamports');
+          _balanceController?.add(lamports);
         }
 
         if (decoded['result'] != null && _subscriptionId == null) {
           _subscriptionId = decoded['result'];
           skrLogger.i('[SKRAMBL WS] Subscribed with ID: $_subscriptionId');
         }
+
+        // Reset reconnect attempts after a good message
+        _reconnectAttempts = 0;
       },
       onError: (e) {
-        skrLogger.i('[SKRAMBL WS] Error: $e');
-        _balanceController?.addError(e);
+        skrLogger.e('[SKRAMBL WS] Error: $e');
+        _scheduleReconnect();
       },
       onDone: () {
-        skrLogger.i('[SKRAMBL WS] Connection closed');
-        _balanceController?.close();
+        skrLogger.w('[SKRAMBL WS] Connection closed');
+        _scheduleReconnect();
       },
+      cancelOnError: true,
     );
 
+    // Subscribe to account
     final subRequest = jsonEncode({
       "jsonrpc": "2.0",
       "id": 1,
@@ -103,6 +109,12 @@ class WalletBalanceStream {
   }
 
   void stop() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _isReconnecting = false;
+    _reconnectAttempts = 0;
+    _currentPubkey = null;
+
     if (_subscriptionId != null) {
       final unsubRequest = jsonEncode({
         "jsonrpc": "2.0",
@@ -110,15 +122,39 @@ class WalletBalanceStream {
         "method": "accountUnsubscribe",
         "params": [_subscriptionId],
       });
-
       _channel?.sink.add(unsubRequest);
     }
 
     _channel?.sink.close();
     _balanceController?.close();
-    _subscriptionId = null;
     _channel = null;
+    _subscriptionId = null;
     _balanceController = null;
+
     skrLogger.i('[SKRAMBL WS] Stream stopped and cleaned up');
+  }
+
+  Future<void> refresh(String pubkey) async {
+    final latest = await _fetchInitialLamports(pubkey);
+    skrLogger.i('[SKRAMBL] Manual refresh: $latest lamports');
+    _balanceController?.add(latest);
+  }
+
+  void _scheduleReconnect() {
+    if (_isReconnecting || _currentPubkey == null) return;
+
+    _isReconnecting = true;
+    _reconnectAttempts++;
+    final delay = Duration(seconds: 2 * _reconnectAttempts.clamp(1, 5));
+
+    skrLogger.w('[SKRAMBL WS] Reconnecting in ${delay.inSeconds}s...');
+
+    _reconnectTimer = Timer(delay, () {
+      skrLogger.i('[SKRAMBL WS] Attempting reconnect to $_currentPubkey...');
+      _isReconnecting = false;
+      _channel?.sink.close();
+      _channel = null;
+      start(_currentPubkey!);
+    });
   }
 }

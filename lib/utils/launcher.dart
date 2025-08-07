@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:solana/solana.dart';
 
 String generatePasscode({int length = 6}) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

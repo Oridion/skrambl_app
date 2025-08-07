@@ -45,4 +45,10 @@ class WalletBalanceProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
   }
+
+  Future<void> refresh() async {
+    if (_pubkey != null) {
+      await _stream.refresh(_pubkey!);
+    }
+  }
 }

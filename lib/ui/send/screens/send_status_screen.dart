@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/providers/transaction_status_provider.dart';
+import 'package:skrambl_app/providers/wallet_balance_manager.dart';
 import 'package:skrambl_app/ui/send/widgets/scrambled_text.dart';
 import 'package:skrambl_app/utils/logger.dart';
 import 'package:solana/dto.dart';
@@ -257,6 +258,8 @@ class _SendStatusScreenState extends State<SendStatusScreen>
             const SizedBox(height: 52),
             ElevatedButton(
               onPressed: () {
+                //Refresh wallet balance - Just incase
+                context.read<WalletBalanceProvider>().refresh();
                 Navigator.popUntil(context, (route) => route.isFirst);
               },
               style: ElevatedButton.styleFrom(

@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:skrambl_app/utils/logger.dart';
 import 'package:solana/solana.dart';
 import '../send_form_model.dart';
 
@@ -25,6 +28,7 @@ class _SkrambledDestinationScreenState
   late final TextEditingController _controller;
   String? _error;
   bool _isValid = false;
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -36,20 +40,24 @@ class _SkrambledDestinationScreenState
     // Listen for changes and validate in real-time
     _controller.addListener(() {
       final current = _controller.text.trim();
-      final isNowValid = _isSolanaAddress(current);
+      skrLogger.i(current);
 
-      if (_isValid != isNowValid) {
+      // Cancel existing debounce
+      if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+      _debounce = Timer(const Duration(milliseconds: 500), () {
+        final isNowValid = _isSolanaAddress(current);
+
         setState(() {
           _isValid = isNowValid;
         });
-      }
 
-      // Clear error when user starts editing again
-      if (_error != null) {
-        setState(() {
-          _error = null;
-        });
-      }
+        if (_error != null) {
+          setState(() {
+            _error = null;
+          });
+        }
+      });
     });
 
     // Initialize state
@@ -78,6 +86,7 @@ class _SkrambledDestinationScreenState
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -117,8 +126,36 @@ class _SkrambledDestinationScreenState
             style: const TextStyle(fontSize: 16, height: 1.4),
           ),
 
-          const Spacer(),
+          if (_controller.text.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 12, 10, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Icon(
+                    _isValid ? Icons.check : Icons.error,
+                    color: _isValid
+                        ? const Color.fromARGB(255, 61, 158, 64)
+                        : Colors.red,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _isValid
+                        ? 'Valid Solana address'
+                        : 'Invalid Solana address',
+                    style: TextStyle(
+                      color: _isValid
+                          ? const Color.fromARGB(255, 49, 128, 52)
+                          : Colors.red,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
+          const Spacer(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
