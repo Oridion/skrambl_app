@@ -131,7 +131,7 @@ class WalletBalanceStream {
     _subscriptionId = null;
     _balanceController = null;
 
-    skrLogger.i('[SKRAMBL WS] Stream stopped and cleaned up');
+    //skrLogger.i('[SKRAMBL WS] Stream stopped and cleaned up');
   }
 
   Future<void> refresh(String pubkey) async {
