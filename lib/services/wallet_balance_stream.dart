@@ -19,7 +19,7 @@ class WalletBalanceStream {
   Future<int> _fetchInitialLamports(String pubkey) async {
     try {
       final response = await http.post(
-        Uri.parse("https://api.mainnet-beta.solana.com"),
+        Uri.parse("https://bernette-tb3sav-fast-mainnet.helius-rpc.com"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "jsonrpc": "2.0",

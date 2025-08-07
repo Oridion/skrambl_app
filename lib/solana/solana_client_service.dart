@@ -9,7 +9,7 @@ class SolanaClientService {
 
   SolanaClientService._internal() {
     const rpcUrl =
-        'https://mainnet.helius-rpc.com/?api-key=e9be3c89-9113-4c5d-be19-4dfc99d8c8f4'; // or devnet
+        'https://bernette-tb3sav-fast-mainnet.helius-rpc.com'; // or devnet
     rpcClient = RpcClient(rpcUrl);
   }
 }

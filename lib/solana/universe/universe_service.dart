@@ -30,9 +30,9 @@ Future<Universe?> fetchUniverseAccount() async {
     final rawBytes = Uint8List.fromList(data.data);
     final sliced = rawBytes.sublist(8);
 
-    skrLogger.i(
-      '🧬 Raw Universe Bytes: ${sliced.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}',
-    );
+    // skrLogger.i(
+    //   '🧬 Raw Universe Bytes: ${sliced.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}',
+    // );
 
     final universe = borsh.deserialize(
       Universe.staticSchema,
@@ -40,16 +40,16 @@ Future<Universe?> fetchUniverseAccount() async {
       Universe.fromJson,
     );
 
-    skrLogger.i('✅ Universe account fetched successfully');
+    // skrLogger.i('✅ Universe account fetched successfully');
     // Log all fields
-    skrLogger.i('📦 Universe Decoded:');
-    skrLogger.i('  accountType   : ${universe.accountType}');
-    skrLogger.i('  locked        : ${universe.locked}');
-    skrLogger.i('  bump          : ${universe.bump}');
-    skrLogger.i('  created       : ${universe.created}');
-    skrLogger.i('  lastUpdated   : ${universe.lastUpdated}');
-    skrLogger.i('  fee           : ${universe.fee} (lamports)');
-    skrLogger.i('  increment     : ${universe.increment} (lamports)');
+    // skrLogger.i('📦 Universe Decoded:');
+    // skrLogger.i('  accountType   : ${universe.accountType}');
+    // skrLogger.i('  locked        : ${universe.locked}');
+    // skrLogger.i('  bump          : ${universe.bump}');
+    // skrLogger.i('  created       : ${universe.created}');
+    // skrLogger.i('  lastUpdated   : ${universe.lastUpdated}');
+    // skrLogger.i('  fee           : ${universe.fee} (lamports)');
+    // skrLogger.i('  increment     : ${universe.increment} (lamports)');
 
     return universe;
   } catch (e, st) {

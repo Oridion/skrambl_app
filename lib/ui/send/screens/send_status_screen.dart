@@ -33,7 +33,7 @@ class _SendStatusScreenState extends State<SendStatusScreen>
   bool _isFailed = false;
 
   late AnimationController _fadeController;
-  late Animation<Color?> _bgColorTween;
+  //late Animation<Color?> _bgColorTween;
 
   @override
   void initState() {
@@ -44,13 +44,13 @@ class _SendStatusScreenState extends State<SendStatusScreen>
       duration: const Duration(milliseconds: 1500),
     );
 
-    _bgColorTween =
-        ColorTween(
-          begin: Colors.transparent,
-          end: const Color.fromARGB(255, 169, 238, 205).withAlpha(3),
-        ).animate(
-          CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
-        );
+    // _bgColorTween =
+    //     ColorTween(
+    //       begin: Colors.transparent,
+    //       end: const Color.fromARGB(255, 169, 238, 205).withAlpha(3),
+    //     ).animate(
+    //       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    //     );
 
     _startTimer();
 
@@ -107,7 +107,7 @@ class _SendStatusScreenState extends State<SendStatusScreen>
 
   Future<void> _pollForPodClosure(String podPubkey) async {
     final rpcClient = RpcClient(
-      "https://mainnet.helius-rpc.com/?api-key=e9be3c89-9113-4c5d-be19-4dfc99d8c8f4",
+      "https://bernette-tb3sav-fast-mainnet.helius-rpc.com",
     );
     skrLogger.i(podPubkey);
     final statusProvider = Provider.of<TransactionStatusProvider>(

@@ -8,7 +8,6 @@ import 'package:skrambl_app/providers/seed_vault_session_manager.dart';
 import 'package:skrambl_app/providers/wallet_balance_manager.dart';
 import 'package:skrambl_app/ui/dashboard/dashboard_screen.dart';
 import 'package:skrambl_app/ui/seed_vault_required.dart';
-import 'package:skrambl_app/utils/logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -75,7 +74,7 @@ class _AppLifecycleHandlerState extends State<AppLifecycleHandler>
       );
 
       if (seedVault.authToken == null) {
-        skrLogger.i("🔁 App resumed. Re-checking authToken...");
+        //skrLogger.i("🔁 App resumed. Re-checking authToken...");
         seedVault.initialize();
         balance.stop();
       }

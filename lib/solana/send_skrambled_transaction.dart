@@ -39,7 +39,7 @@ Future<Uint8List> updateBlockhashInMessage(Uint8List messageBytes) async {
   // Overwrite the blockhash bytes in place
   final patched = Uint8List.fromList(messageBytes);
   patched.setRange(offset, offset + 32, freshBlockhashBytes);
-  skrLogger.i("🔄 Patched blockhash at offset $offset with $freshBlockhash");
+  //skrLogger.i("🔄 Patched blockhash at offset $offset with $freshBlockhash");
 
   assert(
     base58encode(patched.sublist(offset, offset + 32)) == freshBlockhash,
@@ -59,8 +59,8 @@ Future<void> sendSignedTx(Uint8List txBytes, Uint8List signature) async {
     ...txBytes.sublist(64), // Skip the first 64 bytes (empty sig)
   ]);
 
-  skrLogger.i("txBytes length: ${txBytes.length}");
-  skrLogger.i("signedTx length: ${signedTx.length}");
+  //skrLogger.i("txBytes length: ${txBytes.length}");
+  //skrLogger.i("signedTx length: ${signedTx.length}");
   assert(txBytes.length == signedTx.length, "Mismatch in tx length!");
 
   final base64Tx = base64Encode(signedTx);
@@ -70,7 +70,7 @@ Future<void> sendSignedTx(Uint8List txBytes, Uint8List signature) async {
       base64Tx,
       preflightCommitment: Commitment.confirmed,
     );
-    skrLogger.i("🚀 Sent! Signature: $sig");
+    //skrLogger.i("🚀 Sent! Signature: $sig");
   } catch (e) {
     skrLogger.e("❌ Failed to send transaction: $e");
   }
@@ -110,7 +110,7 @@ Future<String> sendTransactionWithRetry(
       // Notify UI: sending
       onPhaseChange?.call(TransactionPhase.sending);
 
-      skrLogger.i("📦 Attempt ${attempt + 1} — tx length: ${signedTx.length}");
+      //skrLogger.i("📦 Attempt ${attempt + 1} — tx length: ${signedTx.length}");
 
       // Send transaction
       final base64Tx = base64Encode(signedTx);
@@ -120,7 +120,7 @@ Future<String> sendTransactionWithRetry(
         preflightCommitment: Commitment.confirmed,
       );
 
-      skrLogger.i("📨 Sent transaction: $sig — waiting for finalization…");
+      //skrLogger.i("📨 Sent transaction: $sig — waiting for finalization…");
 
       // Notify UI: confirming
       onPhaseChange?.call(TransactionPhase.confirming);
@@ -129,7 +129,7 @@ Future<String> sendTransactionWithRetry(
       final isFinalized = await _confirmFinalizedSignature(rpcClient, sig);
 
       if (isFinalized) {
-        skrLogger.i("Finalized: $sig");
+        //skrLogger.i("Finalized: $sig");
         return sig;
       } else {
         skrLogger.w("Not finalized yet, retrying…");
@@ -141,7 +141,7 @@ Future<String> sendTransactionWithRetry(
       // Refresh blockhash if expired
       if (lastError.contains("BlockhashNotFound")) {
         txBytes = await updateBlockhashInMessage(txBytes);
-        skrLogger.i("🔄 Blockhash refreshed for retry");
+        //skrLogger.i("🔄 Blockhash refreshed for retry");
       }
     }
 
@@ -174,7 +174,7 @@ Future<bool> _confirmFinalizedSignature(
       final status = statusResponse.value.first;
 
       if (status == null) {
-        skrLogger.i("⏳ [$i/$maxChecks] Transaction not found yet…");
+        //skrLogger.i("⏳ [$i/$maxChecks] Transaction not found yet…");
       } else if (status.err != null) {
         skrLogger.e("❌ Transaction failed: ${status.err}");
         return false; // fail immediately on error
@@ -182,9 +182,9 @@ Future<bool> _confirmFinalizedSignature(
         //skrLogger.i("✅ Transaction finalized: $signature");
         return true;
       } else {
-        skrLogger.i(
-          "⌛ [$i/$maxChecks] Confirmations: ${status.confirmations} — Not finalized yet",
-        );
+        // skrLogger.i(
+        //   "⌛ [$i/$maxChecks] Confirmations: ${status.confirmations} — Not finalized yet",
+        // );
       }
     } catch (e) {
       skrLogger.e("⚠️ Error while checking status: $e");
