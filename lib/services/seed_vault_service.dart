@@ -149,32 +149,6 @@ Cons:
     return Ed25519HDPublicKey.fromBase58(encoded);
   }
 
-  /// Signs a raw transaction buffer using a derived path
-
-  static Future<Uint8List> signTransaction({
-    required Uint8List transactionBytes,
-    int index = defaultIndex,
-  }) async {
-    final authToken = await getAuthToken();
-    final uri = getBurnerWalletUri(index);
-
-    final signingRequest = SigningRequest(
-      payload: transactionBytes,
-      requestedSignatures: [uri],
-    );
-
-    final result = await SeedVault.instance.signTransactions(
-      authToken: authToken,
-      signingRequests: [signingRequest],
-    );
-
-    if (result.isEmpty || result.first.signatures.isEmpty) {
-      throw Exception("Signing failed or returned empty result");
-    }
-
-    return result.first.signatures.first;
-  }
-
   static Future<Uint8List> signMessage({
     required Uint8List messageBytes,
     required AuthToken authToken,
@@ -198,50 +172,29 @@ Cons:
 
     return result.first.signatures.first;
   }
+
+  // /// Signs a raw transaction buffer using a derived path
+  // static Future<Uint8List> signTransaction({
+  //   required Uint8List transactionBytes,
+  //   int index = defaultIndex,
+  // }) async {
+  //   final authToken = await getAuthToken();
+  //   final uri = getBurnerWalletUri(index);
+
+  //   final signingRequest = SigningRequest(
+  //     payload: transactionBytes,
+  //     requestedSignatures: [uri],
+  //   );
+
+  //   final result = await SeedVault.instance.signTransactions(
+  //     authToken: authToken,
+  //     signingRequests: [signingRequest],
+  //   );
+
+  //   if (result.isEmpty || result.first.signatures.isEmpty) {
+  //     throw Exception("Signing failed or returned empty result");
+  //   }
+
+  //   return result.first.signatures.first;
+  // }
 }
-
-// /// Signed and send base64 message
-// Future<String?> signAndSendBase64Message({
-//   required String base64Message,
-//   required AuthToken authToken,
-//   List<int> derivationPath = const [44, 501, 0, 0],
-// }) async {
-//   try {
-//     final messageBytes = base64Decode(base64Message);
-
-//     // 1. Request authorization and get the pubkey (already done earlier)
-//     final signedTx = await SeedVault.signTransaction(
-//       derivationPath,
-//       messageBytes,
-//     );
-
-//     // 2. Send to Solana
-//     final base64SignedTx = base64Encode(signedTx);
-
-//     final response = await http.post(
-//       Uri.parse('https://api.mainnet-beta.solana.com'),
-//       headers: {'Content-Type': 'application/json'},
-//       body: jsonEncode({
-//         "jsonrpc": "2.0",
-//         "id": 1,
-//         "method": "sendTransaction",
-//         "params": [
-//           base64SignedTx,
-//           {"encoding": "base64"},
-//         ],
-//       }),
-//     );
-
-//     final json = jsonDecode(response.body);
-
-//     if (json['error'] != null) {
-//       skrLogger.e("❌ RPC Error: ${json['error']}");
-//       return null;
-//     }
-
-//     return json['result']; // This is your tx signature
-//   } catch (e) {
-//     skrLogger.e("❌ Sign/send failed: $e");
-//     return null;
-//   }
-// }

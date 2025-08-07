@@ -26,11 +26,14 @@ class SeedVaultSessionManager extends ChangeNotifier {
 
   /// Initialize on app start
   Future<void> initialize() async {
-    //Stop initialize loops
     if (_isInitializing) return;
     _isInitializing = true;
 
     _isAvailable = await SeedVault.instance.isAvailable(allowSimulated: true);
+    if (_isAvailable) {
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
     _hasPermission = await SeedVault.instance.checkPermission();
 
     skrLogger.i('SeedVault isAvailable: $_isAvailable');
@@ -42,35 +45,25 @@ class SeedVaultSessionManager extends ChangeNotifier {
       return;
     }
 
-    // 🔥 Restore existing authorized seed session
     try {
       final authorizedSeeds = await SeedVault.instance.getAuthorizedSeeds();
       if (authorizedSeeds.isNotEmpty) {
-        skrLogger.i("Authorized seeds found. Resetting.. ");
         final seed = authorizedSeeds.first;
-        _authToken =
-            seed[WalletContractV1.authorizedSeedsAuthToken] as AuthToken;
-        skrLogger.i(
-          '✅ Restored authToken from existing authorized seed. $_authToken',
-        );
-
-        skrLogger.i(seed);
-
-        // final account = await SeedVault.instance.getAccount(
-        //   authToken: _authToken as int,
-        //   id: 0,
-        // );
-
-        // skrLogger.i(account);
-
-        validateToken();
+        final token =
+            seed[WalletContractV1.authorizedSeedsAuthToken] as AuthToken?;
+        if (token != null) {
+          skrLogger.i("✅ Restoring token from seed: $token");
+          _authToken = token;
+          await validateToken(); // Only if token exists
+        }
       } else {
-        skrLogger.w('⚠️ No authorized seeds found. Requesting authorization');
-        await requestAuthorization();
-        _authToken = null;
+        skrLogger.w(
+          '⚠️ No authorized seeds yet — waiting for user to authorize.',
+        );
+        _authToken = null; // Don't request inside init — do that manually in UI
       }
     } catch (e) {
-      skrLogger.e('Failed to restore authorized seed: $e');
+      skrLogger.e('SeedVault init error: $e');
       _authToken = null;
     }
 
