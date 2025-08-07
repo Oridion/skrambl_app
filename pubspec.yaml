@@ -45,6 +45,8 @@ dependencies:
   http: ^1.4.0  
   solana: ^0.31.1
   solana_borsh: ^0.0.1
+  flutter_native_splash: ^2.4.6
+  flutter_launcher_icons: ^0.14.4
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -105,3 +107,17 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+flutter_native_splash:
+  color: "#f9f9f9" # Background color
+  image: assets/splash/skrambl-logo.png
+  android: true
+  ios: true
+  web: false
+
+
+flutter_icons:
+  android: true
+  ios: false
+  image_path: assets/icons/skrambl-logo.png
+  adaptive_icon_background: "#f9f9f9"
+  adaptive_icon_foreground: assets/icons/skrambl-logo.png
