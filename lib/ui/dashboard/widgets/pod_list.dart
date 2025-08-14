@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
-import 'package:skrambl_app/ui/pods/all_pods.dart';
+import 'package:skrambl_app/ui/pods/all_pods_screen.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 
 class PodListSection extends StatelessWidget {

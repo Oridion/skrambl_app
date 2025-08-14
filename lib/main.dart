@@ -139,6 +139,12 @@ class SkramblApp extends StatelessWidget {
           titleMedium: GoogleFonts.roboto(fontSize: 20),
           bodyMedium: GoogleFonts.spaceGrotesk(fontSize: 16),
           labelSmall: GoogleFonts.firaCode(fontSize: 12),
+          bodySmall: GoogleFonts.spaceGrotesk(
+            fontSize: 11,
+            fontWeight: FontWeight.w400,
+            color: Colors.grey[600],
+            letterSpacing: 0.2,
+          ),
         ),
       ),
       home: seedVaultAvailable ? const RootShell() : const SeedVaultRequiredScreen(),

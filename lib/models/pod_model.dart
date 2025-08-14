@@ -99,7 +99,7 @@ class Pod extends BorshObject {
   BorshSchema get borshSchema => Pod.staticSchema;
 
   // 150-byte fixed header ONLY
-  static final BorshStructCodec fixedCodec = BorshStructCodec({
+  static final BorshStructCodec shortCodec = BorshStructCodec({
     'accountType': borsh.u8,
     'version': borsh.u8,
     'mode': borsh.u8,
@@ -205,7 +205,7 @@ class Pod extends BorshObject {
         );
         return null;
       }
-      final sliced = raw.sublist(8); // ✅ skip anchor discriminator once
+      final sliced = raw.sublist(8); // skip anchor discriminator once
       skrLogger.i('Pod.decode[$debugLabel] slicedLen=${sliced.length}');
       return fromBuffer(sliced, debugLabel: debugLabel, swallowErrors: swallowErrors);
     } catch (e, st) {
@@ -223,17 +223,17 @@ class Pod extends BorshObject {
   }) {
     try {
       final int totalLen = data.length;
-      skrLogger.i('💡 Pod.decode[$debugLabel] postDiscLen=$totalLen');
+      skrLogger.i('Pod.decode[$debugLabel] postDiscLen=$totalLen');
 
       if (totalLen < _kMinTotal) {
         skrLogger.w('Pod.decode[$debugLabel] too small post-disc: have=$totalLen, need>=${_kMinTotal}');
         return null;
       }
 
-      // 1) Decode the 150-byte fixed header with fixedCodec
+      // 1) Decode the 150-byte fixed header with shortCodec
       skrLogger.i('💡 Pod.decode[$debugLabel] fixed[0..$_kFixedSize) start');
       final fixedPart = data.sublist(0, _kFixedSize);
-      final fixed = fixedCodec.decode(fixedPart); // Map<String, dynamic>
+      final fixed = shortCodec.decode(fixedPart); // Map<String, dynamic>
       skrLogger.i(
         '💡 Pod.decode[$debugLabel] fixed ok: '
         'version=${fixed['version']}, lastProcess=${fixed['lastProcess']}, delay=${fixed['delay']}',
@@ -242,7 +242,7 @@ class Pod extends BorshObject {
       // 2) Decode up to 10 log entries (each 19 bytes)
       final int logsAvail = math.min(totalLen - _kFixedSize, _kLogsRegionSize);
       final int availableEntries = logsAvail ~/ _kLogEntrySize;
-      skrLogger.i('💡 Pod.decode[$debugLabel] logsAvail=$logsAvail, entries=$availableEntries');
+      skrLogger.i('Pod.decode[$debugLabel] logsAvail=$logsAvail, entries=$availableEntries');
 
       final logs = <ActivityEntry>[];
       for (int i = 0; i < availableEntries; i++) {
@@ -250,12 +250,12 @@ class Pod extends BorshObject {
         final end = start + _kLogEntrySize; // ≤ 340
         final slice = data.sublist(start, end);
         if (slice.length != _kLogEntrySize) {
-          skrLogger.w('⚠️ Pod.decode[$debugLabel] log#$i size=${slice.length} expected=$_kLogEntrySize');
+          skrLogger.w('Pod.decode[$debugLabel] log#$i size=${slice.length} expected=$_kLogEntrySize');
         }
         try {
           logs.add(ActivityEntry.fromBuffer(slice)); // expects 19 bytes
         } catch (e) {
-          skrLogger.w('⚠️ Pod.decode[$debugLabel] log#$i decode error: $e');
+          skrLogger.w('Pod.decode[$debugLabel] log#$i decode error: $e');
         }
       }
 
@@ -270,7 +270,7 @@ class Pod extends BorshObject {
         );
       }
 
-      // 4) ✅ Build the Pod DIRECTLY (do NOT call Pod.fromJson here)
+      // Build the Pod DIRECTLY (do NOT call Pod.fromJson here)
       final pod = Pod(
         accountType: fixed['accountType'],
         version: fixed['version'],
@@ -293,9 +293,7 @@ class Pod extends BorshObject {
         logIndex: logIndex,
       );
 
-      skrLogger.i(
-        '✅ Pod.decode[$debugLabel] success: entries=${logs.length}, lastProcess=${pod.lastProcess}',
-      );
+      skrLogger.i('Pod.decode[$debugLabel] success: entries=${logs.length}, lastProcess=${pod.lastProcess}');
       return pod;
     } catch (e, st) {
       skrLogger.e('⛔ Pod.decode[$debugLabel] exception: $e\n$st');

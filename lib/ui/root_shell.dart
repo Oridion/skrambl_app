@@ -2,9 +2,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/ui/burners/burners_screen.dart';
 import 'package:skrambl_app/ui/dashboard/dashboard_screen.dart';
-import 'package:skrambl_app/ui/pods/all_pods.dart';
+import 'package:skrambl_app/ui/pods/all_pods_screen.dart';
 
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
@@ -66,8 +67,8 @@ class _RootShellState extends State<RootShell> {
                       width: 80,
                       child: _NavIconButton(
                         tooltip: 'Pods',
-                        icon: Icons.all_inbox_outlined,
-                        activeIcon: Icons.all_inbox,
+                        icon: AppConstants.skramblIconOutlined,
+                        activeIcon: AppConstants.skramblIcon,
                         selected: _index == 2,
                         onTap: () {
                           HapticFeedback.selectionClick();

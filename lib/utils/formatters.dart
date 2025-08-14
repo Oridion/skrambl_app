@@ -50,3 +50,6 @@ String formatTime(int unixSeconds) {
   // Example: "3:45 PM"
   return DateFormat('h:mm a').format(date);
 }
+
+DateTime? dateTimeOrNull(int? secondsEpoch) =>
+    secondsEpoch == null ? null : DateTime.fromMillisecondsSinceEpoch(secondsEpoch);

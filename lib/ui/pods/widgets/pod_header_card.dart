@@ -1,0 +1,136 @@
+import 'package:flutter/material.dart';
+import 'package:skrambl_app/ui/shared/relative_time.dart'; // for withOpacityCompat if you use it elsewhere
+import 'package:skrambl_app/data/skrambl_entity.dart'; // for PodStatus
+
+/// Professional header for the Pod details page.
+/// - Left: Big SOL amount with subtle "SOL" unit
+/// - Right: Status pill + live relative time
+class PodHeaderCard extends StatelessWidget {
+  final PodStatus status;
+  final Color chipColor;
+  final DateTime? draftedAt;
+  final int lamports; // raw lamports
+
+  const PodHeaderCard({
+    super.key,
+    required this.status,
+    required this.chipColor,
+    required this.draftedAt,
+    required this.lamports,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 255, 255, 255),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color.fromARGB(255, 223, 223, 223), width: 1),
+        boxShadow: const [
+          BoxShadow(blurRadius: 16, spreadRadius: 0, offset: Offset(0, 6), color: Color(0x11000000)),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Amount (prominent)
+          Expanded(
+            child: _AmountBlock(solText: _solString(lamports), textTheme: t),
+          ),
+
+          const SizedBox(width: 12),
+
+          // Status + time (compact, right-aligned)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _StatusPill(text: status.name.toUpperCase(), color: chipColor),
+              if (draftedAt != null) ...[
+                const SizedBox(height: 6),
+                // live “time since created”
+                RelativeTimeListen(
+                  time: draftedAt!,
+                  style: t.bodySmall?.copyWith(color: Colors.black),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Big amount with small SOL unit; uses tabular figures for stability.
+class _AmountBlock extends StatelessWidget {
+  final String solText;
+  final TextTheme textTheme;
+  const _AmountBlock({required this.solText, required this.textTheme});
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = solText.split(' ');
+    final amount = parts.first; // e.g. 12.3456
+    final unit = parts.length > 1 ? parts[1] : 'SOL';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Large number, slightly condensed, heavy weight
+        Text(
+          amount,
+          style: textTheme.displaySmall?.copyWith(
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.0,
+            height: 1.0,
+            color: Colors.black,
+            // Use monospace digits to avoid jitter if your font supports it
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+
+        Text(unit, style: textTheme.labelLarge?.copyWith(color: Colors.black, letterSpacing: 0.3)),
+      ],
+    );
+  }
+}
+
+/// Compact status chip with strong contrast and tight letter-spacing.
+class _StatusPill extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _StatusPill({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withOpacity(0.35)),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+        ).copyWith(color: color),
+      ),
+    );
+  }
+}
+
+/// Convert lamports → SOL string without trailing zeros, e.g. "12.34 SOL"
+String _solString(int lamports) {
+  const lamportsPerSol = 1000000000; // 1e9
+  final sol = lamports / lamportsPerSol;
+  // Keep up to 6 decimals, then trim trailing zeros
+  var s = sol.toStringAsFixed(6);
+  s = s.contains('.') ? s.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '') : s;
+  return '$s SOL';
+}

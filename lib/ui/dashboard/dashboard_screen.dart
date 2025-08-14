@@ -1,4 +1,3 @@
-//NEW WAY
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/providers/seed_vault_session_manager.dart';
@@ -6,7 +5,7 @@ import 'package:skrambl_app/providers/wallet_balance_manager.dart';
 import 'package:skrambl_app/services/seed_vault_service.dart';
 import 'package:skrambl_app/ui/dashboard/sections/dashboard_header.dart';
 import 'package:skrambl_app/ui/dashboard/sections/dashboard_pods.dart';
-import 'package:skrambl_app/ui/pods/all_pods.dart';
+import 'package:skrambl_app/ui/pods/all_pods_screen.dart';
 import 'package:skrambl_app/ui/send/send_controller.dart';
 import 'package:skrambl_app/utils/logger.dart';
 
@@ -191,7 +190,7 @@ class _DashboardContent extends StatelessWidget {
 
             // Pods list as a Sliver (scrollable)
             const SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: 16),
               sliver: PodsSliver(), // <— see below
             ),
 

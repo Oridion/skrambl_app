@@ -23,3 +23,15 @@ bool isSolanaAddress(String address) {
     return false;
   }
 }
+
+String modeLabel(int mode) {
+  // 0=Instant, 1=Delay, extend if you add more modes
+  switch (mode) {
+    case 0:
+      return 'Instant';
+    case 1:
+      return 'Delay';
+    default:
+      return 'Mode $mode';
+  }
+}

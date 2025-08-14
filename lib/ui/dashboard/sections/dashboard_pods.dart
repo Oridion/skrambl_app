@@ -1,13 +1,10 @@
-// lib/ui/dashboard/widgets/pods_sliver.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
-import 'package:skrambl_app/data/skrambl_entity.dart';
-import 'package:skrambl_app/ui/shared/relative_time.dart';
-import 'package:skrambl_app/utils/colors.dart';
-import 'package:skrambl_app/utils/formatters.dart';
-import 'package:skrambl_app/utils/logger.dart';
+import 'package:skrambl_app/ui/pods/pod_details_screen.dart';
+import 'package:skrambl_app/ui/shared/pod_card.dart';
 
 class PodsSliver extends StatelessWidget {
   const PodsSliver({super.key});
@@ -43,7 +40,7 @@ class PodsSliver extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.view_timeline, size: 56, color: const Color.fromARGB(255, 192, 192, 192)),
+                    Icon(AppConstants.skramblIcon, size: 56, color: const Color.fromARGB(255, 192, 192, 192)),
                     const SizedBox(height: 12),
                     const Text(
                       'No deliveries yet',
@@ -65,69 +62,18 @@ class PodsSliver extends StatelessWidget {
 
         return SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, i) => _PodCard(pod: pods[i]),
+            (context, i) => PodCard(
+              pod: pods[i],
+              onTap: () {
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => PodDetailsScreen(localId: pods[i].id)));
+              },
+            ),
             childCount: pods.length,
           ),
         );
       },
-    );
-  }
-}
-
-class _PodCard extends StatelessWidget {
-  final Pod pod;
-  const _PodCard({required this.pod});
-
-  @override
-  Widget build(BuildContext context) {
-    skrLogger.i(pod);
-
-    final status = PodStatus.values[pod.status];
-    Color chip = switch (status) {
-      PodStatus.drafting => Colors.grey,
-      PodStatus.launching => Colors.blueGrey,
-      PodStatus.submitted => Colors.blue,
-      PodStatus.scrambling => Colors.deepPurple,
-      PodStatus.delivering => Colors.orange,
-      PodStatus.finalized => Colors.green,
-      PodStatus.failed => Colors.red,
-    };
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
-        leading: CircleAvatar(
-          radius: 20,
-          backgroundColor: Colors.black,
-          child: const Icon(Icons.rocket_launch, color: Colors.white, size: 18),
-        ),
-        title: RelativeTimeListen(
-          time: DateTime.fromMillisecondsSinceEpoch(pod.draftedAt * 1000), // convert from seconds
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
-        subtitle: Text(
-          '${pod.lamports / 1000000000} to ${shortenPubkey(pod.destination)}',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-          decoration: BoxDecoration(
-            color: chip.withOpacityCompat(.12),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: chip.withOpacityCompat(.35)),
-          ),
-          child: Text(
-            status.name.toUpperCase(),
-            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: chip),
-          ),
-        ),
-        onTap: () {
-          // TODO: navigate to pod details using localId = pod.id
-        },
-      ),
     );
   }
 }
