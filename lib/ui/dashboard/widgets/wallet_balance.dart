@@ -84,7 +84,7 @@ class _WalletBalanceTileState extends State<WalletBalanceTile> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 77,
+          height: 82,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisAlignment: MainAxisAlignment.start,
@@ -92,7 +92,7 @@ class _WalletBalanceTileState extends State<WalletBalanceTile> {
               Text(
                 sol,
                 style: GoogleFonts.archivoBlack(
-                  fontSize: 72,
+                  fontSize: 77,
                   color: Colors.black,
                 ),
               ),
@@ -101,9 +101,9 @@ class _WalletBalanceTileState extends State<WalletBalanceTile> {
             ],
           ),
         ),
-        const SizedBox(height: 19),
+        const SizedBox(height: 20),
         Text(
-          '~\$$usd USD',
+          ' ~\$$usd USD',
           style: TextStyle(color: Colors.grey[600], fontSize: 18),
         ),
       ],

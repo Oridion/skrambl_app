@@ -14,11 +14,7 @@ class SeedVaultRequiredScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.lock,
-                color: const Color.fromARGB(255, 60, 59, 58),
-                size: 64,
-              ),
+              Icon(Icons.lock, color: const Color.fromARGB(255, 60, 59, 58), size: 64),
               const SizedBox(height: 24),
               Text(
                 'Seed Vault Required',

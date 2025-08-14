@@ -2,25 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:skrambl_app/data/skrambl_dao.dart';
+import 'package:skrambl_app/providers/minute_ticker.dart';
 import 'package:skrambl_app/providers/transaction_status_provider.dart';
+import 'package:skrambl_app/ui/root_shell.dart';
 import 'data/local_database.dart';
 import 'package:skrambl_app/providers/seed_vault_session_manager.dart';
 import 'package:skrambl_app/providers/wallet_balance_manager.dart';
-import 'package:skrambl_app/ui/dashboard/dashboard_screen.dart';
-import 'package:skrambl_app/ui/seed_vault_required.dart';
+import 'package:skrambl_app/ui/errors/seed_vault_required.dart';
+import 'package:skrambl_app/data/burner_repository.dart';
+import 'package:skrambl_app/services/burner_wallet_management.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-    ),
+    const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark),
   );
 
   final db = LocalDatabase();
-  await db.select(db.skrambls).get();
 
   final seedVaultProvider = SeedVaultSessionManager();
   await seedVaultProvider.initialize();
@@ -30,9 +30,26 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        // Provide DB
+        Provider<LocalDatabase>(create: (_) => db, dispose: (_, db) => db.close()),
+        // Provide DAO (built from the shared DB)
+        Provider<PodDao>(create: (ctx) => PodDao(ctx.read<LocalDatabase>())),
         ChangeNotifierProvider(create: (_) => seedVaultProvider),
         ChangeNotifierProvider(create: (_) => balanceProvider),
         ChangeNotifierProvider(create: (_) => TransactionStatusProvider()),
+        ChangeNotifierProvider(create: (_) => MinuteTicker()),
+
+        Provider<BurnerRepository>(
+          create: (ctx) {
+            final token = ctx.read<SeedVaultSessionManager>().authToken;
+            if (token == null) {
+              // If this can happen on cold start, you can throw or return a dummy.
+              // Since you call initialize() before runApp, token should be ready.
+              throw StateError('AuthToken is not available for BurnerRepository.');
+            }
+            return BurnerRepository(manager: BurnerWalletManager(authToken: token));
+          },
+        ),
       ],
       child: const AppLifecycleHandler(child: SkramblApp()),
     ),
@@ -47,8 +64,7 @@ class AppLifecycleHandler extends StatefulWidget {
   State<AppLifecycleHandler> createState() => _AppLifecycleHandlerState();
 }
 
-class _AppLifecycleHandlerState extends State<AppLifecycleHandler>
-    with WidgetsBindingObserver {
+class _AppLifecycleHandlerState extends State<AppLifecycleHandler> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -64,14 +80,8 @@ class _AppLifecycleHandlerState extends State<AppLifecycleHandler>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      final seedVault = Provider.of<SeedVaultSessionManager>(
-        context,
-        listen: false,
-      );
-      final balance = Provider.of<WalletBalanceProvider>(
-        context,
-        listen: false,
-      );
+      final seedVault = Provider.of<SeedVaultSessionManager>(context, listen: false);
+      final balance = Provider.of<WalletBalanceProvider>(context, listen: false);
 
       if (seedVault.authToken == null) {
         //skrLogger.i("🔁 App resumed. Re-checking authToken...");
@@ -98,7 +108,7 @@ class SkramblApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color.fromARGB(255, 227, 227, 227),
+        scaffoldBackgroundColor: const Color.fromARGB(255, 239, 240, 242),
         colorScheme: const ColorScheme(
           brightness: Brightness.light,
           primary: Colors.black,
@@ -114,22 +124,15 @@ class SkramblApp extends StatelessWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           foregroundColor: Colors.black,
-          systemOverlayStyle:
-              SystemUiOverlayStyle.dark, // 👈 Ensure this is here
+          systemOverlayStyle: SystemUiOverlayStyle.dark, // 👈 Ensure this is here
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         ),
         textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
+          style: TextButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
         ),
         textTheme: TextTheme(
           displayLarge: GoogleFonts.bitter(),
@@ -138,9 +141,7 @@ class SkramblApp extends StatelessWidget {
           labelSmall: GoogleFonts.firaCode(fontSize: 12),
         ),
       ),
-      home: seedVaultAvailable
-          ? const Dashboard()
-          : const SeedVaultRequiredScreen(),
+      home: seedVaultAvailable ? const RootShell() : const SeedVaultRequiredScreen(),
     );
   }
 }

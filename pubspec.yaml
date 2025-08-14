@@ -47,6 +47,8 @@ dependencies:
   solana_borsh: ^0.0.1
   flutter_native_splash: ^2.4.6
   flutter_launcher_icons: ^0.14.4
+  uuid: ^4.5.1
+  timeago: ^3.7.1
 
 
   # The following adds the Cupertino Icons font to your application.

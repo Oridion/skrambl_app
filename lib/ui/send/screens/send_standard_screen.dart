@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../send_form_model.dart';
+import '../../../models/send_form_model.dart';
 
 class SendStandardScreen extends StatelessWidget {
   final VoidCallback onBack;

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/providers/transaction_status_provider.dart';
 import 'package:skrambl_app/utils/logger.dart';
 import 'package:solana/base58.dart';
@@ -8,9 +9,7 @@ import 'package:solana/solana.dart';
 import 'dart:async';
 
 Future<Uint8List> updateBlockhashInMessage(Uint8List messageBytes) async {
-  final rpcClient = RpcClient(
-    'https://mainnet.helius-rpc.com/?api-key=e9be3c89-9113-4c5d-be19-4dfc99d8c8f4',
-  );
+  final rpcClient = RpcClient('https://mainnet.helius-rpc.com/?api-key=e9be3c89-9113-4c5d-be19-4dfc99d8c8f4');
 
   // Get the latest blockhash from the cluster
   final latestBlockhash = await rpcClient.getLatestBlockhash();
@@ -41,17 +40,12 @@ Future<Uint8List> updateBlockhashInMessage(Uint8List messageBytes) async {
   patched.setRange(offset, offset + 32, freshBlockhashBytes);
   //skrLogger.i("🔄 Patched blockhash at offset $offset with $freshBlockhash");
 
-  assert(
-    base58encode(patched.sublist(offset, offset + 32)) == freshBlockhash,
-    "Blockhash patch failed",
-  );
+  assert(base58encode(patched.sublist(offset, offset + 32)) == freshBlockhash, "Blockhash patch failed");
   return patched;
 }
 
 Future<void> sendSignedTx(Uint8List txBytes, Uint8List signature) async {
-  final rpcClient = RpcClient(
-    "https://mainnet.helius-rpc.com/?api-key=e9be3c89-9113-4c5d-be19-4dfc99d8c8f4",
-  );
+  final rpcClient = RpcClient("https://mainnet.helius-rpc.com/?api-key=e9be3c89-9113-4c5d-be19-4dfc99d8c8f4");
 
   // Append the signature manually
   final signedTx = Uint8List.fromList([
@@ -66,10 +60,7 @@ Future<void> sendSignedTx(Uint8List txBytes, Uint8List signature) async {
   final base64Tx = base64Encode(signedTx);
 
   try {
-    final sig = await rpcClient.sendTransaction(
-      base64Tx,
-      preflightCommitment: Commitment.confirmed,
-    );
+    await rpcClient.sendTransaction(base64Tx, preflightCommitment: Commitment.confirmed);
     //skrLogger.i("🚀 Sent! Signature: $sig");
   } catch (e) {
     skrLogger.e("❌ Failed to send transaction: $e");
@@ -82,15 +73,13 @@ Future<String> sendTransactionWithRetry(
   int maxRetries,
   void Function(TransactionPhase phase)? onPhaseChange, // optional callback
 ) async {
-  final rpcClient = RpcClient(
-    "https://mainnet.helius-rpc.com/?api-key=e9be3c89-9113-4c5d-be19-4dfc99d8c8f4",
-  );
+  final RpcClient rpcClient = AppConstants.rpcClient;
 
   String? lastError;
   int attempt = 0;
 
   // Helper: compact-u16 encoding for signature count
-  List<int> _compactU16(int value) {
+  List<int> compactU16(int value) {
     if (value < 0x80) {
       return [value];
     } else {
@@ -102,7 +91,7 @@ Future<String> sendTransactionWithRetry(
     try {
       // Build signed transaction
       final signedTx = Uint8List.fromList([
-        ..._compactU16(1), // 1 signature
+        ...compactU16(1), // 1 signature
         ...signature, // 64-byte signature
         ...txBytes, // message
       ]);
@@ -210,11 +199,7 @@ Future<bool> queueInstantPod(QueueInstantPodRequest request) async {
   final url = Uri.parse('https://api.oridion.xyz/pod/instant/queue');
 
   final response = await http
-      .post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(request.toJson()),
-      )
+      .post(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode(request.toJson()))
       .timeout(const Duration(seconds: 20));
 
   if (response.statusCode == 200) {

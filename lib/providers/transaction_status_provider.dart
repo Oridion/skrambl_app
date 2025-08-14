@@ -4,6 +4,7 @@ enum TransactionPhase {
   sending, // Got txSig but not confirmed yet
   confirming, // Waiting for finalization
   scrambling, // Calling API to queue
+  delivering,
   completed, // Done!
   failed, // Error happened
 }
@@ -25,6 +26,8 @@ class TransactionStatusProvider extends ChangeNotifier {
         return "CONFIRMING";
       case TransactionPhase.scrambling:
         return "SKRAMBLING";
+      case TransactionPhase.delivering:
+        return "DELIVERING";
       case TransactionPhase.completed:
         return "COMPLETED";
       case TransactionPhase.failed:

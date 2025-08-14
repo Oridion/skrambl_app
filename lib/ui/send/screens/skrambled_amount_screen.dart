@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/providers/wallet_balance_manager.dart';
+import 'package:skrambl_app/services/price_service.dart';
 import 'package:skrambl_app/solana/solana_client_service.dart';
 import 'package:skrambl_app/solana/universe/universe_service.dart';
 import 'package:skrambl_app/ui/send/widgets/glitch_header.dart';
 import 'package:skrambl_app/ui/send/widgets/slider_shape.dart';
+import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/utils/logger.dart';
 
-import '../send_form_model.dart';
+import '../../../models/send_form_model.dart';
 
 class SkrambledAmountScreen extends StatefulWidget {
   final VoidCallback onNext;
@@ -137,31 +140,54 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
     final bool hasAmount = _amount != null && _amount! > 0;
     final double total = hasAmount ? amount + fee : 0;
 
+    String usd(double sol) {
+      final p = widget.formModel.solUsdPrice;
+      if (p == null) return '';
+      final v = sol * p;
+      final s = v >= 100
+          ? v.toStringAsFixed(0)
+          : v >= 1
+          ? v.toStringAsFixed(2)
+          : v.toStringAsFixed(4);
+      return '\$$s';
+    }
+
     return GlitchHeader(
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 24),
+        padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'ESTIMATED TOTAL COST',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 2),
             Text(
-              '${formatSol(total)} SOL',
-              style: const TextStyle(
-                fontSize: 38,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+              'ESTIMATED TOTAL',
+              style: TextStyle(fontSize: 11, color: Colors.white.withOpacityCompat(0.7), letterSpacing: 0.8),
+            ),
+            const SizedBox(height: 4),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              transitionBuilder: (c, a) => FadeTransition(opacity: a, child: c),
+              child: Text(
+                '${formatSol(total)} SOL',
+                key: ValueKey('${total.toStringAsFixed(9)}$_delaySeconds'),
+                style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w800, color: Colors.white),
               ),
             ),
             if (hasAmount) ...[
-              const SizedBox(height: 4),
-              Text(
-                '(${formatSol(amount)} +${formatSol(fee)} FEE)',
-                style: const TextStyle(fontSize: 14, color: Colors.white70),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  Text(
+                    '(${formatSol(amount)} + ${formatSol(fee)} fee)',
+                    style: const TextStyle(fontSize: 13, color: Colors.white70),
+                  ),
+                  const SizedBox(width: 8),
+                  if (widget.formModel.solUsdPrice != null)
+                    Text(
+                      '• ${usd(total)}',
+                      style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.75)),
+                    ),
+                ],
               ),
             ],
           ],
@@ -178,12 +204,8 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
     final walletBalance = balanceProvider.solBalance;
     final isBalanceLoading = balanceProvider.isLoading;
 
-    final isValid =
-        _amount != null &&
-        _amount! >= _minAmount &&
-        _errorText == null &&
-        !isBalanceLoading;
-
+    final isValid = _amount != null && _amount! >= _minAmount && _errorText == null && !isBalanceLoading;
+    final radius = BorderRadius.circular(10);
     return LayoutBuilder(
       builder: (context, constraints) {
         return Column(
@@ -191,78 +213,84 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
             _buildHeader(),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(30),
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight - 200,
-                  ),
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 200),
                   child: IntrinsicHeight(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
                           'Enter amount and delay',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 22),
+
                         TextField(
                           controller: _amountController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,6}')), // max 6 decimals
+                          ],
                           decoration: InputDecoration(
-                            labelText: 'Amount (SOL)',
-                            border: const OutlineInputBorder(),
-                            // Customize border when error occurs 👇
+                            labelText: 'Amount in SOL',
+                            helperText: (widget.formModel.solUsdPrice != null && (_amount ?? 0) > 0)
+                                ? '≈ ${((_amount ?? 0) * (widget.formModel.solUsdPrice ?? 0)).toStringAsFixed(2)} USD'
+                                : null,
+                            helperStyle: const TextStyle(fontSize: 12, color: Colors.black54),
+                            border: OutlineInputBorder(borderRadius: radius),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: radius,
+                              borderSide: const BorderSide(color: Colors.black, width: 1.6),
+                            ),
                             errorBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: Color.fromARGB(255, 175, 33, 33),
-                                width: 1.5,
-                              ),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: radius,
+                              borderSide: const BorderSide(color: Color(0xFFB3261E), width: 1.4),
                             ),
-
-                            // Optional: border when focused & error is shown
                             focusedErrorBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: const Color.fromARGB(255, 175, 33, 33),
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: radius,
+                              borderSide: const BorderSide(color: Color(0xFFB3261E), width: 1.6),
                             ),
-
-                            // Adjust the error message text style
                             errorStyle: const TextStyle(
-                              fontSize: 13,
-                              color: Color.fromARGB(255, 175, 33, 33),
-                              height: 1.2, // tight vertical spacing
+                              fontSize: 12.5,
+                              color: Color(0xFFB3261E),
+                              height: 1.1,
                             ),
-                            errorText: _errorText,
                             suffixIcon: (!isBalanceLoading && walletBalance > 0)
-                                ? TextButton(
-                                    onPressed: () {
-                                      final fee = calculateFee(_delaySeconds);
-                                      final max = walletBalance - fee;
-                                      if (max > 0) {
-                                        _amountController.text = max
-                                            .toStringAsFixed(6);
-                                      }
-                                    },
-                                    child: const Text('MAX'),
+                                ? Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: TextButton(
+                                      style: TextButton.styleFrom(
+                                        backgroundColor: const Color(0xFFEDEDED),
+                                        foregroundColor: Colors.black,
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(999),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        final feeNow = calculateFee(_delaySeconds);
+                                        final max = walletBalance - feeNow;
+                                        if (max > 0) _amountController.text = max.toStringAsFixed(6);
+                                      },
+                                      child: const Text(
+                                        'MAX',
+                                        style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                                      ),
+                                    ),
                                   )
                                 : null,
+                            suffixIconConstraints: const BoxConstraints(minWidth: 72),
+                            errorText: _errorText,
                           ),
                         ),
                         if (!isBalanceLoading && walletBalance > 0) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            'Balance: ${formatSol(walletBalance)} SOL',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey,
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(6, 4, 6, 8),
+                            child: Text(
+                              'Balance: ${formatSol(walletBalance)} SOL',
+                              style: const TextStyle(fontSize: 12.5, color: Colors.black54),
                             ),
                           ),
                         ],
@@ -270,80 +298,49 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              'Delay: $delayText',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              '(${calculateFee(_delaySeconds).toStringAsFixed(3)} FEE)',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Color.fromARGB(255, 65, 65, 65),
-                              ),
-                            ),
+                            _DelayChip(text: 'Delay: $delayText'),
+                            const SizedBox(width: 8),
+                            _MonoChip(text: '${calculateFee(_delaySeconds).toStringAsFixed(3)} SOL fee'),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 24),
+
                         SliderTheme(
                           data: SliderTheme.of(context).copyWith(
-                            trackHeight: 14.0,
-                            activeTrackColor: Colors.black54,
-                            inactiveTrackColor: Colors.grey.shade100,
-                            trackShape: const RoundedRectSliderTrackShape(),
-                            thumbShape: const SquareSliderThumbShape(
-                              size: 25,
-                            ), // 👈 use boxy thumb,
+                            trackHeight: 20,
+                            activeTrackColor: const Color.fromARGB(221, 60, 60, 60),
+                            inactiveTrackColor: const Color.fromARGB(255, 211, 211, 211),
+                            thumbShape: const SquareSliderThumbShape(size: 35),
                             thumbColor: Colors.black,
                             overlayShape: SliderComponentShape.noOverlay,
                             tickMarkShape: SliderTickMarkShape.noTickMark,
+                            valueIndicatorShape: const PaddleSliderValueIndicatorShape(),
+                            valueIndicatorTextStyle: const TextStyle(color: Colors.white),
                           ),
                           child: Slider(
                             min: 0,
                             max: 3600,
-                            divisions: 12,
+                            divisions: 12, // 0,5,10,...,60 min steps
                             value: _delaySeconds.toDouble(),
                             label: delayText,
-                            onChanged: (value) {
-                              setState(() => _delaySeconds = value.round());
-                            },
+                            onChanged: (v) => setState(() => _delaySeconds = v.round()),
+                            onChangeEnd: (_) => HapticFeedback.selectionClick(),
                           ),
                         ),
-                        const Spacer(),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            TextButton(
-                              onPressed: widget.onBack,
-                              child: const Text('Back'),
-                            ),
-                            ElevatedButton(
-                              onPressed: isValid
-                                  ? () {
-                                      widget.formModel.amount = _amount;
-                                      widget.formModel.delaySeconds =
-                                          _delaySeconds;
-                                      widget.formModel.fee = fee;
-                                      FocusScope.of(
-                                        context,
-                                      ).unfocus(); // Dismiss keyboard
-                                      widget.onNext();
-                                    }
-                                  : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
-                              child: const Text('Next'),
-                            ),
-                          ],
+
+                        // tiny ticks
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: const [
+                              Text('0m', style: TextStyle(fontSize: 11, color: Colors.black45)),
+                              Text('15m', style: TextStyle(fontSize: 11, color: Colors.black45)),
+                              Text('30m', style: TextStyle(fontSize: 11, color: Colors.black45)),
+                              Text('45m', style: TextStyle(fontSize: 11, color: Colors.black45)),
+                              Text('60m', style: TextStyle(fontSize: 11, color: Colors.black45)),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -351,9 +348,86 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                 ),
               ),
             ),
+            Container(
+              padding: EdgeInsets.fromLTRB(24, 20, 24, 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(onPressed: widget.onBack, child: const Text('Back')),
+                  ElevatedButton(
+                    onPressed: isValid
+                        ? () async {
+                            final amt = _amount ?? 0;
+                            final delay = _delaySeconds;
+                            final feeLamports = fee;
+
+                            FocusScope.of(context).unfocus();
+
+                            double? priceUsdPerSol;
+                            try {
+                              priceUsdPerSol = await fetchSolPriceUsd(); // one HTTP call
+                            } catch (_) {}
+
+                            if (!context.mounted) return;
+
+                            widget.formModel
+                              ..amount = amt
+                              ..delaySeconds = delay
+                              ..fee = feeLamports
+                              ..solUsdPrice = priceUsdPerSol; // <— store the numeric price once
+
+                            widget.onNext();
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    child: const Text('Next'),
+                  ),
+                ],
+              ),
+            ),
           ],
         );
       },
+    );
+  }
+}
+
+class _DelayChip extends StatelessWidget {
+  final String text;
+  const _DelayChip({required this.text});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8)),
+      child: Text(
+        text,
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+
+class _MonoChip extends StatelessWidget {
+  final String text;
+  const _MonoChip({required this.text});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEDEDED),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black12),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+      ),
     );
   }
 }

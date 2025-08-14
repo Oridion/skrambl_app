@@ -1,0 +1,409 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:skrambl_app/api/launch_pod_service.dart';
+import 'package:skrambl_app/data/skrambl_dao.dart';
+import 'package:skrambl_app/data/skrambl_entity.dart';
+import 'package:skrambl_app/models/launch_pod_request.dart';
+import 'package:skrambl_app/services/seed_vault_service.dart';
+import 'package:skrambl_app/solana/pod_tx_helper.dart';
+import 'package:skrambl_app/solana/send_skrambled_transaction.dart';
+import 'package:skrambl_app/ui/send/screens/send_status_screen.dart';
+import 'package:skrambl_app/ui/send/helpers/status_result.dart';
+import 'package:skrambl_app/utils/launcher.dart';
+import 'package:skrambl_app/utils/logger.dart';
+import 'package:solana/solana.dart';
+import 'package:solana_seed_vault/solana_seed_vault.dart';
+import '../../data/burner_repository.dart';
+import 'screens/send_type_selection_screen.dart';
+import 'screens/send_standard_screen.dart';
+import 'screens/skrambled_destination_screen.dart';
+import 'screens/skrambled_amount_screen.dart';
+import 'screens/skrambled_summary_screen.dart';
+import '../../models/send_form_model.dart';
+
+class SendController extends StatefulWidget {
+  final AuthToken authToken;
+  const SendController({super.key, required this.authToken});
+
+  @override
+  State<SendController> createState() => _SendControllerState();
+}
+
+class _SendControllerState extends State<SendController> {
+  final PageController _pageController = PageController();
+  final SendFormModel _formModel = SendFormModel();
+  String? _currentDraftId; // Draft db id
+  bool _canResend = false; // Controls send button label/handler
+  int _currentPage = 0;
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void nextPage() {
+    if (_currentPage < _pages.length - 1) {
+      setState(() => _currentPage++);
+      _pageController.animateToPage(
+        _currentPage,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void prevPage() {
+    if (_currentPage > 0) {
+      setState(() => _currentPage--);
+      _pageController.animateToPage(
+        _currentPage,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  Future<void> _handleStatusResult(SendStatusResult? result) async {
+    if (!mounted || result == null) return;
+    setState(() => _isSubmitting = false);
+
+    switch (result.type) {
+      case SendStatusResultType.failed:
+        setState(() => _canResend = true); // show "RESEND TRANSACTION"
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(result.message ?? 'Send failed. Please try again.')));
+        break;
+
+      case SendStatusResultType.submitted:
+        // nothing special; status screen continues to scramble/complete
+        break;
+
+      case SendStatusResultType.canceled:
+        // user backed out
+        break;
+    }
+  }
+
+  Future<SendStatusResult?> _pushStatus({
+    required Uint8List txBytes,
+    required Uint8List signature,
+    required String podPdaBase58,
+    required String destination,
+    required double amount,
+    required String localId,
+  }) {
+    return Navigator.push<SendStatusResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SendStatusScreen(
+          localId: localId,
+          txBytes: txBytes,
+          signature: signature,
+          podPDA: Ed25519HDPublicKey.fromBase58(podPdaBase58),
+          destination: destination,
+          amount: amount,
+        ),
+      ),
+    );
+  }
+
+  //SEND SKRAMBLED TRANSACTION
+  void sendSkrambled() async {
+    if (_isSubmitting) return;
+    setState(() {
+      _isSubmitting = true;
+      _canResend = false;
+    });
+
+    final dao = context.read<PodDao>();
+
+    // Check if Seed Vault is available
+    final isAvailable = await SeedVault.instance.isAvailable(allowSimulated: true);
+    if (!isAvailable) throw Exception("Seed Vault not available");
+
+    // Ask the user to grant SKRAMBL permission to use Seed Vault
+    final permissionGranted = await SeedVaultService.requestPermission();
+    if (!permissionGranted) throw Exception("Seed Vault permission denied");
+
+    // Get a valid AuthToken (either reuse or prompt the authorizeSeed dialog)
+    if (!mounted) return;
+    final token = await SeedVaultService.getValidToken(context);
+    if (token == null) {
+      skrLogger.e("❌ Seed Vault authorization denied.");
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
+    // Derive the public key with that token
+    final userWallet = await SeedVaultService.getPublicKey(
+      authToken: token, // ← use `token`, not `widget.authToken`
+    );
+    if (userWallet == null) {
+      skrLogger.e("❌ Failed to fetch public key.");
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
+    // Build the payload
+    const lamportsPerSol = 1000000000;
+    var podId = generatePodId(); //POD ID
+    var passcode = generatePasscode(); //Emergency Passcode
+
+    final payload = LaunchPodRequest(
+      id: podId,
+      destination: _formModel.destinationWallet!,
+      lamports: (_formModel.amount! * lamportsPerSol).round(),
+      userWallet: userWallet.toString(),
+      delay: _formModel.delaySeconds,
+      passcode: passcode,
+      showMemo: 1,
+      returnType: "message",
+    );
+    //skrLogger.i("📦 Payload: $payload");
+
+    // Derive the Pod PDA
+    var podPDA = await getPodPDA(id: podId, creator: userWallet);
+    skrLogger.i("POD PDA: ${podPDA.toString()}");
+
+    // Insert draft pod into the database
+    // Note: `podId` is used as a local identifier, not the on-chain
+    // PDA. It should be unique for each pod.
+    skrLogger.i("Creating draft pod with ID: $podId");
+    final localId = await dao.createDraft(
+      creator: userWallet.toString(), // the Seed Vault pubkey
+      podId: podId,
+      podPda: podPDA.toBase58(),
+      lamports: (_formModel.amount! * lamportsPerSol).round(),
+      mode: _formModel.delaySeconds == 0 ? 0 : 1, // 0=instant, 1=delay
+      delaySeconds: _formModel.delaySeconds,
+      showMemo: false,
+      escapeCode: passcode, // optional, for local recovery
+      destination: _formModel.destinationWallet!,
+    );
+
+    setState(() {
+      _currentDraftId = localId; // Store the local draft ID
+      _canResend = false;
+    });
+
+    // Fetch the unsigned tx
+    // final unsignedBase64Tx = await fetchUnsignedLaunchTx(payload);
+    // await dao.attachUnsignedMessage(
+    //   id: _currentDraftId!,
+    //   podPda: podPDA.toBase58(),
+    //   unsignedMessageB64: unsignedBase64Tx,
+    // );
+    late final String unsignedBase64Tx;
+    try {
+      unsignedBase64Tx = await fetchUnsignedLaunchTx(payload);
+      await dao.attachUnsignedMessage(id: _currentDraftId!, unsignedMessageB64: unsignedBase64Tx);
+      // decode, patch, sign, push status...
+    } catch (e) {
+      setState(() => _canResend = true);
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Send failed. You can retry without rebuilding.')));
+      skrLogger.e('Send failed: $e');
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
+    // Decode and sign the transaction
+    // Note: we need to update the blockhash before signing
+    try {
+      var txBytes = base64Decode(unsignedBase64Tx);
+      txBytes = await updateBlockhashInMessage(txBytes);
+      final signature = await SeedVaultService.signMessage(
+        messageBytes: txBytes,
+        authToken: token, // Passing authToken from getValidToken
+      );
+      if (signature.length != 64) {
+        setState(() {
+          _canResend = true;
+          _isSubmitting = false;
+        });
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Invalid signature. Try again.')));
+        return;
+      }
+
+      skrLogger.i("✅ Signature: $signature");
+
+      if (!context.mounted) return;
+
+      final result = await _pushStatus(
+        txBytes: txBytes,
+        signature: signature,
+        podPdaBase58: podPDA.toBase58(),
+        destination: _formModel.destinationWallet!,
+        amount: _formModel.amount!,
+        localId: _currentDraftId!,
+      );
+
+      await _handleStatusResult(result);
+    } catch (e) {
+      // Don’t discard the draft; we want to RESEND
+      setState(() => _canResend = true);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Send failed. You can retry without rebuilding the transaction.')),
+      );
+      skrLogger.e('Send failed: $e');
+      setState(() => _isSubmitting = false);
+      return;
+    }
+  }
+
+  // Resend the transaction if it failed
+  // We need to update blockhash and re-sign
+  Future<void> _resendFromDraft() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+
+    final dao = context.read<PodDao>();
+
+    try {
+      final pod = await dao.watchById(_currentDraftId!).first;
+      if (pod == null) {
+        setState(() => _canResend = false);
+        setState(() => _isSubmitting = false);
+        return;
+      }
+
+      // Case A: already submitted → retry queue only
+      if (pod.launchSig != null && pod.status == PodStatus.submitted.index) {
+        if (!mounted) return;
+        final result = await Navigator.push<SendStatusResult>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SendStatusScreen.queueOnly(
+              localId: _currentDraftId!,
+              podPDA: Ed25519HDPublicKey.fromBase58(pod.podPda),
+              destination: _formModel.destinationWallet!,
+              amount: _formModel.amount!,
+              launchSig: pod.launchSig!,
+            ),
+          ),
+        );
+        await _handleStatusResult(result);
+        return;
+      }
+
+      // Case A2: already past submitted (scrambling/delivering) → just watch
+      if (pod.status == PodStatus.scrambling.index || pod.status == PodStatus.delivering.index) {
+        if (!mounted) return;
+        final result = await Navigator.push<SendStatusResult>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SendStatusScreen.queueOnly(
+              localId: _currentDraftId!,
+              podPDA: Ed25519HDPublicKey.fromBase58(pod.podPda),
+              destination: _formModel.destinationWallet!,
+              amount: _formModel.amount!,
+              launchSig: pod.launchSig ?? '', // not used in watch-only path
+            ),
+          ),
+        );
+        await _handleStatusResult(result);
+        return;
+      }
+
+      // Case B: not submitted yet → rebuild unsigned, sign, send
+      if (pod.unsignedMessageB64 == null) {
+        // Nothing to resend locally; you could re-fetch from Lambda here if desired.
+        setState(() => _canResend = true);
+        setState(() => _isSubmitting = false);
+        return;
+      }
+
+      var txBytes = base64Decode(pod.unsignedMessageB64!);
+      txBytes = await updateBlockhashInMessage(txBytes);
+
+      if (!mounted) return;
+      final token = await SeedVaultService.getValidToken(context);
+      if (token == null) {
+        setState(() => _canResend = true);
+        setState(() => _isSubmitting = false);
+        return;
+      }
+      final signature = await SeedVaultService.signMessage(messageBytes: txBytes, authToken: token);
+      if (signature.length != 64) {
+        setState(() => _canResend = true);
+        setState(() => _isSubmitting = false);
+        return;
+      }
+
+      final result = await _pushStatus(
+        txBytes: txBytes,
+        signature: signature,
+        podPdaBase58: pod.podPda,
+        destination: _formModel.destinationWallet!,
+        amount: _formModel.amount!,
+        localId: _currentDraftId!,
+      );
+
+      await _handleStatusResult(result);
+    } catch (e) {
+      skrLogger.e('Resend prep failed: $e');
+      setState(() => _canResend = true);
+      setState(() => _isSubmitting = false);
+    }
+  }
+
+  List<Widget> get _pages {
+    // Always start with type selection
+    final pages = <Widget>[SendTypeSelectionScreen(onNext: nextPage, formModel: _formModel)];
+    final repo = context.read<BurnerRepository>();
+    if (_formModel.isSkrambled == true) {
+      pages.addAll([
+        SkrambledDestinationScreen(
+          onNext: nextPage,
+          onBack: prevPage,
+          formModel: _formModel,
+          fetchBurners: repo.fetchBurners,
+          createBurner: repo.createBurner,
+        ),
+        SkrambledAmountScreen(onNext: nextPage, onBack: prevPage, formModel: _formModel),
+        SkrambledSummaryScreen(
+          key: ValueKey('summary-$_canResend-${_currentDraftId ?? ""}'),
+          onSend: _canResend ? _resendFromDraft : sendSkrambled,
+          onBack: prevPage,
+          canResend: _canResend,
+          isSubmitting: _isSubmitting,
+          formModel: _formModel,
+        ),
+      ]);
+    } else {
+      pages.add(SendStandardScreen(onBack: prevPage, formModel: _formModel));
+    }
+
+    return pages;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Send'),
+        leading: _currentPage > 0
+            ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: prevPage)
+            : null,
+      ),
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
+        children: _pages,
+      ),
+    );
+  }
+}

@@ -1,4 +1,5 @@
 import 'dart:math';
+
 import 'package:solana/solana.dart';
 
 String generatePasscode({int length = 6}) {
@@ -10,5 +11,15 @@ String generatePasscode({int length = 6}) {
 
 int generatePodId() {
   final random = Random.secure();
-  return random.nextInt(65536); // Range: 0 to 65535 inclusive
+  return random.nextInt(1 << 16); // Range: 0 to 65535 inclusive
+}
+
+bool isSolanaAddress(String address) {
+  if (address.isEmpty) return false;
+  try {
+    Ed25519HDPublicKey.fromBase58(address);
+    return true;
+  } catch (_) {
+    return false;
+  }
 }

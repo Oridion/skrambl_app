@@ -3,6 +3,7 @@ import 'package:skrambl_app/utils/logger.dart';
 import 'package:solana_seed_vault/solana_seed_vault.dart';
 
 /// General usage for all activities throughout app.
+// ignore: unintended_html_in_doc_comment
 ///final session = Provider.of<SeedVaultSessionManager>(context, listen: false);
 // final token = session.authToken;
 // if (token == null) {
