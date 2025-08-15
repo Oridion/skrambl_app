@@ -8,8 +8,7 @@ class SolanaClientService {
   late final RpcClient rpcClient;
 
   SolanaClientService._internal() {
-    const rpcUrl =
-        'https://bernette-tb3sav-fast-mainnet.helius-rpc.com'; // or devnet
+    const rpcUrl = 'https://bernette-tb3sav-fast-mainnet.helius-rpc.com'; // or devnet
     rpcClient = RpcClient(rpcUrl);
   }
 }

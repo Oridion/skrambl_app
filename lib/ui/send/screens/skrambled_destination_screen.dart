@@ -244,7 +244,7 @@ class _SkrambledDestinationScreenState extends State<SkrambledDestinationScreen>
         Expanded(
           child: ListView.separated(
             itemCount: _burners.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, i) {
               final b = _burners[i];
               final selected = b.publicKey == _selectedBurnerAddress;

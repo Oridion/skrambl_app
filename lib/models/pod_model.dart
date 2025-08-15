@@ -226,7 +226,7 @@ class Pod extends BorshObject {
       skrLogger.i('Pod.decode[$debugLabel] postDiscLen=$totalLen');
 
       if (totalLen < _kMinTotal) {
-        skrLogger.w('Pod.decode[$debugLabel] too small post-disc: have=$totalLen, need>=${_kMinTotal}');
+        skrLogger.w('Pod.decode[$debugLabel] too small post-disc: have=$totalLen, need>=$_kMinTotal');
         return null;
       }
 

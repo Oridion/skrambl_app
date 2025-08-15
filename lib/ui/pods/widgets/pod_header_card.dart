@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:skrambl_app/ui/shared/relative_time.dart'; // for withOpacityCompat if you use it elsewhere
-import 'package:skrambl_app/data/skrambl_entity.dart'; // for PodStatus
+import 'package:skrambl_app/data/skrambl_entity.dart';
+import 'package:skrambl_app/utils/colors.dart'; // for PodStatus
 
 /// Professional header for the Pod details page.
 /// - Left: Big SOL amount with subtle "SOL" unit
@@ -109,9 +110,9 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withOpacityCompat(0.10),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: color.withOpacityCompat(0.35)),
       ),
       child: Text(
         text,

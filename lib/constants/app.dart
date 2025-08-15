@@ -13,6 +13,8 @@ class AppConstants {
 
   static final rpcClient = RpcClient("https://bernette-tb3sav-fast-mainnet.helius-rpc.com");
 
+  static final wsClientRawURL = 'wss://bernette-tb3sav-fast-mainnet.helius-rpc.com';
+
   //Skrambled Icon
   static const IconData skramblIconOutlined = Icons.token_outlined;
   static const IconData skramblIcon = Icons.token;

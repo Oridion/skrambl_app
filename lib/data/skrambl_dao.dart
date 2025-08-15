@@ -21,6 +21,19 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
             ..limit(limit))
           .watch();
 
+  // Watch / resume only pending pods
+  /// Pending pods are those that are in the process of being launched or scrambled.
+  Stream<List<Pod>> watchPendingPods() {
+    return (select(pods)..where(
+          (p) => p.status.isIn([
+            PodStatus.submitted.index,
+            PodStatus.scrambling.index,
+            PodStatus.delivering.index,
+          ]),
+        ))
+        .watch();
+  }
+
   // Create local draft row when user hits "Launch"
   Future<String> createDraft({
     required String creator,

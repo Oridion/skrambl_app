@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/providers/minute_ticker.dart';
+import 'package:skrambl_app/providers/pod_watcher_manager.dart';
 import 'package:skrambl_app/providers/transaction_status_provider.dart';
+import 'package:skrambl_app/solana/solana_ws_service.dart';
 import 'package:skrambl_app/ui/root_shell.dart';
 import 'data/local_database.dart';
 import 'package:skrambl_app/providers/seed_vault_session_manager.dart';
@@ -21,24 +23,27 @@ void main() async {
   );
 
   final db = LocalDatabase();
+  final podDao = PodDao(db);
 
   final seedVaultProvider = SeedVaultSessionManager();
   await seedVaultProvider.initialize();
 
   final balanceProvider = WalletBalanceProvider();
 
+  final sharedWs = SolanaWsService();
+  final watcherManager = PodWatcherManager(podDao, wsService: sharedWs);
+
   runApp(
     MultiProvider(
       providers: [
-        // Provide DB
-        Provider<LocalDatabase>(create: (_) => db, dispose: (_, db) => db.close()),
-        // Provide DAO (built from the shared DB)
-        Provider<PodDao>(create: (ctx) => PodDao(ctx.read<LocalDatabase>())),
+        Provider<LocalDatabase>.value(value: db),
+        Provider<PodDao>.value(value: podDao),
+        Provider<SolanaWsService>.value(value: sharedWs),
         ChangeNotifierProvider(create: (_) => seedVaultProvider),
         ChangeNotifierProvider(create: (_) => balanceProvider),
         ChangeNotifierProvider(create: (_) => TransactionStatusProvider()),
         ChangeNotifierProvider(create: (_) => MinuteTicker()),
-
+        ChangeNotifierProvider<PodWatcherManager>.value(value: watcherManager),
         Provider<BurnerRepository>(
           create: (ctx) {
             final token = ctx.read<SeedVaultSessionManager>().authToken;
@@ -54,6 +59,9 @@ void main() async {
       child: const AppLifecycleHandler(child: SkramblApp()),
     ),
   );
+
+  // Start the watcher after providers are set up
+  watcherManager.start();
 }
 
 class AppLifecycleHandler extends StatefulWidget {
@@ -79,7 +87,9 @@ class _AppLifecycleHandlerState extends State<AppLifecycleHandler> with WidgetsB
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    final watcher = context.read<PodWatcherManager>();
     if (state == AppLifecycleState.resumed) {
+      watcher.start();
       final seedVault = Provider.of<SeedVaultSessionManager>(context, listen: false);
       final balance = Provider.of<WalletBalanceProvider>(context, listen: false);
 
@@ -89,6 +99,7 @@ class _AppLifecycleHandlerState extends State<AppLifecycleHandler> with WidgetsB
         balance.stop();
       }
     }
+    if (state == AppLifecycleState.paused) watcher.stop();
   }
 
   @override

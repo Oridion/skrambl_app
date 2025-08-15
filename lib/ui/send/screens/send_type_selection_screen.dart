@@ -36,7 +36,7 @@ class SendTypeSelectionScreen extends StatelessWidget {
                 'Standard is near-instant. SKRAMBLED adds distance between you and the recipient.',
                 style: Theme.of(
                   context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.black.withOpacity(0.72), height: 1.25),
+                ).textTheme.bodyMedium?.copyWith(color: Colors.black.withOpacityCompat(0.72), height: 1.25),
               ),
               const SizedBox(height: 28),
 

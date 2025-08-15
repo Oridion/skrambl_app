@@ -6,6 +6,7 @@ import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/ui/burners/burners_screen.dart';
 import 'package:skrambl_app/ui/dashboard/dashboard_screen.dart';
 import 'package:skrambl_app/ui/pods/all_pods_screen.dart';
+import 'package:skrambl_app/utils/colors.dart';
 
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
@@ -41,7 +42,7 @@ class _RootShellState extends State<RootShell> {
               child: Container(
                 height: 62,
                 decoration: BoxDecoration(
-                  color: cs.surface.withAlpha(78),
+                  color: Colors.grey.withAlpha(6),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.white.withAlpha(18)),
                   boxShadow: [
@@ -139,7 +140,7 @@ class _NavIconButton extends StatelessWidget {
               child: Icon(
                 selected ? activeIcon : icon,
                 size: 22,
-                color: selected ? Colors.white : cs.onSurface.withOpacity(0.75),
+                color: selected ? Colors.white : cs.onSurface.withOpacityCompat(0.75),
               ),
             ),
           ),

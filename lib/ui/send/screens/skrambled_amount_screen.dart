@@ -185,7 +185,7 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                   if (widget.formModel.solUsdPrice != null)
                     Text(
                       '• ${usd(total)}',
-                      style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.75)),
+                      style: TextStyle(fontSize: 12, color: Colors.white.withOpacityCompat(0.75)),
                     ),
                 ],
               ),
