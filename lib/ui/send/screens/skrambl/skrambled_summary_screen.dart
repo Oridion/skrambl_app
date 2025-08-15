@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_money_row.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_sec_title.dart';
 import 'package:skrambl_app/ui/shared/divider.dart';
+import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
-import '../../../models/send_form_model.dart';
+import '../../../../models/send_form_model.dart';
 
 class SkrambledSummaryScreen extends StatelessWidget {
   final VoidCallback onSend;
@@ -67,28 +68,31 @@ class SkrambledSummaryScreen extends StatelessWidget {
       child: Column(
         children: [
           // HEADER
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Review delivery',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: onBg,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.2,
+          Padding(
+            padding: const EdgeInsets.only(left: 8), // adjust px as needed
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Review transaction',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: onBg,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Final check before you SKRAMBLE',
-                  style: theme.textTheme.bodySmall?.copyWith(color: onBgMuted),
-                ),
-              ],
+                  const SizedBox(height: 1),
+                  Text(
+                    'Final check before you send',
+                    style: theme.textTheme.bodySmall?.copyWith(color: onBgMuted),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 17),
 
           // CARD
           Expanded(
@@ -96,7 +100,7 @@ class SkrambledSummaryScreen extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: darkBg ? const Color(0xFF0E0E0E) : Colors.white,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: divider, width: 1),
                   boxShadow: [
                     BoxShadow(
@@ -106,34 +110,33 @@ class SkrambledSummaryScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.fromLTRB(28, 18, 28, 18),
+                padding: const EdgeInsets.fromLTRB(32, 26, 32, 26),
                 child: Column(
                   children: [
                     SectionTitle('Destination', color: onBgMuted),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SelectableText(
-                            destination,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: onBg,
-                              fontWeight: FontWeight.w700,
-                              fontFamily: 'RobotoMono',
-                              letterSpacing: -0.2,
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: SelectableText(
+                              destination,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: onBg,
+                                fontWeight: FontWeight.w400,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
 
-                    const SizedBox(height: 20),
-                    AppDivider(color: divider),
+                    const SizedBox(height: 16),
 
                     // DELAY
-                    const SizedBox(height: 14),
                     SectionTitle('Delay', color: onBgMuted),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Column(
                       children: [
                         Text(
@@ -152,24 +155,21 @@ class SkrambledSummaryScreen extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 20),
-                    AppDivider(color: divider),
 
                     // AMOUNT
-                    const SizedBox(height: 14),
                     SectionTitle('Transferring', color: onBgMuted),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     MoneyRow(
-                      leftPrimary: '${formatSol(amountSol)} SOL',
+                      leftPrimary: formatSol(amountSol),
                       rightSubtle: price == null ? null : usd(amountSol),
                       primaryColor: onBg,
                       subtleColor: onBgMuted,
                     ),
 
-                    const SizedBox(height: 12),
                     _KVRow(
                       icon: Icons.info_outline_rounded,
                       label: 'Estimated fee',
-                      value: '${formatSol(feeSol)} SOL',
+                      value: formatSol(feeSol),
                       hintRight: price == null ? null : usd(feeSol),
                       color: onBg,
                       hintColor: onBgMuted,
@@ -177,16 +177,14 @@ class SkrambledSummaryScreen extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 20),
-                    AppDivider(color: divider),
 
                     // TOTAL
-                    const SizedBox(height: 14),
                     SectionTitle('Total (sending + fee)', color: onBgMuted),
                     const SizedBox(height: 12),
                     MoneyRow(
-                      leftPrimary: totalSol == null ? '—' : '${formatSol(totalSol)} SOL',
+                      leftPrimary: totalSol == null ? '0' : formatSol(totalSol),
                       rightSubtle: (price == null || totalSol == null) ? null : usd(totalSol),
-                      primaryColor: onBg,
+                      primaryColor: const Color.fromARGB(255, 0, 0, 0),
                       subtleColor: onBgMuted,
                       big: true,
                     ),
@@ -197,11 +195,11 @@ class SkrambledSummaryScreen extends StatelessWidget {
                       _PriceSkeleton(color: onBgMuted.withOpacityCompat(0.35)),
                     ],
 
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Does not include network fees',
+                        'Not including network fees',
                         style: theme.textTheme.bodySmall?.copyWith(color: onBgMuted),
                       ),
                     ),
@@ -308,17 +306,30 @@ class _KVRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: t.bodyMedium?.copyWith(color: color, fontWeight: FontWeight.w600),
+            style: t.bodySmall?.copyWith(color: color, fontWeight: FontWeight.w300),
           ),
         ),
         const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              value,
-              style: t.bodyMedium?.copyWith(color: color, fontWeight: FontWeight.w700),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: SolanaLogo(size: 8, color: color),
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  value,
+                  style: t.bodyMedium?.copyWith(color: color, fontWeight: FontWeight.w900),
+                ),
+              ],
             ),
+
             if (hintRight != null) Text(hintRight!, style: t.bodySmall?.copyWith(color: hintColor)),
           ],
         ),

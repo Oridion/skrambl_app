@@ -104,13 +104,16 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
   }
 
   // Mark pod as finalized. This means the delivery was successful.
+  // This also removes the escape code and unsigned message.
   Future<void> markFinalized({required String id}) async {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     await (update(pods)..where((t) => t.id.equals(id))).write(
       PodsCompanion(
         finalizedAt: Value(now),
         status: Value(PodStatus.finalized.index),
-        statusMsg: const Value('Launch finalized'),
+        statusMsg: const Value('Finalized'),
+        escapeCode: Value(null),
+        unsignedMessageB64: const Value(null),
       ),
     );
   }

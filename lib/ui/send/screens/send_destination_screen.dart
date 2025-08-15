@@ -13,7 +13,7 @@ import 'package:skrambl_app/utils/launcher.dart';
 
 enum DestinationMode { address, burner }
 
-class SkrambledDestinationScreen extends StatefulWidget {
+class SendDestinationScreen extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onBack;
   final SendFormModel formModel;
@@ -22,7 +22,7 @@ class SkrambledDestinationScreen extends StatefulWidget {
   final Future<List<BurnerWallet>> Function() fetchBurners;
   final Future<BurnerWallet> Function(String label) createBurner;
 
-  const SkrambledDestinationScreen({
+  const SendDestinationScreen({
     super.key,
     required this.onNext,
     required this.onBack,
@@ -32,11 +32,10 @@ class SkrambledDestinationScreen extends StatefulWidget {
   });
 
   @override
-  State<SkrambledDestinationScreen> createState() => _SkrambledDestinationScreenState();
+  State<SendDestinationScreen> createState() => _SendDestinationScreenState();
 }
 
-class _SkrambledDestinationScreenState extends State<SkrambledDestinationScreen>
-    with TickerProviderStateMixin {
+class _SendDestinationScreenState extends State<SendDestinationScreen> with TickerProviderStateMixin {
   // Address mode
   late final TextEditingController _addressCtrl;
   String? _error;

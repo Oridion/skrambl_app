@@ -2,17 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
+import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/providers/transaction_status_provider.dart';
 import 'package:skrambl_app/providers/wallet_balance_manager.dart';
-import 'package:skrambl_app/services/pod_service.dart';
 import 'package:skrambl_app/solana/send_skrambled_transaction.dart';
 import 'package:skrambl_app/ui/send/helpers/status_result.dart';
 import 'package:skrambl_app/ui/send/widgets/scrambled_text.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/logger.dart';
-import 'package:solana/dto.dart';
 import 'package:solana/solana.dart';
 
 class SendStatusScreen extends StatefulWidget {
@@ -60,8 +58,8 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
   int _elapsedSeconds = 0;
   Timer? _timer;
   Timer? _podWatcher;
-  bool _seenOnChain = false; // remember if we ever saw the account
-
+  //bool _seenOnChain = false; // remember if we ever saw the account
+  late final StreamSubscription _podRowSub;
   late final AnimationController _fadeController;
   late final TransactionStatusProvider _status;
   late final VoidCallback _statusListener;
@@ -71,7 +69,6 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
     super.initState();
 
     _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
-
     _startTimer();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -85,42 +82,106 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
         }
       }
 
-      // wire provider listener safely (so we can remove in dispose)
+      // Wire provider listener for your internal send transitions (unchanged)
       _status = context.read<TransactionStatusProvider>();
-      _statusListener = () {
-        switch (_status.phase) {
-          case TransactionPhase.scrambling:
-            skrLogger.i("Starting to listen for pod updates");
-            startPodWatcher(widget.podPDA.toString());
-            break;
+      _statusListener = _onStatusProviderChange;
+      _status.addListener(_statusListener);
 
-          case TransactionPhase.delivering:
-            break;
+      // subscribe to the pod row and mirror to UI phases
+      final dao = context.read<PodDao>();
+      _podRowSub = dao.watchById(widget.localId).listen((pod) async {
+        if (pod == null) return;
 
-          case TransactionPhase.completed:
+        // Delivering: when your backend flips the process or when status changes
+        if (pod.status == PodStatus.delivering.index) {
+          if (_status.phase != TransactionPhase.delivering) {
+            _status.setPhase(TransactionPhase.delivering);
+          }
+        }
+
+        // Completed
+        if (pod.status == PodStatus.finalized.index) {
+          if (!_isComplete) {
             setState(() {
               _isComplete = true;
               _timer?.cancel();
             });
             _fadeController.forward();
-            break;
+          }
+        }
 
-          case TransactionPhase.failed:
-            skrLogger.e("Transaction failed!");
+        // Failed
+        if (pod.status == PodStatus.failed.index) {
+          if (!_isFailed) {
             setState(() {
               _isFailed = true;
               _timer?.cancel();
             });
-            // Optionally bounce back to parent immediately:
-            // if (mounted) Navigator.pop(context, SendStatusResult.failed(localId: widget.localId, message: 'Submission failed'));
-            break;
-
-          default:
-            break;
+          }
         }
-      };
-      _status.addListener(_statusListener);
+      });
+
+      // // wire provider listener safely (so we can remove in dispose)
+      // _status = context.read<TransactionStatusProvider>();
+      // _statusListener = () {
+      //   switch (_status.phase) {
+      //     case TransactionPhase.scrambling:
+      //       skrLogger.i("Starting to listen for pod updates");
+      //       startPodWatcher(widget.podPDA.toString());
+      //       break;
+
+      //     case TransactionPhase.delivering:
+      //       break;
+
+      //     case TransactionPhase.completed:
+      //       setState(() {
+      //         _isComplete = true;
+      //         _timer?.cancel();
+      //       });
+      //       _fadeController.forward();
+      //       break;
+
+      //     case TransactionPhase.failed:
+      //       skrLogger.e("Transaction failed!");
+      //       setState(() {
+      //         _isFailed = true;
+      //         _timer?.cancel();
+      //       });
+      //       // Optionally bounce back to parent immediately:
+      //       // if (mounted) Navigator.pop(context, SendStatusResult.failed(localId: widget.localId, message: 'Submission failed'));
+      //       break;
+
+      //     default:
+      //       break;
+      //   }
+      // };
+      // _status.addListener(_statusListener);
     });
+  }
+
+  void _onStatusProviderChange() {
+    switch (_status.phase) {
+      case TransactionPhase.scrambling:
+        // No local watcher here anymore — global manager handles it
+        break;
+      case TransactionPhase.delivering:
+        break;
+      case TransactionPhase.completed:
+        setState(() {
+          _isComplete = true;
+          _timer?.cancel();
+        });
+        _fadeController.forward();
+        break;
+      case TransactionPhase.failed:
+        setState(() {
+          _isFailed = true;
+          _timer?.cancel();
+        });
+        break;
+      default:
+        break;
+    }
   }
 
   @override
@@ -220,64 +281,64 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
     }
   }
 
-  void startPodWatcher(String podPubkey) {
-    _seenOnChain = false;
-    _podWatcher?.cancel();
-    bool busy = false;
-    int nullInfoStrikes = 0; // for “closed” confirmation
+  // void startPodWatcher(String podPubkey) {
+  //   _seenOnChain = false;
+  //   _podWatcher?.cancel();
+  //   bool busy = false;
+  //   int nullInfoStrikes = 0; // for “closed” confirmation
 
-    final status = context.read<TransactionStatusProvider>();
-    final dao = context.read<PodDao>();
-    final rpc = AppConstants.rpcClient;
+  //   final status = context.read<TransactionStatusProvider>();
+  //   final dao = context.read<PodDao>();
+  //   final rpc = AppConstants.rpcClient;
 
-    _podWatcher = Timer.periodic(const Duration(seconds: 3), (t) async {
-      if (!mounted) {
-        t.cancel();
-        _podWatcher = null;
-        return;
-      }
-      if (busy) return; // prevent overlap
-      busy = true;
+  //   _podWatcher = Timer.periodic(const Duration(seconds: 3), (t) async {
+  //     if (!mounted) {
+  //       t.cancel();
+  //       _podWatcher = null;
+  //       return;
+  //     }
+  //     if (busy) return; // prevent overlap
+  //     busy = true;
 
-      try {
-        // 1) program-level state (cheap, tells us about transitions)
-        final pod = await fetchPod(podPubkey, "confirmed"); // may be null if not indexed yet
-        if (pod != null && pod.lastProcess == 1) {
-          if (status.phase != TransactionPhase.delivering) {
-            skrLogger.i('🛬 Pod is delivering');
-            status.setPhase(TransactionPhase.delivering);
-            await dao.markDelivering(id: widget.localId);
-            return; // skip account check this tick
-          }
-        }
+  //     try {
+  //       // 1) program-level state (cheap, tells us about transitions)
+  //       final pod = await fetchPod(podPubkey, "confirmed"); // may be null if not indexed yet
+  //       if (pod != null && pod.lastProcess == 1) {
+  //         if (status.phase != TransactionPhase.delivering) {
+  //           skrLogger.i('🛬 Pod is delivering');
+  //           status.setPhase(TransactionPhase.delivering);
+  //           await dao.markDelivering(id: widget.localId);
+  //           return; // skip account check this tick
+  //         }
+  //       }
 
-        // 2) account existence (closure completes the flow)
-        final info = await rpc.getAccountInfo(podPubkey, encoding: Encoding.base64);
+  //       // 2) account existence (closure completes the flow)
+  //       final info = await rpc.getAccountInfo(podPubkey, encoding: Encoding.base64);
 
-        if (info.value != null) {
-          _seenOnChain = true;
-          nullInfoStrikes = 0; // reset strikes when we see it
-        } else if (_seenOnChain) {
-          // require two consecutive null reads to avoid transient blips
-          nullInfoStrikes += 1;
-          if (nullInfoStrikes >= 2) {
-            if (!mounted) return;
-            skrLogger.i("✅ Pod closed! Delivery complete!");
-            await dao.markFinalized(id: widget.localId);
-            status.setPhase(TransactionPhase.completed);
-            t.cancel();
-            _podWatcher = null;
-            return;
-          }
-        }
-      } catch (e) {
-        // Only warn before we've ever seen it on-chain; else, ignore transient noise
-        if (!_seenOnChain) skrLogger.w('Transient watch error: $e');
-      } finally {
-        busy = false; // ALWAYS release busy flag
-      }
-    });
-  }
+  //       if (info.value != null) {
+  //         _seenOnChain = true;
+  //         nullInfoStrikes = 0; // reset strikes when we see it
+  //       } else if (_seenOnChain) {
+  //         // require two consecutive null reads to avoid transient blips
+  //         nullInfoStrikes += 1;
+  //         if (nullInfoStrikes >= 2) {
+  //           if (!mounted) return;
+  //           skrLogger.i("✅ Pod closed! Delivery complete!");
+  //           await dao.markFinalized(id: widget.localId);
+  //           status.setPhase(TransactionPhase.completed);
+  //           t.cancel();
+  //           _podWatcher = null;
+  //           return;
+  //         }
+  //       }
+  //     } catch (e) {
+  //       // Only warn before we've ever seen it on-chain; else, ignore transient noise
+  //       if (!_seenOnChain) skrLogger.w('Transient watch error: $e');
+  //     } finally {
+  //       busy = false; // ALWAYS release busy flag
+  //     }
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {

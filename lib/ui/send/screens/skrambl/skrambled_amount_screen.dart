@@ -7,11 +7,12 @@ import 'package:skrambl_app/solana/solana_client_service.dart';
 import 'package:skrambl_app/solana/universe/universe_service.dart';
 import 'package:skrambl_app/ui/send/widgets/glitch_header.dart';
 import 'package:skrambl_app/ui/send/widgets/slider_shape.dart';
+import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/utils/logger.dart';
 
-import '../../../models/send_form_model.dart';
+import '../../../../models/send_form_model.dart';
 
 class SkrambledAmountScreen extends StatefulWidget {
   final VoidCallback onNext;
@@ -167,13 +168,24 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 180),
               transitionBuilder: (c, a) => FadeTransition(opacity: a, child: c),
-              child: Text(
-                '${formatSol(total)} SOL',
-                key: ValueKey('${total.toStringAsFixed(9)}$_delaySeconds'),
-                style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w800, color: Colors.white),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Transform.translate(
+                    offset: const Offset(0, 4), // x, y — move up 2px
+                    child: SolanaLogo(size: 16, useDark: false, color: Colors.white),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    formatSol(total),
+                    key: ValueKey('${total.toStringAsFixed(9)}$_delaySeconds'),
+                    style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w800, color: Colors.white),
+                  ),
+                ],
               ),
             ),
-            if (hasAmount) ...[
+            if (hasAmount && !_loadingFees) ...[
               const SizedBox(height: 2),
               Row(
                 children: [
@@ -224,7 +236,7 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                           'Enter amount and delay',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 22),
+                        const SizedBox(height: 18),
 
                         TextField(
                           controller: _amountController,
@@ -232,8 +244,16 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                           inputFormatters: [
                             FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,6}')), // max 6 decimals
                           ],
+
                           decoration: InputDecoration(
-                            labelText: 'Amount in SOL',
+                            prefix: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(width: 2),
+                                SolanaLogo(size: 12, color: Colors.black),
+                                const SizedBox(width: 6),
+                              ],
+                            ),
                             helperText: (widget.formModel.solUsdPrice != null && (_amount ?? 0) > 0)
                                 ? '≈ ${((_amount ?? 0) * (widget.formModel.solUsdPrice ?? 0)).toStringAsFixed(2)} USD'
                                 : null,
@@ -241,7 +261,7 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                             border: OutlineInputBorder(borderRadius: radius),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: radius,
-                              borderSide: const BorderSide(color: Colors.black, width: 1.6),
+                              borderSide: const BorderSide(color: Colors.black, width: 1.4),
                             ),
                             errorBorder: OutlineInputBorder(
                               borderRadius: radius,

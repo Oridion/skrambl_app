@@ -1,10 +1,13 @@
 // lib/pods/watch/pod_watcher_task.dart
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui';
 import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
+import 'package:skrambl_app/services/pod_service.dart';
 import 'package:skrambl_app/solana/solana_client_service.dart';
 import 'package:skrambl_app/solana/solana_ws_service.dart';
+import 'package:skrambl_app/utils/logger.dart';
 
 class PodWatcherTask {
   final PodDao dao;
@@ -29,21 +32,43 @@ class PodWatcherTask {
     _startPollingFallback(onDone: onDone);
   }
 
-  void _wireWebSocket({VoidCallback? onDone}) async {
+  void _wireWebSocket({VoidCallback? onDone}) {
     try {
-      // Option A) accountSubscribe(pda) → null means closed
-      _wsSub = ws.accountSubscribe(pod.podPda).listen((acct) async {
-        if (_finished) return;
-        if (acct == null) {
-          await dao.markFinalized(id: pod.id);
-          _finish(onDone);
-        }
-      });
+      _wsSub = ws
+          .accountSubscribe(
+            pod.podPda,
+            commitment: 'confirmed', // match your previous HTTP commitment
+            encoding: 'base64',
+          )
+          .listen((acct) async {
+            if (_finished) return;
 
-      // Option B) if you store a landing/withdraw signature:
-      // rpc.ws.signatureSubscribe(pod.landingSig).listen((status) { if (status.finalized) ... });
+            // Finalized (account closed)
+            if (acct == null) {
+              await dao.markFinalized(id: pod.id);
+              _finish(onDone);
+              return;
+            }
+
+            // --- Decode account data to detect delivering ---
+            // acct['data'] is typically [base64String, "base64"]
+            final dataField = acct['data'];
+            if (dataField is List && dataField.isNotEmpty && dataField.first is String) {
+              try {
+                final b64 = dataField.first as String;
+                final bytes = base64.decode(b64);
+                final int? lastProcess = await parseLastProcessFrom(bytes); // <— your helper
+                if (lastProcess == 1) {
+                  skrLogger.i('Pod ${pod.podPda} is now delivering');
+                  await dao.markDelivering(id: pod.id);
+                }
+              } catch (_) {
+                // Ignore decode errors; next update will try again
+              }
+            }
+          });
     } catch (_) {
-      // WS may fail — polling will handle it
+      // WS may fail — polling fallback covers it
     }
   }
 

@@ -9,6 +9,18 @@ import 'package:solana/dto.dart';
 import 'dart:typed_data';
 import 'package:skrambl_app/utils/logger.dart';
 
+/// Stub: replace with your real parser (Anchor/Borsh).
+/// Return the on-chain 'lastProcess' field from account bytes.
+Future<int?> parseLastProcessFrom(List<int> bytes) async {
+  skrLogger.i("Parsing Pod from bytes: ${bytes.length} bytes");
+  Pod? pod = Pod.fromAccountData(bytes);
+  if (pod == null) {
+    skrLogger.w("Failed to parse Pod from bytes");
+    return null;
+  }
+  return pod.lastProcess;
+}
+
 Future<Pod?> fetchPod(String podPda, String commitment) async {
   final payload = {
     "jsonrpc": "2.0",

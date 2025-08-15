@@ -7,6 +7,7 @@ import 'package:skrambl_app/ui/dashboard/sections/dashboard_header.dart';
 import 'package:skrambl_app/ui/dashboard/sections/dashboard_pods.dart';
 import 'package:skrambl_app/ui/pods/all_pods_screen.dart';
 import 'package:skrambl_app/ui/send/send_controller.dart';
+import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/logger.dart';
 
 /// A screen that handles Seed Vault authorization, wallet balance subscription,
@@ -155,7 +156,10 @@ class _DashboardContent extends StatelessWidget {
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
                     ),
-                    child: const Text('SEND SOL'),
+                    child: Text(
+                      'SEND SOL',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ),
               ),

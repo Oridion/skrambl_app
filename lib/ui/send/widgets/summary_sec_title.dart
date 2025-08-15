@@ -8,11 +8,17 @@ class SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text.toUpperCase(),
-      style: Theme.of(
-        context,
-      ).textTheme.labelSmall?.copyWith(color: color, fontWeight: FontWeight.w800, letterSpacing: 0.9),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
+      width: double.infinity,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(5)),
+      child: Text(
+        text.toUpperCase(),
+        style: Theme.of(
+          context,
+        ).textTheme.labelSmall?.copyWith(color: color, fontWeight: FontWeight.w800, letterSpacing: 0.9),
+      ),
     );
   }
 }

@@ -1,28 +1,45 @@
+// Dart SDK
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+
+// Flutter
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:skrambl_app/api/launch_pod_service.dart';
+import 'package:skrambl_app/ui/send/screens/standard/standard_summary_screen.dart';
+
+// Third-party
+import 'package:solana/solana.dart';
+import 'package:solana_seed_vault/solana_seed_vault.dart';
+
+// App: data & models
+import 'package:skrambl_app/data/burner_repository.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/models/launch_pod_request.dart';
+import 'package:skrambl_app/models/send_form_model.dart';
+
+// App: routes
+import 'package:skrambl_app/routes/send_routes.dart';
+
+// App: services
+import 'package:skrambl_app/api/launch_pod_service.dart';
 import 'package:skrambl_app/services/seed_vault_service.dart';
 import 'package:skrambl_app/solana/pod_tx_helper.dart';
 import 'package:skrambl_app/solana/send_skrambled_transaction.dart';
-import 'package:skrambl_app/ui/send/screens/send_status_screen.dart';
+
+// App: UI
 import 'package:skrambl_app/ui/send/helpers/status_result.dart';
+import 'package:skrambl_app/ui/send/screens/skrambl/skrambled_status_screen.dart';
+import 'package:skrambl_app/ui/send/screens/standard/standard_amount_screen.dart';
+import 'package:skrambl_app/ui/send/screens/send_type_selection_screen.dart';
+import 'package:skrambl_app/ui/send/screens/skrambl/skrambled_amount_screen.dart';
+import 'package:skrambl_app/ui/send/screens/send_destination_screen.dart';
+import 'package:skrambl_app/ui/send/screens/skrambl/skrambled_summary_screen.dart';
+
+// App: utils
 import 'package:skrambl_app/utils/launcher.dart';
 import 'package:skrambl_app/utils/logger.dart';
-import 'package:solana/solana.dart';
-import 'package:solana_seed_vault/solana_seed_vault.dart';
-import '../../data/burner_repository.dart';
-import 'screens/send_type_selection_screen.dart';
-import 'screens/send_standard_screen.dart';
-import 'screens/skrambled_destination_screen.dart';
-import 'screens/skrambled_amount_screen.dart';
-import 'screens/skrambled_summary_screen.dart';
-import '../../models/send_form_model.dart';
 
 class SendController extends StatefulWidget {
   final AuthToken authToken;
@@ -39,6 +56,7 @@ class _SendControllerState extends State<SendController> {
   bool _canResend = false; // Controls send button label/handler
   int _currentPage = 0;
   bool _isSubmitting = false;
+  final _navKey = GlobalKey<NavigatorState>();
 
   @override
   void dispose() {
@@ -68,28 +86,6 @@ class _SendControllerState extends State<SendController> {
     }
   }
 
-  Future<void> _handleStatusResult(SendStatusResult? result) async {
-    if (!mounted || result == null) return;
-    setState(() => _isSubmitting = false);
-
-    switch (result.type) {
-      case SendStatusResultType.failed:
-        setState(() => _canResend = true); // show "RESEND TRANSACTION"
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(result.message ?? 'Send failed. Please try again.')));
-        break;
-
-      case SendStatusResultType.submitted:
-        // nothing special; status screen continues to scramble/complete
-        break;
-
-      case SendStatusResultType.canceled:
-        // user backed out
-        break;
-    }
-  }
-
   Future<SendStatusResult?> _pushStatus({
     required Uint8List txBytes,
     required Uint8List signature,
@@ -98,8 +94,7 @@ class _SendControllerState extends State<SendController> {
     required double amount,
     required String localId,
   }) {
-    return Navigator.push<SendStatusResult>(
-      context,
+    return Navigator.of(context).push<SendStatusResult>(
       MaterialPageRoute(
         builder: (_) => SendStatusScreen(
           localId: localId,
@@ -111,6 +106,24 @@ class _SendControllerState extends State<SendController> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleStatusResult(SendStatusResult? result) async {
+    if (!mounted || result == null) return;
+    setState(() => _isSubmitting = false);
+
+    switch (result.type) {
+      case SendStatusResultType.failed:
+        setState(() => _canResend = true);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(result.message ?? 'Send failed. Please try again.')));
+        break;
+      case SendStatusResultType.submitted:
+        break;
+      case SendStatusResultType.canceled:
+        break;
+    }
   }
 
   //SEND SKRAMBLED TRANSACTION
@@ -366,7 +379,7 @@ class _SendControllerState extends State<SendController> {
     final repo = context.read<BurnerRepository>();
     if (_formModel.isSkrambled == true) {
       pages.addAll([
-        SkrambledDestinationScreen(
+        SendDestinationScreen(
           onNext: nextPage,
           onBack: prevPage,
           formModel: _formModel,
@@ -384,7 +397,7 @@ class _SendControllerState extends State<SendController> {
         ),
       ]);
     } else {
-      pages.add(SendStandardScreen(onBack: prevPage, formModel: _formModel));
+      pages.add(StandardAmountScreen(onBack: prevPage, onNext: nextPage, formModel: _formModel));
     }
 
     return pages;
@@ -395,14 +408,102 @@ class _SendControllerState extends State<SendController> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Send'),
-        leading: _currentPage > 0
-            ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: prevPage)
-            : null,
+        leading: BackButton(
+          onPressed: () async {
+            final didPop = await _navKey.currentState?.maybePop() ?? false;
+            if (!didPop && mounted) Navigator.of(context).maybePop();
+          },
+        ),
       ),
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: _pages,
+      body: Navigator(
+        key: _navKey,
+        initialRoute: SendRoutes.type,
+        onGenerateRoute: (settings) {
+          switch (settings.name) {
+            // 1) choose type
+            case SendRoutes.type:
+              return MaterialPageRoute(
+                builder: (_) => SendTypeSelectionScreen(
+                  formModel: _formModel,
+                  onNext: () => _navKey.currentState!.pushNamed(SendRoutes.destination),
+                ),
+              );
+
+            // 2) destination (shared)
+            case SendRoutes.destination:
+              {
+                final repo = context.read<BurnerRepository>();
+                return MaterialPageRoute(
+                  builder: (_) => SendDestinationScreen(
+                    // NOTE: we reuse your existing destination screen for both flows.
+                    // If standard needs a different destination UI, make a StandardDestinationScreen and branch here.
+                    formModel: _formModel,
+                    onBack: () => _navKey.currentState!.maybePop(),
+                    onNext: () {
+                      if (_formModel.isSkrambled == true) {
+                        _navKey.currentState!.pushNamed(SendRoutes.skAmount);
+                      } else {
+                        // jump to standard route (single page or your new 2-step)
+                        _navKey.currentState!.pushNamed(SendRoutes.stAmount);
+                      }
+                    },
+                    fetchBurners: repo.fetchBurners,
+                    createBurner: repo.createBurner,
+                  ),
+                );
+              }
+
+            // 3a) SKRAMBL amount
+            case SendRoutes.skAmount:
+              return MaterialPageRoute(
+                builder: (_) => SkrambledAmountScreen(
+                  formModel: _formModel,
+                  onBack: () => _navKey.currentState!.maybePop(),
+                  onNext: () => _navKey.currentState!.pushNamed(SendRoutes.skSummary),
+                ),
+              );
+
+            // 4a) SKRAMBL summary
+            case SendRoutes.skSummary:
+              return MaterialPageRoute(
+                builder: (_) => SkrambledSummaryScreen(
+                  key: ValueKey('summary-$_canResend-${_currentDraftId ?? ""}'),
+                  formModel: _formModel,
+                  canResend: _canResend,
+                  isSubmitting: _isSubmitting,
+                  onBack: () => _navKey.currentState!.maybePop(),
+                  onSend: _canResend ? _resendFromDraft : sendSkrambled,
+                ),
+              );
+
+            // 3b) STANDARD Amount path
+            case SendRoutes.stAmount:
+              return MaterialPageRoute(
+                builder: (_) => StandardAmountScreen(
+                  formModel: _formModel,
+                  onBack: () => _navKey.currentState!.maybePop(),
+                  onNext: () => _navKey.currentState!.pushNamed(SendRoutes.stSummary),
+                  // If SendStandardScreen ends by sending, you can navigate out or push a tiny status.
+                  // You can also change this to two routes (stAmount, stSummary) later without touching this controller.
+                ),
+              );
+
+            // 4b) STANDARD Summary
+            case SendRoutes.stSummary:
+              return MaterialPageRoute(
+                builder: (_) => StandardSummaryScreen(
+                  formModel: _formModel,
+                  onBack: () => _navKey.currentState!.maybePop(),
+
+                  // If SendStandardScreen ends by sending, you can navigate out or push a tiny status.
+                  // You can also change this to two routes (stAmount, stSummary) later without touching this controller.
+                ),
+              );
+
+            default:
+              return MaterialPageRoute(builder: (_) => const Center(child: Text('Route not found')));
+          }
+        },
       ),
     );
   }

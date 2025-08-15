@@ -25,7 +25,6 @@ class _RootShellState extends State<RootShell> {
       _KeepAlive(child: BurnersScreen()),
       _KeepAlive(child: AllPods()),
     ];
-    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       extendBody: true,

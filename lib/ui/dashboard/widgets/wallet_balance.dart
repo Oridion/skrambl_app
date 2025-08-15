@@ -3,17 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:skrambl_app/services/price_service.dart';
 import 'package:skrambl_app/services/wallet_balance_stream.dart';
+import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:solana_seed_vault/solana_seed_vault.dart';
 
 class WalletBalanceTile extends StatefulWidget {
   final AuthToken authToken;
   final String pubkey;
 
-  const WalletBalanceTile({
-    super.key,
-    required this.authToken,
-    required this.pubkey,
-  });
+  const WalletBalanceTile({super.key, required this.authToken, required this.pubkey});
 
   @override
   State<WalletBalanceTile> createState() => _WalletBalanceTileState();
@@ -29,9 +26,7 @@ class _WalletBalanceTileState extends State<WalletBalanceTile> {
   void initState() {
     super.initState();
 
-    _subscription = _balanceStream.start(widget.pubkey).listen((
-      lamports,
-    ) async {
+    _subscription = _balanceStream.start(widget.pubkey).listen((lamports) async {
       final price = await fetchSolPriceUsd();
 
       if (mounted) {
@@ -51,9 +46,7 @@ class _WalletBalanceTileState extends State<WalletBalanceTile> {
     if (oldWidget.pubkey != widget.pubkey) {
       _subscription?.cancel();
       _balanceStream.stop();
-      _subscription = _balanceStream.start(widget.pubkey).listen((
-        lamports,
-      ) async {
+      _subscription = _balanceStream.start(widget.pubkey).listen((lamports) async {
         final price = await fetchSolPriceUsd();
 
         if (mounted) {
@@ -89,23 +82,17 @@ class _WalletBalanceTileState extends State<WalletBalanceTile> {
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Text(
-                sol,
-                style: GoogleFonts.archivoBlack(
-                  fontSize: 77,
-                  color: Colors.black,
-                ),
+              Transform.translate(
+                offset: const Offset(0, -5), // x, y — move up 2px
+                child: SolanaLogo(useDark: true, size: 24),
               ),
-              const SizedBox(width: 6),
-              Text('SOL'),
+              const SizedBox(width: 8),
+              Text(sol, style: GoogleFonts.archivoBlack(fontSize: 77, color: Colors.black)),
             ],
           ),
         ),
         const SizedBox(height: 20),
-        Text(
-          ' ~\$$usd USD',
-          style: TextStyle(color: Colors.grey[600], fontSize: 18),
-        ),
+        Text(' ~\$$usd USD', style: TextStyle(color: Colors.grey[600], fontSize: 18)),
       ],
     );
   }

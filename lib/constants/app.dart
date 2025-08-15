@@ -19,3 +19,9 @@ class AppConstants {
   static const IconData skramblIconOutlined = Icons.token_outlined;
   static const IconData skramblIcon = Icons.token;
 }
+
+class AppAssets {
+  AppAssets._();
+  static const solanaLogoBlack = 'assets/solana/Solana-Black.svg';
+  static const solanaLogoWhite = 'assets/solana/Solana-White.svg';
+}
