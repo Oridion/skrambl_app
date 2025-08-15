@@ -29,7 +29,6 @@ class _AllPodsState extends State<AllPods> {
       appBar: AppBar(
         title: const Text('All Deliveries'),
         titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black87),
-
         titleSpacing: 24, // matches horizontal padding
       ),
       body: StreamBuilder<List<Pod>>(
@@ -73,6 +72,7 @@ class _AllPodsState extends State<AllPods> {
 
           return CustomScrollView(
             slivers: [
+              const SliverPadding(padding: EdgeInsets.only(bottom: 8)),
               SliverToBoxAdapter(
                 child: PodsHeader(
                   total: pods.length,
@@ -83,9 +83,9 @@ class _AllPodsState extends State<AllPods> {
                   onFilterChanged: (f) => setState(() => _filter = f),
                 ),
               ),
-
+              // space between header and list
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 sliver: SliverList.builder(
                   itemCount: filtered.length,
                   itemBuilder: (context, i) => PodCard(
