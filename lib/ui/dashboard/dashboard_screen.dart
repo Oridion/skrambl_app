@@ -134,7 +134,7 @@ class _DashboardContent extends StatelessWidget {
 
             // Send button (between header and list)
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(28, 8, 28, 32),
+              padding: const EdgeInsets.fromLTRB(28, 8, 28, 28),
               sliver: SliverToBoxAdapter(
                 child: SizedBox(
                   width: double.infinity,
@@ -150,14 +150,15 @@ class _DashboardContent extends StatelessWidget {
                           }
                         : null,
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      minimumSize: const Size.fromHeight(52),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                       backgroundColor: Colors.black,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
                     ),
-                    child: Text(
+                    child: const Text(
                       'SEND SOL',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -166,7 +167,7 @@ class _DashboardContent extends StatelessWidget {
 
             // Section title
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(26, 12, 26, 0),
+              padding: const EdgeInsets.fromLTRB(26, 7, 26, 0),
               sliver: SliverToBoxAdapter(
                 child: Row(
                   children: [

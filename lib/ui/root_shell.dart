@@ -9,14 +9,15 @@ import 'package:skrambl_app/ui/pods/all_pods_screen.dart';
 import 'package:skrambl_app/utils/colors.dart';
 
 class RootShell extends StatefulWidget {
-  const RootShell({super.key});
+  final int initialIndex;
+  const RootShell({super.key, this.initialIndex = 0});
 
   @override
   State<RootShell> createState() => _RootShellState();
 }
 
 class _RootShellState extends State<RootShell> {
-  int _index = 0;
+  late int _index = widget.initialIndex;
 
   @override
   Widget build(BuildContext context) {

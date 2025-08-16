@@ -8,6 +8,7 @@ import 'package:skrambl_app/providers/transaction_status_provider.dart';
 import 'package:skrambl_app/providers/wallet_balance_manager.dart';
 import 'package:skrambl_app/solana/send_skrambled_transaction.dart';
 import 'package:skrambl_app/ui/dashboard/dashboard_screen.dart';
+import 'package:skrambl_app/ui/root_shell.dart';
 import 'package:skrambl_app/ui/send/helpers/status_result.dart';
 import 'package:skrambl_app/ui/send/widgets/scrambled_text.dart';
 import 'package:skrambl_app/ui/shared/solana_logo.dart';
@@ -525,7 +526,7 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                               context.read<WalletBalanceProvider>().refresh();
 
                               Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(builder: (_) => const Dashboard()),
+                                MaterialPageRoute(builder: (_) => const RootShell(initialIndex: 0)),
                                 (route) => false,
                               );
                             },
