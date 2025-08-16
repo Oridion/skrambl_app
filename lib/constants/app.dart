@@ -5,6 +5,7 @@ class AppConstants {
   // App version
   static const String appVersion = '1.0.0';
 
+  static const int lamportsPerSol = 1000000000;
   // API base URL
   static const String apiBaseUrl = 'https://api.oridion.xyz/';
 

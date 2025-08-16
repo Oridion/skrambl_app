@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/providers/wallet_balance_manager.dart';
 import 'package:skrambl_app/services/price_service.dart';
 import 'package:skrambl_app/solana/solana_client_service.dart';
@@ -41,7 +42,6 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
   BigInt? _incrementFee;
   bool _loadingFees = true;
 
-  static const int lamportsPerSol = 1000000000;
   static const double _minAmount = 0.000001;
 
   final rpc = SolanaClientService().rpcClient;
@@ -133,7 +133,7 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
 
     final int tiers = (delaySeconds / 180).floor();
     final feeLamports = _baseFee! + (_incrementFee! * BigInt.from(tiers));
-    final feeSol = feeLamports / BigInt.from(lamportsPerSol);
+    final feeSol = feeLamports / BigInt.from(AppConstants.lamportsPerSol);
     return feeSol.toDouble();
   }
 
@@ -219,7 +219,6 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
     final isBalanceLoading = balanceProvider.isLoading;
 
     final isValid = _amount != null && _amount! >= _minAmount && _errorText == null && !isBalanceLoading;
-    final radius = BorderRadius.circular(6);
     return LayoutBuilder(
       builder: (context, constraints) {
         return Column(

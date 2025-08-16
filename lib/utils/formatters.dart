@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:intl/intl.dart';
+import 'package:solana/base58.dart';
 
 String formatSol(double value, {int maxDecimals = 6}) {
   if (value == 0) return '0';
@@ -53,3 +56,8 @@ String formatTime(int unixSeconds) {
 
 DateTime? dateTimeOrNull(int? secondsEpoch) =>
     secondsEpoch == null ? null : DateTime.fromMillisecondsSinceEpoch(secondsEpoch);
+
+//Convert signature for view
+String signatureToBase58(Uint8List sigBytes) {
+  return base58encode(sigBytes);
+}

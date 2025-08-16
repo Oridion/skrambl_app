@@ -7,9 +7,12 @@ import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/providers/transaction_status_provider.dart';
 import 'package:skrambl_app/providers/wallet_balance_manager.dart';
 import 'package:skrambl_app/solana/send_skrambled_transaction.dart';
+import 'package:skrambl_app/ui/dashboard/dashboard_screen.dart';
 import 'package:skrambl_app/ui/send/helpers/status_result.dart';
 import 'package:skrambl_app/ui/send/widgets/scrambled_text.dart';
+import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart';
+import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/utils/logger.dart';
 import 'package:solana/solana.dart';
 
@@ -120,42 +123,6 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
           }
         }
       });
-
-      // // wire provider listener safely (so we can remove in dispose)
-      // _status = context.read<TransactionStatusProvider>();
-      // _statusListener = () {
-      //   switch (_status.phase) {
-      //     case TransactionPhase.scrambling:
-      //       skrLogger.i("Starting to listen for pod updates");
-      //       startPodWatcher(widget.podPDA.toString());
-      //       break;
-
-      //     case TransactionPhase.delivering:
-      //       break;
-
-      //     case TransactionPhase.completed:
-      //       setState(() {
-      //         _isComplete = true;
-      //         _timer?.cancel();
-      //       });
-      //       _fadeController.forward();
-      //       break;
-
-      //     case TransactionPhase.failed:
-      //       skrLogger.e("Transaction failed!");
-      //       setState(() {
-      //         _isFailed = true;
-      //         _timer?.cancel();
-      //       });
-      //       // Optionally bounce back to parent immediately:
-      //       // if (mounted) Navigator.pop(context, SendStatusResult.failed(localId: widget.localId, message: 'Submission failed'));
-      //       break;
-
-      //     default:
-      //       break;
-      //   }
-      // };
-      // _status.addListener(_statusListener);
     });
   }
 
@@ -281,65 +248,6 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
     }
   }
 
-  // void startPodWatcher(String podPubkey) {
-  //   _seenOnChain = false;
-  //   _podWatcher?.cancel();
-  //   bool busy = false;
-  //   int nullInfoStrikes = 0; // for “closed” confirmation
-
-  //   final status = context.read<TransactionStatusProvider>();
-  //   final dao = context.read<PodDao>();
-  //   final rpc = AppConstants.rpcClient;
-
-  //   _podWatcher = Timer.periodic(const Duration(seconds: 3), (t) async {
-  //     if (!mounted) {
-  //       t.cancel();
-  //       _podWatcher = null;
-  //       return;
-  //     }
-  //     if (busy) return; // prevent overlap
-  //     busy = true;
-
-  //     try {
-  //       // 1) program-level state (cheap, tells us about transitions)
-  //       final pod = await fetchPod(podPubkey, "confirmed"); // may be null if not indexed yet
-  //       if (pod != null && pod.lastProcess == 1) {
-  //         if (status.phase != TransactionPhase.delivering) {
-  //           skrLogger.i('🛬 Pod is delivering');
-  //           status.setPhase(TransactionPhase.delivering);
-  //           await dao.markDelivering(id: widget.localId);
-  //           return; // skip account check this tick
-  //         }
-  //       }
-
-  //       // 2) account existence (closure completes the flow)
-  //       final info = await rpc.getAccountInfo(podPubkey, encoding: Encoding.base64);
-
-  //       if (info.value != null) {
-  //         _seenOnChain = true;
-  //         nullInfoStrikes = 0; // reset strikes when we see it
-  //       } else if (_seenOnChain) {
-  //         // require two consecutive null reads to avoid transient blips
-  //         nullInfoStrikes += 1;
-  //         if (nullInfoStrikes >= 2) {
-  //           if (!mounted) return;
-  //           skrLogger.i("✅ Pod closed! Delivery complete!");
-  //           await dao.markFinalized(id: widget.localId);
-  //           status.setPhase(TransactionPhase.completed);
-  //           t.cancel();
-  //           _podWatcher = null;
-  //           return;
-  //         }
-  //       }
-  //     } catch (e) {
-  //       // Only warn before we've ever seen it on-chain; else, ignore transient noise
-  //       if (!_seenOnChain) skrLogger.w('Transient watch error: $e');
-  //     } finally {
-  //       busy = false; // ALWAYS release busy flag
-  //     }
-  //   });
-  // }
-
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -410,8 +318,8 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFFEFF7F1), // light mint
-                  Color(0xFFF6FBF7), // almost white
+                  Color.fromARGB(255, 217, 230, 221), // light mint
+                  Color.fromARGB(255, 211, 225, 214), // almost white
                 ],
               ),
             ),
@@ -460,7 +368,7 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Your SKRAMBL transfer has landed.',
+                        'Your SKRAMBL transfer has finalized.',
                         style: TextStyle(fontSize: 14.5, color: Colors.black54),
                       ),
                       const SizedBox(height: 24),
@@ -468,11 +376,11 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                       // Receipt card
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                        padding: const EdgeInsets.fromLTRB(26, 18, 26, 18),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Colors.white.withOpacityCompat(0.7),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.black12),
+                          border: Border.all(color: Colors.black38),
                           boxShadow: const [
                             BoxShadow(color: Color(0x11000000), blurRadius: 16, offset: Offset(0, 6)),
                           ],
@@ -482,19 +390,32 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                           children: [
                             // Amount row
                             Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.send_rounded, size: 18, color: Colors.black87),
-                                const SizedBox(width: 8),
-                                const Text('Amount', style: TextStyle(fontSize: 12.5, color: Colors.black54)),
-                                const Spacer(),
-                                Text(
-                                  amountStr,
-                                  style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w700),
+                                //const Icon(Icons.send_rounded, size: 18, color: Colors.black87),
+                                Transform.translate(
+                                  offset: const Offset(3, 3), // x, y — move up 2px
+                                  child: SolanaLogo(size: 12, useDark: true),
+                                ),
+                                const SizedBox(width: 13),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Amount',
+                                        style: TextStyle(fontSize: 12.5, color: Colors.black54),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        amountStr,
+                                        style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            const Divider(height: 1),
                             const SizedBox(height: 12),
 
                             // Destination row (copyable)
@@ -541,6 +462,54 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                                 ),
                               ],
                             ),
+
+                            const SizedBox(height: 12),
+
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.account_balance_wallet_rounded,
+                                  size: 18,
+                                  color: Colors.black87,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Signature',
+                                        style: TextStyle(fontSize: 12.5, color: Colors.black54),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      SelectableText(
+                                        _ellipsize(signatureToBase58(widget.signature!), head: 8, tail: 8),
+                                        style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  tooltip: 'Copy address',
+                                  icon: const Icon(Icons.copy_rounded, size: 18),
+                                  onPressed: () async {
+                                    await Clipboard.setData(
+                                      ClipboardData(text: signatureToBase58(widget.signature!)),
+                                    );
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Address copied'),
+                                        behavior: SnackBarBehavior.floating,
+                                        duration: Duration(milliseconds: 1200),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -554,7 +523,11 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                           OutlinedButton.icon(
                             onPressed: () {
                               context.read<WalletBalanceProvider>().refresh();
-                              Navigator.popUntil(context, (route) => route.isFirst);
+
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(builder: (_) => const Dashboard()),
+                                (route) => false,
+                              );
                             },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.black,
@@ -562,14 +535,17 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
-                            icon: const Icon(Icons.dashboard_rounded, size: 18),
-                            label: const Text('Dashboard'),
+
+                            label: const Text('Done'),
                           ),
                           const SizedBox(width: 12),
                           ElevatedButton.icon(
                             onPressed: () {
                               context.read<WalletBalanceProvider>().refresh();
-                              Navigator.pop(context); // back one: returns to amount/summary step
+                              Navigator.popUntil(
+                                context,
+                                (route) => route.isFirst,
+                              ); // back one: returns to amount/summary step
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black,

@@ -20,4 +20,19 @@ class SendFormModel {
     fee = 0;
     isSkrambled = false;
   }
+
+  @override
+  String toString() {
+    return '''
+    SendFormModel(
+      userWallet: $userWallet,
+      destinationWallet: $destinationWallet,
+      amount: $amount,
+      usdAmount: $usdAmount,
+      solUsdPrice: $solUsdPrice,
+      delaySeconds: $delaySeconds,
+      fee: $fee,
+      isSkrambled: $isSkrambled
+    )''';
+  }
 }
