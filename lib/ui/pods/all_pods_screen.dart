@@ -27,9 +27,10 @@ class _AllPodsState extends State<AllPods> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: Row(children: [SizedBox(width: 24), Icon(AppConstants.skramblIcon)]),
         title: const Text('All Deliveries'),
         titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black87),
-        titleSpacing: 24, // matches horizontal padding
+        titleSpacing: 0, // matches horizontal padding
       ),
       body: StreamBuilder<List<Pod>>(
         stream: dao.watchAll(),

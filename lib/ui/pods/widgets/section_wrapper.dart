@@ -20,10 +20,10 @@ class SectionWrapper extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.black12),
             ),
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 9, 12, 20),
             child: child,
           ),
         ],

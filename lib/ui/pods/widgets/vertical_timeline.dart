@@ -31,11 +31,14 @@ class VerticalTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (int i = 0; i < items.length; i++)
-          TimelineTile(item: items[i], isFirst: i == 0, isLast: i == items.length - 1),
-      ],
+    return Padding(
+      padding: EdgeInsetsGeometry.fromLTRB(12, 20, 12, 20),
+      child: Column(
+        children: [
+          for (int i = 0; i < items.length; i++)
+            TimelineTile(item: items[i], isFirst: i == 0, isLast: i == items.length - 1),
+        ],
+      ),
     );
   }
 }
@@ -73,7 +76,7 @@ class TimelineTile extends StatelessWidget {
           // Content
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

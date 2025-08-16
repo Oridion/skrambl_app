@@ -34,6 +34,21 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
         .watch();
   }
 
+  ///Watch only non standard pods
+  Stream<List<Pod>> watchPendingNonStandardPods() {
+    return (select(pods)
+          ..where(
+            (p) => p.status.isIn([
+              PodStatus.submitted.index,
+              PodStatus.scrambling.index,
+              PodStatus.delivering.index,
+            ]),
+          )
+          ..where((p) => p.mode.isNotValue(5))
+          ..where((p) => p.podPda.isNotNull()))
+        .watch();
+  }
+
   // Create local draft row when user hits "Launch"
   Future<String> createDraft({
     required String creator,

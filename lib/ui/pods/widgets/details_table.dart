@@ -26,21 +26,21 @@ class PodDetailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0x11000000))),
-      ),
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+      // decoration: const BoxDecoration(
+      //   border: Border(bottom: BorderSide(color: Color(0x11000000))),
+      // ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
-            width: 110,
+            width: 100,
             child: Text(title, style: t.labelSmall?.copyWith(color: Colors.black54)),
           ),
           Expanded(
             child: Text(
               value,
-              style: (monospace ? t.bodyMedium?.copyWith(fontFamily: 'monospace') : t.bodyMedium),
+              style: t.bodyMedium,
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
               softWrap: false,

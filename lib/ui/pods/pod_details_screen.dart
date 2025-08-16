@@ -1,4 +1,3 @@
-// lib/ui/pods/pod_details_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/ui/pods/helper/pod_timeline_builder.dart';
@@ -64,12 +63,16 @@ class PodDetailsScreen extends StatelessWidget {
 
               // ===== DETAILS =====
               SectionWrapper(
-                label: 'Details',
+                label: 'DETAILS',
                 child: PodDetailsTable(
                   rows: [
-                    PodDetailRow('Destination', pod.destination, copyable: true, monospace: true),
-                    PodDetailRow('Mode', modeLabel(pod.mode)),
-                    //_DetailRow('Delay', formatDurationShort(Duration(seconds: pod.delaySeconds!))),
+                    PodDetailRow(
+                      'Destination',
+                      shortenPubkey(pod.destination),
+                      copyable: true,
+                      monospace: true,
+                    ),
+                    PodDetailRow('Delay', modeLabel(pod.mode)),
                   ],
                 ),
               ),

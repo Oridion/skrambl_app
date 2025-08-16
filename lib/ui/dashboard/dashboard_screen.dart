@@ -134,7 +134,7 @@ class _DashboardContent extends StatelessWidget {
 
             // Send button (between header and list)
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(28, 8, 28, 28),
+              padding: const EdgeInsets.fromLTRB(28, 14, 28, 24),
               sliver: SliverToBoxAdapter(
                 child: SizedBox(
                   width: double.infinity,

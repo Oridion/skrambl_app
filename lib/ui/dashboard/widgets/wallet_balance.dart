@@ -91,7 +91,7 @@ class _WalletBalanceTileState extends State<WalletBalanceTile> {
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 15),
         Text(' ~\$$usd USD', style: TextStyle(color: Colors.grey[600], fontSize: 18)),
       ],
     );

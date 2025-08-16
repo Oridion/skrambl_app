@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:skrambl_app/ui/shared/relative_time.dart'; // for withOpacityCompat if you use it elsewhere
 import 'package:skrambl_app/data/skrambl_entity.dart';
+import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart'; // for PodStatus
 
 /// Professional header for the Pod details page.
@@ -26,13 +27,10 @@ class PodHeaderCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 255, 255, 255),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color.fromARGB(255, 223, 223, 223), width: 1),
-        boxShadow: const [
-          BoxShadow(blurRadius: 16, spreadRadius: 0, offset: Offset(0, 6), color: Color(0x11000000)),
-        ],
       ),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -77,10 +75,15 @@ class _AmountBlock extends StatelessWidget {
     final amount = parts.first; // e.g. 12.3456
     final unit = parts.length > 1 ? parts[1] : 'SOL';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+
       children: [
-        // Large number, slightly condensed, heavy weight
+        Transform.translate(
+          offset: const Offset(0, -7), // x, y — move up 2px
+          child: SolanaLogo(size: 14, useDark: true),
+        ),
+        SizedBox(width: 7),
         Text(
           amount,
           style: textTheme.displaySmall?.copyWith(
@@ -92,7 +95,7 @@ class _AmountBlock extends StatelessWidget {
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
-
+        SizedBox(width: 3),
         Text(unit, style: textTheme.labelLarge?.copyWith(color: Colors.black, letterSpacing: 0.3)),
       ],
     );

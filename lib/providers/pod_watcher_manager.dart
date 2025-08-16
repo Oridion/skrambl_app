@@ -27,12 +27,11 @@ class PodWatcherManager with ChangeNotifier {
     if (_started) return;
     _started = true;
 
-    _sub = dao.watchPendingPods().listen((pods) {
-      // Build the desired set of active PDAs
-      final desired = pods
-          .where((p) => p.podPda != null /* && isWatchable(p.status) */)
-          .map((p) => p.podPda)
-          .toSet();
+    _sub = dao.watchPendingNonStandardPods().listen((pods) {
+      // Only watch non-standard pods (mode != 5) that have a PDA
+      final watchable = pods.where((p) => p.mode != 5 && p.podPda != null).toList();
+      // Desired set of PDAs we should be watching
+      final desired = watchable.map((p) => p.podPda!).toSet();
 
       // Start new watchers
       for (final p in pods) {

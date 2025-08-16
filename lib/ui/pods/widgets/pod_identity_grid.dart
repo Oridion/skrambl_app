@@ -19,14 +19,14 @@ class PodIdentityGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final entries = <Widget>[
-      _MonoCopyRow(label: 'Local ID', value: localId),
       _MonoCopyRow(label: 'Pod ID', value: podId?.toString() ?? '—'),
       _MonoCopyRow(label: 'PDA', value: pda),
       _MonoCopyRow(label: 'Creator', value: creator),
     ];
 
-    return Column(
-      children: [for (final e in entries) Padding(padding: const EdgeInsets.only(bottom: 8), child: e)],
+    return Padding(
+      padding: EdgeInsetsGeometry.fromLTRB(12, 12, 12, 4),
+      child: Column(children: [for (final e in entries) e]),
     );
   }
 }
@@ -43,15 +43,10 @@ class _MonoCopyRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SizedBox(
-          width: 92,
+          width: 100,
           child: Text(label, style: t.labelSmall?.copyWith(color: Colors.black54)),
         ),
-        Expanded(
-          child: SelectableText(
-            value == '—' ? value : shortenPubkey(value),
-            style: t.bodyMedium?.copyWith(fontFamily: 'monospace', fontWeight: FontWeight.w600),
-          ),
-        ),
+        Expanded(child: SelectableText(value == '—' ? value : shortenPubkey(value), style: t.bodyMedium)),
         IconButton(
           icon: const Icon(Icons.copy, size: 18),
           tooltip: 'Copy',
