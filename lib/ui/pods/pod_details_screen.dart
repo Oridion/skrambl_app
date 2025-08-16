@@ -79,13 +79,13 @@ class PodDetailsScreen extends StatelessWidget {
 
               // ===== TIMELINE =====
               SectionWrapper(
-                label: 'Journey',
+                label: 'JOUNEY',
                 child: VerticalTimeline(items: timeline),
               ),
 
               // ===== IDENTIFIERS =====
               SectionWrapper(
-                label: 'Identifiers',
+                label: 'META',
                 child: PodIdentityGrid(
                   localId: pod.id,
                   podId: pod.podId, // u16 (int)
