@@ -25,36 +25,49 @@ class TransferDiagram extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _AddressCard(
-          label: fromLabel,
-          address: fromAddress,
-          leading: const Icon(Icons.account_balance_wallet_outlined, size: 18, color: Colors.black),
-          onCopy: onCopyFrom,
-        ),
+    final t = Theme.of(context).textTheme;
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.black12),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 4))],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text('TRAVEL ROUTE', style: t.labelMedium?.copyWith(color: Colors.black38)),
+          ),
+          const SizedBox(height: 10),
+          _AddressCard(
+            label: fromLabel,
+            address: fromAddress,
+            leading: const Icon(Icons.account_balance_wallet_outlined, size: 18, color: Colors.black),
+            onCopy: onCopyFrom,
+          ),
+          const SizedBox(height: 10),
+          Column(
+            children: [
+              Icon(Icons.arrow_downward_rounded, color: Colors.black.withOpacityCompat(0.6)),
+              //const SizedBox(height: 8),
+              // _AmountChip(sol: amountSol, usd: amountUsd),
+              // const SizedBox(height: 8),
+              //Icon(Icons.arrow_downward_rounded, color: Colors.black.withOpacityCompat(0.6)),
+            ],
+          ),
+          const SizedBox(height: 10),
 
-        // Arrow + amount chip
-        const SizedBox(height: 12),
-        Column(
-          children: [
-            Icon(Icons.arrow_downward_rounded, color: Colors.black.withOpacityCompat(0.6)),
-            //const SizedBox(height: 8),
-            // _AmountChip(sol: amountSol, usd: amountUsd),
-            // const SizedBox(height: 8),
-            //Icon(Icons.arrow_downward_rounded, color: Colors.black.withOpacityCompat(0.6)),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        _AddressCard(
-          label: toLabel,
-          address: toAddress,
-          leading: const Icon(Icons.account_balance_wallet_outlined, size: 18, color: Colors.black),
-          onCopy: onCopyTo,
-        ),
-      ],
+          _AddressCard(
+            label: toLabel,
+            address: toAddress,
+            leading: const Icon(Icons.account_balance_wallet_outlined, size: 18, color: Colors.black),
+            onCopy: onCopyTo,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -75,7 +88,7 @@ class _AddressCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color.fromARGB(255, 242, 242, 242),
         border: Border.all(color: Colors.black12),
         borderRadius: BorderRadius.circular(12),
       ),

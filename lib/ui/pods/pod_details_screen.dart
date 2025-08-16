@@ -86,7 +86,7 @@ class PodDetailsScreen extends StatelessWidget {
                 child: PodIdentityGrid(
                   localId: pod.id,
                   podId: pod.podId, // u16 (int)
-                  pda: pod.podPda,
+                  pda: pod.podPda ?? '',
                   creator: pod.creator, // creating wallet (could be primary or burner)
                 ),
               ),

@@ -6,14 +6,14 @@ class Pods extends Table {
   TextColumn get id => text()(); // uuid or "<creator>-<podId>-<ts>"
 
   // On-chain identifiers
-  TextColumn get podPda => text()(); // base58 PDA once known
+  TextColumn get podPda => text().nullable()(); // base58 PDA once known
   TextColumn get creator => text()(); // parent wallet base58
-  IntColumn get podId => integer()(); // your u16 id used in seeds
+  IntColumn get podId => integer().nullable()(); // your u16 id used in seeds
 
   // User args at launch
   IntColumn get lamports => integer()();
   IntColumn get mode => integer()(); // 0=instant, 1=delay...
-  IntColumn get delaySeconds => integer()();
+  IntColumn get delaySeconds => integer().withDefault(const Constant(0))();
   BoolColumn get showMemo => boolean().withDefault(const Constant(false))();
 
   // escape handling (nullable so we can erase)

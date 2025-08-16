@@ -102,7 +102,6 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
     final balanceProvider = context.watch<WalletBalanceProvider>();
     final walletBalance = balanceProvider.solBalance;
     final isBalanceLoading = balanceProvider.isLoading;

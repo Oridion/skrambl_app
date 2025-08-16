@@ -54,11 +54,11 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
       PodsCompanion.insert(
         id: localId,
         creator: creator,
-        podId: podId,
-        podPda: podPda,
+        podId: Value(podId),
+        podPda: Value(podPda),
         lamports: lamports,
         mode: mode,
-        delaySeconds: delaySeconds,
+        delaySeconds: Value(delaySeconds),
         showMemo: Value(showMemo),
         escapeCode: Value(escapeCode),
         destination: destination,
@@ -142,6 +142,102 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
   Future<void> trimSecrets(String id) async {
     await (update(pods)..where((t) => t.id.equals(id))).write(
       PodsCompanion(escapeCode: Value(null), unsignedMessageB64: const Value(null)),
+    );
+  }
+
+  // Insert a STANDARD pod row at the moment you have a tx signature.
+  // (No podId/PDA, delay=0, mode=5)
+  Future<String> insertStandardPending({
+    required String creator, // sender pubkey (base58)
+    required String destination, // recipient base58
+    required int lamports, // amount
+    required String signature, // launch tx sig
+  }) async {
+    final localId = const Uuid().v4();
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    await into(pods).insert(
+      PodsCompanion.insert(
+        id: localId,
+        creator: creator,
+        destination: destination,
+        lamports: lamports,
+        // Standard markers:
+        mode: 5, // 5 = standard
+        delaySeconds: const Value(0),
+        podId: const Value(null), // no on-chain pod id
+        podPda: const Value(null), // no PDA
+        // Status at submission:
+        status: PodStatus.submitted.index,
+        statusMsg: const Value('Submitted (standard)'),
+        draftedAt: now,
+        submittedAt: Value(now),
+
+        // Signature:
+        launchSig: Value(signature),
+        lastSig: Value(signature),
+      ),
+    );
+
+    return localId;
+  }
+
+  // If user retried and we already have the row (by signature), just upsert:
+  Future<void> upsertStandardPendingBySig({
+    required String signature,
+    required String creator,
+    required String destination,
+    required int lamports,
+  }) async {
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final q = update(pods)..where((t) => t.launchSig.equals(signature));
+
+    final updated = await q.write(
+      PodsCompanion(
+        creator: Value(creator),
+        destination: Value(destination),
+        lamports: Value(lamports),
+        lastSig: Value(signature),
+        status: Value(PodStatus.submitted.index),
+        statusMsg: const Value('Submitted (standard)'),
+        submittedAt: Value(now),
+      ),
+    );
+
+    if (updated == 0) {
+      // No row with that signature → insert
+      await insertStandardPending(
+        creator: creator,
+        destination: destination,
+        lamports: lamports,
+        signature: signature,
+      );
+    }
+  }
+
+  // Mark finalized by signature (reuse same flow as skrambled)
+  Future<void> markStandardFinalizedBySig(String signature) async {
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    await (update(pods)..where((t) => t.launchSig.equals(signature))).write(
+      PodsCompanion(
+        status: Value(PodStatus.finalized.index),
+        statusMsg: const Value('Finalized'),
+        finalizedAt: Value(now),
+        // Trim secrets fields are already null for standard, but safe to set:
+        escapeCode: const Value(null),
+        unsignedMessageB64: const Value(null),
+      ),
+    );
+  }
+
+  // Mark failed by signature
+  Future<void> markStandardFailedBySig(String signature, {String? message}) async {
+    await (update(pods)..where((t) => t.launchSig.equals(signature))).write(
+      PodsCompanion(
+        status: Value(PodStatus.failed.index),
+        statusMsg: Value(message ?? 'Failed'),
+        lastError: Value(message),
+      ),
     );
   }
 }

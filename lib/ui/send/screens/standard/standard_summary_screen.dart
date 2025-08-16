@@ -1,6 +1,7 @@
 // lib/ui/send/screens/standard/standard_summary_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:skrambl_app/models/send_form_model.dart';
 import 'package:skrambl_app/ui/send/screens/standard/standard_sending_scren.dart';
 import 'package:skrambl_app/ui/send/widgets/transfer_diagram.dart';
@@ -64,11 +65,7 @@ class _StandardSummaryScreenState extends State<StandardSummaryScreen> {
                   children: [
                     Text(
                       'Review and send',
-                      style: t.titleMedium?.copyWith(
-                        color: onBg,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.2,
-                      ),
+                      style: t.titleMedium?.copyWith(color: onBg, fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 2),
                     Text('Final check before you send', style: t.bodySmall?.copyWith(color: onBgMuted)),
@@ -80,14 +77,11 @@ class _StandardSummaryScreenState extends State<StandardSummaryScreen> {
               // Amount card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                padding: const EdgeInsets.fromLTRB(24, 18, 24, 6),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border.all(color: Colors.black12),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x0F000000), blurRadius: 12, offset: Offset(0, 6)),
-                  ],
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
@@ -95,23 +89,27 @@ class _StandardSummaryScreenState extends State<StandardSummaryScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Transfer Amount', style: t.labelLarge?.copyWith(color: Colors.black54)),
-                          const SizedBox(height: 6),
+                          Text('TRANSFER AMOUNT', style: t.labelMedium?.copyWith(color: Colors.black38)),
                           Row(
                             children: [
-                              const SolanaLogo(size: 18, color: Colors.black),
-                              const SizedBox(width: 10),
+                              Padding(
+                                padding: EdgeInsetsGeometry.fromLTRB(0, 8, 0, 0),
+                                child: const SolanaLogo(size: 16, color: Colors.black),
+                              ),
+                              const SizedBox(width: 6),
                               Text(
                                 formatSol(amount),
-                                style: t.titleLarge?.copyWith(fontWeight: FontWeight.w900, fontSize: 30),
+                                style: GoogleFonts.archivoBlack(fontSize: 44, color: Colors.black),
                               ),
                               const SizedBox(width: 8),
                               if (usdStr != null) ...[
-                                Text('•', style: t.bodyMedium?.copyWith(color: Colors.black54, fontSize: 20)),
                                 const SizedBox(width: 8),
-                                Text(
-                                  usdStr,
-                                  style: t.bodyMedium?.copyWith(color: Colors.black54, fontSize: 20),
+                                Padding(
+                                  padding: EdgeInsetsGeometry.fromLTRB(0, 6, 0, 0),
+                                  child: Text(
+                                    usdStr,
+                                    style: t.bodyMedium?.copyWith(color: Colors.black54, fontSize: 24),
+                                  ),
                                 ),
                               ],
                             ],
@@ -122,7 +120,7 @@ class _StandardSummaryScreenState extends State<StandardSummaryScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
 
               // Transfer diagram (source -> amount -> destination)
               Expanded(

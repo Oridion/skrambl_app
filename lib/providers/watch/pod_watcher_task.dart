@@ -36,7 +36,7 @@ class PodWatcherTask {
     try {
       _wsSub = ws
           .accountSubscribe(
-            pod.podPda,
+            pod.podPda!,
             commitment: 'confirmed', // match your previous HTTP commitment
             encoding: 'base64',
           )
@@ -76,7 +76,7 @@ class PodWatcherTask {
     int seconds = 3;
     _poller = Timer.periodic(Duration(seconds: seconds), (t) async {
       try {
-        final info = await rpc.getAccountInfo(pod.podPda);
+        final info = await rpc.getAccountInfo(pod.podPda!);
         if (info.value == null) {
           if (_finished) return;
           await dao.markFinalized(id: pod.id);

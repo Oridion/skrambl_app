@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/models/send_form_model.dart';
 import 'package:skrambl_app/services/seed_vault_service.dart';
 import 'package:skrambl_app/solana/solana_client_service.dart';
@@ -71,6 +73,20 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
       setState(() => _phase = 'Submitting…');
       final txSig = await _sendSignedTransaction(rpc: rpc, messageBytes: messageBytes, signature: signature);
 
+      // Persist pending standard entry
+      try {
+        final dao = context.read<PodDao>();
+        await dao.upsertStandardPendingBySig(
+          signature: txSig,
+          creator: sender.toBase58(),
+          destination: widget.form.destinationWallet!,
+          lamports: lamports,
+        );
+      } catch (e) {
+        // Don’t break the UX if local DB write fails
+        skrLogger.w('DB upsert (standard pending) failed: $e');
+      }
+
       setState(() {
         _signature = txSig;
         _phase = 'Confirming…';
@@ -78,14 +94,24 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
 
       await _confirmSignature(rpc, txSig);
 
+      //Confirmed
       if (!mounted) return;
+      try {
+        final dao = context.read<PodDao>();
+        await dao.markStandardFinalizedBySig(txSig);
+      } catch (e) {
+        skrLogger.w('DB finalize (standard) failed: $e');
+      }
+
       setState(() {
         _phase = 'Confirmed';
-        _done = true; // <-- stay on screen and show success UI
+        _done = true;
       });
     } catch (e, st) {
       skrLogger.e('Standard send failed: $e\n$st');
       if (!mounted) return;
+      final dao = context.read<PodDao>();
+      await dao.markStandardFailedBySig(_signature!, message: _error ?? 'Unknown error');
       setState(() {
         _error = e.toString();
         _done = true;

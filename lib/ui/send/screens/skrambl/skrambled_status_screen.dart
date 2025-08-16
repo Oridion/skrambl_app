@@ -2,12 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:skrambl_app/utils/solana.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/providers/transaction_status_provider.dart';
 import 'package:skrambl_app/providers/wallet_balance_manager.dart';
 import 'package:skrambl_app/solana/send_skrambled_transaction.dart';
-import 'package:skrambl_app/ui/dashboard/dashboard_screen.dart';
 import 'package:skrambl_app/ui/root_shell.dart';
 import 'package:skrambl_app/ui/send/helpers/status_result.dart';
 import 'package:skrambl_app/ui/send/widgets/scrambled_text.dart';
@@ -155,6 +155,7 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
   @override
   void dispose() {
     _fadeController.dispose();
+    _podRowSub.cancel();
     _timer?.cancel();
     // remove the listener to avoid leaks
     try {
@@ -307,7 +308,7 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
 
   Widget _buildCompletedView() {
     final amountStr = '${widget.amount} SOL';
-
+    final sigBase58 = widget.launchSig ?? signatureToBase58(widget.signature!);
     return FadeTransition(
       opacity: _fadeController.drive(CurveTween(curve: Curves.easeOut)),
       child: Stack(
@@ -332,7 +333,7 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 520),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.symmetric(horizontal: 34),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -377,10 +378,10 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                       // Receipt card
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.fromLTRB(26, 18, 26, 18),
+                        padding: const EdgeInsets.fromLTRB(36, 36, 36, 28),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacityCompat(0.7),
-                          borderRadius: BorderRadius.circular(14),
+                          color: Colors.white.withOpacityCompat(0.4),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.black38),
                           boxShadow: const [
                             BoxShadow(color: Color(0x11000000), blurRadius: 16, offset: Offset(0, 6)),
@@ -390,124 +391,125 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Amount row
-                            Row(
+                            Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                //const Icon(Icons.send_rounded, size: 18, color: Colors.black87),
-                                Transform.translate(
-                                  offset: const Offset(3, 3), // x, y — move up 2px
-                                  child: SolanaLogo(size: 12, useDark: true),
-                                ),
-                                const SizedBox(width: 13),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Amount',
-                                        style: TextStyle(fontSize: 12.5, color: Colors.black54),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        amountStr,
-                                        style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900),
-                                      ),
-                                    ],
-                                  ),
+                                const Text('AMOUNT', style: TextStyle(fontSize: 13, color: Colors.black54)),
+                                const SizedBox(height: 8),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Transform.translate(
+                                      offset: const Offset(2, 8), // x, y — move up 2px
+                                      child: SolanaLogo(size: 12, useDark: true),
+                                    ),
+                                    const SizedBox(width: 13),
+                                    Text(
+                                      amountStr,
+                                      style: const TextStyle(fontSize: 18.5, fontWeight: FontWeight.w900),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
+
+                            const SizedBox(height: 30),
 
                             // Destination row (copyable)
-                            Row(
+                            Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(
-                                  Icons.account_balance_wallet_rounded,
-                                  size: 18,
-                                  color: Colors.black87,
+                                const Text(
+                                  'DESTINATION',
+                                  style: TextStyle(fontSize: 13, color: Colors.black54),
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Destination',
-                                        style: TextStyle(fontSize: 12.5, color: Colors.black54),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      SelectableText(
-                                        _ellipsize(widget.destination, head: 8, tail: 8),
-                                        style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  tooltip: 'Copy address',
-                                  icon: const Icon(Icons.copy_rounded, size: 18),
-                                  onPressed: () async {
-                                    await Clipboard.setData(ClipboardData(text: widget.destination));
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Address copied'),
-                                        behavior: SnackBarBehavior.floating,
-                                        duration: Duration(milliseconds: 1200),
-                                      ),
-                                    );
-                                  },
+
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.account_balance_wallet_rounded,
+                                      size: 18,
+                                      color: Colors.black87,
+                                    ),
+
+                                    const SizedBox(width: 8),
+                                    SelectableText(
+                                      _ellipsize(widget.destination, head: 8, tail: 8),
+                                      style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      tooltip: 'Copy address',
+                                      icon: const Icon(Icons.copy_rounded, size: 18),
+                                      onPressed: () async {
+                                        await Clipboard.setData(ClipboardData(text: widget.destination));
+                                        if (!mounted) return;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Address copied'),
+                                            behavior: SnackBarBehavior.floating,
+                                            duration: Duration(milliseconds: 1200),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
 
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 14),
 
-                            Row(
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(
-                                  Icons.account_balance_wallet_rounded,
-                                  size: 18,
-                                  color: Colors.black87,
+                                const Text(
+                                  'SIGNATURE',
+                                  style: TextStyle(fontSize: 13, color: Colors.black54),
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Signature',
-                                        style: TextStyle(fontSize: 12.5, color: Colors.black54),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      SelectableText(
-                                        _ellipsize(signatureToBase58(widget.signature!), head: 8, tail: 8),
-                                        style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  tooltip: 'Copy address',
-                                  icon: const Icon(Icons.copy_rounded, size: 18),
-                                  onPressed: () async {
-                                    await Clipboard.setData(
-                                      ClipboardData(text: signatureToBase58(widget.signature!)),
-                                    );
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Address copied'),
-                                        behavior: SnackBarBehavior.floating,
-                                        duration: Duration(milliseconds: 1200),
-                                      ),
-                                    );
-                                  },
+
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.account_balance_wallet_rounded,
+                                      size: 18,
+                                      color: Colors.black87,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    SelectableText(
+                                      _ellipsize(signatureToBase58(widget.signature!), head: 8, tail: 8),
+                                      style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+                                    ),
+
+                                    const SizedBox(width: 8),
+
+                                    IconButton(
+                                      tooltip: 'View on SolanaFM',
+                                      icon: const Icon(Icons.arrow_outward_rounded, size: 18),
+                                      onPressed: () => openOnSolanaFM(context, sigBase58),
+                                    ),
+
+                                    // IconButton(
+                                    //   tooltip: 'Copy address',
+                                    //   icon: const Icon(Icons.copy_rounded, size: 18),
+                                    //   onPressed: () async {
+                                    //     await Clipboard.setData(
+                                    //       ClipboardData(text: signatureToBase58(widget.signature!)),
+                                    //     );
+                                    //     if (!mounted) return;
+                                    //     ScaffoldMessenger.of(context).showSnackBar(
+                                    //       const SnackBar(
+                                    //         content: Text('Address copied'),
+                                    //         behavior: SnackBarBehavior.floating,
+                                    //         duration: Duration(milliseconds: 1200),
+                                    //       ),
+                                    //     );
+                                    //   },
+                                    // ),
+                                  ],
                                 ),
                               ],
                             ),

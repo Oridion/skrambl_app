@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:solana/solana.dart';
 
 class AppConstants {
@@ -19,6 +20,8 @@ class AppConstants {
   //Skrambled Icon
   static const IconData skramblIconOutlined = Icons.token_outlined;
   static const IconData skramblIcon = Icons.token;
+
+  static final TextStyle solFontStyle = GoogleFonts.archivoBlack(fontSize: 77, color: Colors.black);
 }
 
 class AppAssets {

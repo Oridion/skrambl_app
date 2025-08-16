@@ -326,7 +326,7 @@ class _SendControllerState extends State<SendController> {
           MaterialPageRoute(
             builder: (_) => SendStatusScreen.queueOnly(
               localId: _currentDraftId!,
-              podPDA: Ed25519HDPublicKey.fromBase58(pod.podPda),
+              podPDA: Ed25519HDPublicKey.fromBase58(pod.podPda!),
               destination: _formModel.destinationWallet!,
               amount: _formModel.amount!,
               launchSig: pod.launchSig!,
@@ -345,7 +345,7 @@ class _SendControllerState extends State<SendController> {
           MaterialPageRoute(
             builder: (_) => SendStatusScreen.queueOnly(
               localId: _currentDraftId!,
-              podPDA: Ed25519HDPublicKey.fromBase58(pod.podPda),
+              podPDA: Ed25519HDPublicKey.fromBase58(pod.podPda!),
               destination: _formModel.destinationWallet!,
               amount: _formModel.amount!,
               launchSig: pod.launchSig ?? '', // not used in watch-only path
@@ -384,7 +384,7 @@ class _SendControllerState extends State<SendController> {
       final result = await _pushStatus(
         txBytes: txBytes,
         signature: signature,
-        podPdaBase58: pod.podPda,
+        podPdaBase58: pod.podPda!,
         destination: _formModel.destinationWallet!,
         amount: _formModel.amount!,
         localId: _currentDraftId!,

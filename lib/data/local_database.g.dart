@@ -22,9 +22,9 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
   late final GeneratedColumn<String> podPda = GeneratedColumn<String>(
     'pod_pda',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _creatorMeta = const VerificationMeta(
     'creator',
@@ -42,9 +42,9 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
   late final GeneratedColumn<int> podId = GeneratedColumn<int>(
     'pod_id',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.int,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _lamportsMeta = const VerificationMeta(
     'lamports',
@@ -75,7 +75,8 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
     aliasedName,
     false,
     type: DriftSqlType.int,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
   );
   static const VerificationMeta _showMemoMeta = const VerificationMeta(
     'showMemo',
@@ -267,8 +268,6 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
         _podPdaMeta,
         podPda.isAcceptableOrUnknown(data['pod_pda']!, _podPdaMeta),
       );
-    } else if (isInserting) {
-      context.missing(_podPdaMeta);
     }
     if (data.containsKey('creator')) {
       context.handle(
@@ -283,8 +282,6 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
         _podIdMeta,
         podId.isAcceptableOrUnknown(data['pod_id']!, _podIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_podIdMeta);
     }
     if (data.containsKey('lamports')) {
       context.handle(
@@ -310,8 +307,6 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
           _delaySecondsMeta,
         ),
       );
-    } else if (isInserting) {
-      context.missing(_delaySecondsMeta);
     }
     if (data.containsKey('show_memo')) {
       context.handle(
@@ -425,7 +420,7 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
       podPda: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}pod_pda'],
-      )!,
+      ),
       creator: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}creator'],
@@ -433,7 +428,7 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
       podId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}pod_id'],
-      )!,
+      ),
       lamports: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}lamports'],
@@ -509,9 +504,9 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
 
 class Pod extends DataClass implements Insertable<Pod> {
   final String id;
-  final String podPda;
+  final String? podPda;
   final String creator;
-  final int podId;
+  final int? podId;
   final int lamports;
   final int mode;
   final int delaySeconds;
@@ -530,9 +525,9 @@ class Pod extends DataClass implements Insertable<Pod> {
   final String? lastError;
   const Pod({
     required this.id,
-    required this.podPda,
+    this.podPda,
     required this.creator,
-    required this.podId,
+    this.podId,
     required this.lamports,
     required this.mode,
     required this.delaySeconds,
@@ -554,9 +549,13 @@ class Pod extends DataClass implements Insertable<Pod> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['pod_pda'] = Variable<String>(podPda);
+    if (!nullToAbsent || podPda != null) {
+      map['pod_pda'] = Variable<String>(podPda);
+    }
     map['creator'] = Variable<String>(creator);
-    map['pod_id'] = Variable<int>(podId);
+    if (!nullToAbsent || podId != null) {
+      map['pod_id'] = Variable<int>(podId);
+    }
     map['lamports'] = Variable<int>(lamports);
     map['mode'] = Variable<int>(mode);
     map['delay_seconds'] = Variable<int>(delaySeconds);
@@ -597,9 +596,13 @@ class Pod extends DataClass implements Insertable<Pod> {
   PodsCompanion toCompanion(bool nullToAbsent) {
     return PodsCompanion(
       id: Value(id),
-      podPda: Value(podPda),
+      podPda: podPda == null && nullToAbsent
+          ? const Value.absent()
+          : Value(podPda),
       creator: Value(creator),
-      podId: Value(podId),
+      podId: podId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(podId),
       lamports: Value(lamports),
       mode: Value(mode),
       delaySeconds: Value(delaySeconds),
@@ -644,9 +647,9 @@ class Pod extends DataClass implements Insertable<Pod> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Pod(
       id: serializer.fromJson<String>(json['id']),
-      podPda: serializer.fromJson<String>(json['podPda']),
+      podPda: serializer.fromJson<String?>(json['podPda']),
       creator: serializer.fromJson<String>(json['creator']),
-      podId: serializer.fromJson<int>(json['podId']),
+      podId: serializer.fromJson<int?>(json['podId']),
       lamports: serializer.fromJson<int>(json['lamports']),
       mode: serializer.fromJson<int>(json['mode']),
       delaySeconds: serializer.fromJson<int>(json['delaySeconds']),
@@ -672,9 +675,9 @@ class Pod extends DataClass implements Insertable<Pod> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'podPda': serializer.toJson<String>(podPda),
+      'podPda': serializer.toJson<String?>(podPda),
       'creator': serializer.toJson<String>(creator),
-      'podId': serializer.toJson<int>(podId),
+      'podId': serializer.toJson<int?>(podId),
       'lamports': serializer.toJson<int>(lamports),
       'mode': serializer.toJson<int>(mode),
       'delaySeconds': serializer.toJson<int>(delaySeconds),
@@ -696,9 +699,9 @@ class Pod extends DataClass implements Insertable<Pod> {
 
   Pod copyWith({
     String? id,
-    String? podPda,
+    Value<String?> podPda = const Value.absent(),
     String? creator,
-    int? podId,
+    Value<int?> podId = const Value.absent(),
     int? lamports,
     int? mode,
     int? delaySeconds,
@@ -717,9 +720,9 @@ class Pod extends DataClass implements Insertable<Pod> {
     Value<String?> lastError = const Value.absent(),
   }) => Pod(
     id: id ?? this.id,
-    podPda: podPda ?? this.podPda,
+    podPda: podPda.present ? podPda.value : this.podPda,
     creator: creator ?? this.creator,
-    podId: podId ?? this.podId,
+    podId: podId.present ? podId.value : this.podId,
     lamports: lamports ?? this.lamports,
     mode: mode ?? this.mode,
     delaySeconds: delaySeconds ?? this.delaySeconds,
@@ -854,9 +857,9 @@ class Pod extends DataClass implements Insertable<Pod> {
 
 class PodsCompanion extends UpdateCompanion<Pod> {
   final Value<String> id;
-  final Value<String> podPda;
+  final Value<String?> podPda;
   final Value<String> creator;
-  final Value<int> podId;
+  final Value<int?> podId;
   final Value<int> lamports;
   final Value<int> mode;
   final Value<int> delaySeconds;
@@ -899,12 +902,12 @@ class PodsCompanion extends UpdateCompanion<Pod> {
   });
   PodsCompanion.insert({
     required String id,
-    required String podPda,
+    this.podPda = const Value.absent(),
     required String creator,
-    required int podId,
+    this.podId = const Value.absent(),
     required int lamports,
     required int mode,
-    required int delaySeconds,
+    this.delaySeconds = const Value.absent(),
     this.showMemo = const Value.absent(),
     this.escapeCode = const Value.absent(),
     required int status,
@@ -920,12 +923,9 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     this.lastError = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       podPda = Value(podPda),
        creator = Value(creator),
-       podId = Value(podId),
        lamports = Value(lamports),
        mode = Value(mode),
-       delaySeconds = Value(delaySeconds),
        status = Value(status),
        destination = Value(destination),
        draftedAt = Value(draftedAt);
@@ -980,9 +980,9 @@ class PodsCompanion extends UpdateCompanion<Pod> {
 
   PodsCompanion copyWith({
     Value<String>? id,
-    Value<String>? podPda,
+    Value<String?>? podPda,
     Value<String>? creator,
-    Value<int>? podId,
+    Value<int?>? podId,
     Value<int>? lamports,
     Value<int>? mode,
     Value<int>? delaySeconds,
@@ -1138,12 +1138,12 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
 typedef $$PodsTableCreateCompanionBuilder =
     PodsCompanion Function({
       required String id,
-      required String podPda,
+      Value<String?> podPda,
       required String creator,
-      required int podId,
+      Value<int?> podId,
       required int lamports,
       required int mode,
-      required int delaySeconds,
+      Value<int> delaySeconds,
       Value<bool> showMemo,
       Value<String?> escapeCode,
       required int status,
@@ -1162,9 +1162,9 @@ typedef $$PodsTableCreateCompanionBuilder =
 typedef $$PodsTableUpdateCompanionBuilder =
     PodsCompanion Function({
       Value<String> id,
-      Value<String> podPda,
+      Value<String?> podPda,
       Value<String> creator,
-      Value<int> podId,
+      Value<int?> podId,
       Value<int> lamports,
       Value<int> mode,
       Value<int> delaySeconds,
@@ -1514,9 +1514,9 @@ class $$PodsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> podPda = const Value.absent(),
+                Value<String?> podPda = const Value.absent(),
                 Value<String> creator = const Value.absent(),
-                Value<int> podId = const Value.absent(),
+                Value<int?> podId = const Value.absent(),
                 Value<int> lamports = const Value.absent(),
                 Value<int> mode = const Value.absent(),
                 Value<int> delaySeconds = const Value.absent(),
@@ -1560,12 +1560,12 @@ class $$PodsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String podPda,
+                Value<String?> podPda = const Value.absent(),
                 required String creator,
-                required int podId,
+                Value<int?> podId = const Value.absent(),
                 required int lamports,
                 required int mode,
-                required int delaySeconds,
+                Value<int> delaySeconds = const Value.absent(),
                 Value<bool> showMemo = const Value.absent(),
                 Value<String?> escapeCode = const Value.absent(),
                 required int status,

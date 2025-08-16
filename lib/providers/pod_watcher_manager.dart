@@ -30,14 +30,14 @@ class PodWatcherManager with ChangeNotifier {
     _sub = dao.watchPendingPods().listen((pods) {
       // Build the desired set of active PDAs
       final desired = pods
-          .where((p) => p.podPda.isNotEmpty /* && isWatchable(p.status) */)
+          .where((p) => p.podPda != null /* && isWatchable(p.status) */)
           .map((p) => p.podPda)
           .toSet();
 
       // Start new watchers
       for (final p in pods) {
         final pda = p.podPda;
-        if (pda.isEmpty) continue;
+        if (pda == null) continue;
         if (_active.containsKey(pda)) continue;
 
         final task = PodWatcherTask(dao: dao, pod: p, wsService: ws);

@@ -149,7 +149,8 @@ class SkramblApp extends StatelessWidget {
           displayLarge: GoogleFonts.spaceGrotesk(fontSize: 30),
           titleMedium: GoogleFonts.roboto(fontSize: 20),
           bodyMedium: GoogleFonts.spaceGrotesk(fontSize: 16),
-          labelSmall: GoogleFonts.firaCode(fontSize: 12),
+          labelSmall: GoogleFonts.spaceGrotesk(fontSize: 12),
+          //labelLarge: GoogleFonts.spaceGrotesk(fontSize: 30),
           bodySmall: GoogleFonts.spaceGrotesk(
             fontSize: 11,
             fontWeight: FontWeight.w400,

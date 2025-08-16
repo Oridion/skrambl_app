@@ -1,24 +1,24 @@
-// lib/solana/fee_estimator.dart
-import 'dart:convert';
-import 'dart:typed_data';
-import 'package:http/http.dart' as http;
-import 'package:solana/solana.dart';
+// // lib/solana/fee_estimator.dart
+// import 'dart:convert';
+// import 'dart:typed_data';
+// import 'package:http/http.dart' as http;
+// import 'package:solana/solana.dart';
 
-import 'package:skrambl_app/solana/solana_client_service.dart';
-import 'package:skrambl_app/constants/app.dart'; // for your RPC URL
+// import 'package:skrambl_app/solana/solana_client_service.dart';
+// import 'package:skrambl_app/constants/app.dart'; // for your RPC URL
 
-Future<int> getSingleSignatureFee() async {
-  final rpc = SolanaClientService().rpcClient;
+// Future<int> getSingleSignatureFee() async {
+//   final rpc = SolanaClientService().rpcClient;
 
-  try {
-    // Get a fresh blockhash (includes fee calculator info)
-    final latest = await rpc.getLatestBlockhash();
-    return latest.value.feeCalculator.lamportsPerSignature;
-  } catch (e) {
-    // Fail-safe: fallback to ~5000 lamports (default)
-    return 5000;
-  }
-}
+//   try {
+//     // Get a fresh blockhash (includes fee calculator info)
+//     final latest = await rpc.getLatestBlockhash();
+//     return latest.value.feeCalculator.lamportsPerSignature;
+//   } catch (e) {
+//     // Fail-safe: fallback to ~5000 lamports (default)
+//     return 5000;
+//   }
+// }
 
 // class FeeEstimate {
 //   final int baseLamports;

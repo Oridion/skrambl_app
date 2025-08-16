@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_money_row.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_sec_title.dart';
-import 'package:skrambl_app/ui/shared/divider.dart';
 import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
