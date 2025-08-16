@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:skrambl_app/models/send_form_model.dart';
 import 'package:skrambl_app/providers/wallet_balance_manager.dart';
 import 'package:skrambl_app/services/price_service.dart';
+import 'package:skrambl_app/ui/send/widgets/amount_input.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 
@@ -95,6 +96,10 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
     widget.onNext();
   }
 
+  double calculateFee(int delaySeconds) {
+    return 0.toDouble();
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
@@ -104,8 +109,6 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
 
     final hasAmount = _amount != null && _amount! > 0;
     final isValid = hasAmount && _amount! >= _minAmount && _errorText == null && !isBalanceLoading;
-
-    final radius = BorderRadius.circular(10);
 
     return Scaffold(
       body: SafeArea(
@@ -158,70 +161,17 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Enter amount', style: t.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 12),
-
-                    TextField(
+                    AmountInput(
                       controller: _amountCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,6}'))],
-                      decoration: InputDecoration(
-                        labelText: 'Amount in SOL',
-                        helperText: (widget.formModel.solUsdPrice != null && (_amount ?? 0) > 0)
-                            ? '≈ ${_usd(_amount ?? 0)}'
-                            : null,
-                        helperStyle: const TextStyle(fontSize: 12, color: Colors.black54),
-                        border: OutlineInputBorder(borderRadius: radius),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: radius,
-                          borderSide: const BorderSide(color: Colors.black, width: 1.6),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: radius,
-                          borderSide: const BorderSide(color: Color(0xFFB3261E), width: 1.4),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: radius,
-                          borderSide: const BorderSide(color: Color(0xFFB3261E), width: 1.6),
-                        ),
-                        errorStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB3261E), height: 1.1),
-                        suffixIcon: (!isBalanceLoading && walletBalance > 0)
-                            ? Padding(
-                                padding: const EdgeInsets.only(right: 6),
-                                child: TextButton(
-                                  style: TextButton.styleFrom(
-                                    backgroundColor: const Color(0xFFEDEDED),
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                                  ),
-                                  onPressed: () {
-                                    if (walletBalance > 0) {
-                                      _amountCtrl.text = walletBalance.toStringAsFixed(6);
-                                    }
-                                  },
-                                  child: const Text(
-                                    'MAX',
-                                    style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
-                                  ),
-                                ),
-                              )
-                            : null,
-                        suffixIconConstraints: const BoxConstraints(minWidth: 72),
-                        errorText: _errorText,
-                      ),
+                      solUsdPrice: widget.formModel.solUsdPrice,
+                      amount: _amount,
+                      walletBalance: walletBalance,
+                      isBalanceLoading: isBalanceLoading,
+                      calculateFee: calculateFee,
+                      delaySeconds: 0,
+                      radius: BorderRadius.circular(6),
+                      errorText: _errorText,
                     ),
-
-                    if (!isBalanceLoading && walletBalance > 0) ...[
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(6, 4, 6, 8),
-                        child: Text(
-                          'Balance: ${formatSol(walletBalance)} SOL',
-                          style: const TextStyle(fontSize: 12.5, color: Colors.black54),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

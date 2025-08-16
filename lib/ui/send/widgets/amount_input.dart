@@ -1,0 +1,125 @@
+// lib/ui/shared/amount_input.dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:skrambl_app/ui/shared/solana_logo.dart';
+import 'package:skrambl_app/utils/colors.dart';
+
+class AmountInput extends StatelessWidget {
+  final TextEditingController controller;
+  final double? solUsdPrice;
+  final double? amount;
+  final double walletBalance;
+  final bool isBalanceLoading;
+  final double Function(int delaySeconds) calculateFee;
+  final int delaySeconds;
+  final String? errorText;
+  final BorderRadius radius;
+  final VoidCallback? onMaxPressed;
+
+  const AmountInput({
+    super.key,
+    required this.controller,
+    required this.solUsdPrice,
+    required this.amount,
+    required this.walletBalance,
+    required this.isBalanceLoading,
+    required this.calculateFee,
+    required this.delaySeconds,
+    required this.radius,
+    this.errorText,
+    this.onMaxPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Send amount', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+
+        TextField(
+          controller: controller,
+          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w600, color: Colors.black),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,6}'))],
+          decoration: InputDecoration(
+            fillColor: Colors.white.withOpacityCompat(0.6),
+            filled: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            prefix: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(width: 2),
+                SolanaLogo(size: 14, color: Colors.black),
+                const SizedBox(width: 8),
+              ],
+            ),
+            helperText: (solUsdPrice != null && (amount ?? 0) > 0)
+                ? '≈ ${((amount ?? 0) * (solUsdPrice ?? 0)).toStringAsFixed(2)} USD'
+                : null,
+            helperStyle: const TextStyle(fontSize: 12, color: Colors.black54),
+            border: OutlineInputBorder(
+              borderRadius: radius,
+              borderSide: const BorderSide(color: Color.fromARGB(255, 143, 143, 143), width: 1.4),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: radius,
+              borderSide: const BorderSide(color: Color.fromARGB(255, 143, 143, 143), width: 1.4),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: radius,
+              borderSide: const BorderSide(color: Color(0xFFB3261E), width: 1.4),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: radius,
+              borderSide: const BorderSide(color: Color(0xFFB3261E), width: 1.6),
+            ),
+            errorStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB3261E), height: 1.1),
+            suffixIcon: (!isBalanceLoading && walletBalance > 0)
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 14),
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
+                      ),
+                      onPressed:
+                          onMaxPressed ??
+                          () {
+                            final feeNow = calculateFee(delaySeconds);
+                            final max = walletBalance - feeNow;
+                            if (max > 0) controller.text = max.toStringAsFixed(6);
+                          },
+                      child: const Text(
+                        'MAX',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  )
+                : null,
+            suffixIconConstraints: const BoxConstraints(minWidth: 72),
+            errorText: errorText,
+          ),
+        ),
+
+        if (!isBalanceLoading && walletBalance > 0) ...[
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(6, 4, 6, 8),
+            child: Text(
+              'Balance: ${walletBalance.toStringAsFixed(6)} SOL',
+              style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}

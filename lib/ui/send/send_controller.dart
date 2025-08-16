@@ -59,9 +59,34 @@ class _SendControllerState extends State<SendController> {
   final _navKey = GlobalKey<NavigatorState>();
 
   @override
+  void initState() {
+    super.initState();
+    _initUserWallet();
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _initUserWallet() async {
+    try {
+      // If you sometimes need a fresh token, you could call SeedVaultService.getValidToken(context) here instead.
+      final pubkey = await SeedVaultService.getPublicKeyString(authToken: widget.authToken);
+      if (!mounted) return;
+      if (pubkey == null) {
+        skrLogger.e('Failed to retrieve public key.');
+        // Optionally show a toast/snackbar instead of throwing.
+        return;
+      }
+      _formModel.userWallet = pubkey;
+      skrLogger.i('User wallet set: $pubkey');
+      setState(() {}); // only if UI depends on it immediately
+    } catch (e, st) {
+      skrLogger.e('Error getting public key: $e\n$st');
+      // Optionally notify the user here.
+    }
   }
 
   void nextPage() {

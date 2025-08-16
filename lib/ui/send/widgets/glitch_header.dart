@@ -13,7 +13,11 @@ class GlitchHeader extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1C1C2D), Color(0xFF2E2B40), Color(0xFF444160)],
+          colors: [
+            Color.fromARGB(255, 30, 30, 30),
+            Color.fromARGB(255, 59, 59, 59),
+            Color.fromARGB(255, 61, 61, 61),
+          ],
         ),
       ),
       child: child,

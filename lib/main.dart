@@ -146,7 +146,7 @@ class SkramblApp extends StatelessWidget {
           style: TextButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
         ),
         textTheme: TextTheme(
-          displayLarge: GoogleFonts.bitter(),
+          displayLarge: GoogleFonts.spaceGrotesk(fontSize: 30),
           titleMedium: GoogleFonts.roboto(fontSize: 20),
           bodyMedium: GoogleFonts.spaceGrotesk(fontSize: 16),
           labelSmall: GoogleFonts.firaCode(fontSize: 12),

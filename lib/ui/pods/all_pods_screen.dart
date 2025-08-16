@@ -6,7 +6,7 @@ import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/ui/pods/pod_details_screen.dart';
-import 'package:skrambl_app/ui/shared/filter_chip.dart';
+import 'package:skrambl_app/ui/shared/chips.dart';
 import 'package:skrambl_app/ui/shared/pod_card.dart';
 
 enum PodsFilter { all, active, finalized, failed }

@@ -60,7 +60,7 @@ class SkrambledSummaryScreen extends StatelessWidget {
     final onBg = darkBg ? Colors.white : Colors.black;
     final onBgMuted = darkBg ? Colors.white70 : Colors.black54;
     final divider = darkBg ? Colors.white10 : const Color.fromARGB(43, 16, 16, 16);
-    final chipBg = darkBg ? Colors.white10 : const Color.fromARGB(255, 5, 137, 23);
+    final chipBg = darkBg ? Colors.white10 : const Color.fromARGB(255, 62, 62, 62);
 
     return Container(
       color: bg,
@@ -140,10 +140,10 @@ class SkrambledSummaryScreen extends StatelessWidget {
                     Column(
                       children: [
                         Text(
-                          delayText,
+                          delayText.toUpperCase(),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: chipBg,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                         const SizedBox(height: 4),

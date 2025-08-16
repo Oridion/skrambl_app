@@ -12,7 +12,10 @@ class SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
       width: double.infinity,
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(5)),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 236, 236, 236),
+        borderRadius: BorderRadius.circular(5),
+      ),
       child: Text(
         text.toUpperCase(),
         style: Theme.of(

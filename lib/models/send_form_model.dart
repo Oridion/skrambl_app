@@ -1,5 +1,6 @@
 class SendFormModel {
   // Shared across both standard and skrambled
+  String? userWallet;
   String? destinationWallet;
   double? amount; // in SOL
   String? usdAmount; // USD equivalent, if applicable
@@ -12,6 +13,7 @@ class SendFormModel {
   bool isSkrambled = false;
 
   void reset() {
+    userWallet = null;
     destinationWallet = null;
     amount = null;
     delaySeconds = 0;

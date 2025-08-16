@@ -75,24 +75,6 @@ class SendTypeSelectionScreen extends StatelessWidget {
                 },
               ),
               const Spacer(),
-
-              // Tiny footnote
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8)),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, size: 16, color: Colors.white38),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'SKRAMBLED does not guarantee anonymity; it increases friction in traceability.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),

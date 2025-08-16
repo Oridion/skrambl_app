@@ -1,7 +1,10 @@
+// lib/ui/send/screens/standard/standard_summary_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skrambl_app/models/send_form_model.dart';
 import 'package:skrambl_app/ui/send/screens/standard/standard_sending_scren.dart';
+import 'package:skrambl_app/ui/send/widgets/transfer_diagram.dart';
+import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 
 class StandardSummaryScreen extends StatefulWidget {
@@ -17,10 +20,7 @@ class StandardSummaryScreen extends StatefulWidget {
 class _StandardSummaryScreenState extends State<StandardSummaryScreen> {
   bool _pushing = false;
 
-  String _short(String s) {
-    if (s.length <= 14) return s;
-    return '${s.substring(0, 6)}…${s.substring(s.length - 6)}';
-  }
+  String _short(String s) => s.length <= 14 ? s : '${s.substring(0, 6)}…${s.substring(s.length - 6)}';
 
   String? _usd(double sol, double? price) {
     if (price == null) return null;
@@ -44,8 +44,10 @@ class _StandardSummaryScreenState extends State<StandardSummaryScreen> {
     final dest = widget.formModel.destinationWallet ?? '';
     final amount = widget.formModel.amount ?? 0.0;
     final usdStr = _usd(amount, widget.formModel.solUsdPrice);
-
     final canContinue = dest.isNotEmpty && amount > 0;
+
+    final onBg = Colors.black;
+    final onBgMuted = const Color(0xFF636363);
 
     return Scaffold(
       body: SafeArea(
@@ -54,10 +56,28 @@ class _StandardSummaryScreenState extends State<StandardSummaryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Review & Send', style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+              // Header
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Review and send',
+                      style: t.titleMedium?.copyWith(
+                        color: onBg,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text('Final check before you send', style: t.bodySmall?.copyWith(color: onBgMuted)),
+                  ],
+                ),
+              ),
               const SizedBox(height: 16),
 
-              // Amount
+              // Amount card
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -75,17 +95,24 @@ class _StandardSummaryScreenState extends State<StandardSummaryScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Amount', style: t.labelLarge?.copyWith(color: Colors.black54)),
+                          Text('Transfer Amount', style: t.labelLarge?.copyWith(color: Colors.black54)),
                           const SizedBox(height: 6),
                           Row(
                             children: [
+                              const SolanaLogo(size: 18, color: Colors.black),
+                              const SizedBox(width: 10),
                               Text(
-                                '${formatSol(amount)} SOL',
-                                style: t.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                                formatSol(amount),
+                                style: t.titleLarge?.copyWith(fontWeight: FontWeight.w900, fontSize: 30),
                               ),
+                              const SizedBox(width: 8),
                               if (usdStr != null) ...[
+                                Text('•', style: t.bodyMedium?.copyWith(color: Colors.black54, fontSize: 20)),
                                 const SizedBox(width: 8),
-                                Text('• $usdStr', style: t.bodyMedium?.copyWith(color: Colors.black54)),
+                                Text(
+                                  usdStr,
+                                  style: t.bodyMedium?.copyWith(color: Colors.black54, fontSize: 20),
+                                ),
                               ],
                             ],
                           ),
@@ -97,88 +124,47 @@ class _StandardSummaryScreenState extends State<StandardSummaryScreen> {
               ),
               const SizedBox(height: 14),
 
-              // Destination
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.black12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Destination', style: t.labelLarge?.copyWith(color: Colors.black54)),
-                          const SizedBox(height: 6),
-                          SelectableText(
-                            dest.isEmpty ? '—' : _short(dest),
-                            style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Copy address',
-                      icon: const Icon(Icons.copy, size: 18),
-                      onPressed: dest.isEmpty
-                          ? null
-                          : () async {
-                              await Clipboard.setData(ClipboardData(text: dest));
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Address copied'),
-                                  duration: Duration(milliseconds: 1200),
-                                ),
-                              );
-                            },
-                    ),
-                  ],
-                ),
-              ),
-              // Optional memo
-              // if ((widget.form.memo ?? '').isNotEmpty) ...[
-              //   const SizedBox(height: 14),
-              //   Container(
-              //     width: double.infinity,
-              //     padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-              //     decoration: BoxDecoration(
-              //       color: Colors.white,
-              //       border: Border.all(color: Colors.black12),
-              //       borderRadius: BorderRadius.circular(12),
-              //     ),
-              //     child: Column(
-              //       crossAxisAlignment: CrossAxisAlignment.start,
-              //       children: [
-              //         Text('Memo', style: t.labelLarge?.copyWith(color: Colors.black54)),
-              //         const SizedBox(height: 6),
-              //         Text(widget.form.memo!, style: t.bodyMedium),
-              //       ],
-              //     ),
-              //   ),
-              // ],
-
-              //const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: canContinue ? _goNext : null,
-                  icon: const Icon(Icons.vpn_key_rounded, size: 18),
-                  label: Text(_pushing ? 'Opening Seed Vault…' : 'Sign with Seed Vault'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              // Transfer diagram (source -> amount -> destination)
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 6, bottom: 12),
+                  child: TransferDiagram(
+                    fromLabel: 'Your wallet',
+                    fromAddress: _short(widget.formModel.userWallet ?? '—'),
+                    toLabel: 'Destination',
+                    toAddress: dest.isEmpty ? '—' : _short(dest),
+                    amountSol: amount,
+                    amountUsd: usdStr,
+                    onCopyFrom: (widget.formModel.userWallet ?? '').isEmpty
+                        ? null
+                        : () => Clipboard.setData(ClipboardData(text: widget.formModel.userWallet!)),
+                    onCopyTo: dest.isEmpty ? null : () => Clipboard.setData(ClipboardData(text: dest)),
                   ),
                 ),
               ),
+              const SizedBox(height: 6),
             ],
+          ),
+        ),
+      ),
+
+      // Fixed bottom CTA
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: canContinue ? _goNext : null,
+              label: Text(_pushing ? 'Opening Seed Vault…' : 'APPROVE'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
           ),
         ),
       ),
