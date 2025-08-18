@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:skrambl_app/utils/formatters.dart';
 import 'package:solana/solana.dart';
 
 String generatePasscode({int length = 6}) {
@@ -28,12 +29,21 @@ String modeLabel(int mode) {
   // 0=Instant, 1=Delay, extend if you add more modes
   switch (mode) {
     case 0:
-      return 'INSTANT';
+      return 'SKRAMBLED';
     case 1:
-      return 'DELAY';
+      return 'SKRAMBLED';
     case 5:
       return 'STANDARD';
     default:
       return 'Mode $mode';
+  }
+}
+
+String delayLabel(int delay) {
+  switch (delay) {
+    case 0:
+      return 'INSTANT';
+    default:
+      return formatDelay(delay);
   }
 }

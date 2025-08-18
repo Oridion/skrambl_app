@@ -61,3 +61,13 @@ DateTime? dateTimeOrNull(int? secondsEpoch) =>
 String signatureToBase58(Uint8List sigBytes) {
   return base58encode(sigBytes);
 }
+
+String formatDelay(int seconds) {
+  final minutes = seconds ~/ 60; // integer division
+  final leftover = seconds % 60; // remainder
+  if (minutes > 0) {
+    return leftover > 0 ? "$minutes min ${leftover}s" : "$minutes min";
+  } else {
+    return "${leftover}s";
+  }
+}

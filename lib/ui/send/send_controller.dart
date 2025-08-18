@@ -432,7 +432,7 @@ class _SendControllerState extends State<SendController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Send'),
+        //title: const Text('Send'),
         leading: BackButton(
           onPressed: () async {
             final didPop = await _navKey.currentState?.maybePop() ?? false;

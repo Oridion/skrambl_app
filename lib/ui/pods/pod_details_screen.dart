@@ -75,8 +75,9 @@ class PodDetailsScreen extends StatelessWidget {
                 child: PodDetailsTable(
                   rows: [
                     PodDetailRow('TYPE', modeLabel(pod.mode)),
-                    PodDetailRow('CREATOR', shortenPubkey(pod.creator)),
-                    PodDetailRow('DESTINATION', shortenPubkey(pod.destination), copyable: true),
+                    if (pod.mode != 5) PodDetailRow('DELAY', delayLabel(pod.delaySeconds)),
+                    // PodDetailRow('CREATOR', shortenPubkey(pod.creator)),
+                    // PodDetailRow('DESTINATION', shortenPubkey(pod.destination), copyable: true),
                     if (pod.podPda != null) PodDetailRow('PDA', shortenPubkey(pod.podPda!), copyable: true),
                   ],
                 ),

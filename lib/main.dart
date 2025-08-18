@@ -131,11 +131,17 @@ class SkramblApp extends StatelessWidget {
           surface: Colors.white,
           onSurface: Colors.black,
         ),
-        appBarTheme: const AppBarTheme(
+        appBarTheme: AppBarTheme(
+          centerTitle: true,
           backgroundColor: Colors.transparent,
           elevation: 0,
           foregroundColor: Colors.black,
           systemOverlayStyle: SystemUiOverlayStyle.dark, // 👈 Ensure this is here
+          titleTextStyle: GoogleFonts.spaceGrotesk(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(

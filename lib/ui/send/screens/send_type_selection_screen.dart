@@ -17,7 +17,7 @@ class SendTypeSelectionScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(25, 24, 25, 24),
+          padding: const EdgeInsets.fromLTRB(25, 10, 25, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
