@@ -179,12 +179,34 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _submittingAtMeta = const VerificationMeta(
+    'submittingAt',
+  );
+  @override
+  late final GeneratedColumn<int> submittingAt = GeneratedColumn<int>(
+    'submitting_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _submittedAtMeta = const VerificationMeta(
     'submittedAt',
   );
   @override
   late final GeneratedColumn<int> submittedAt = GeneratedColumn<int>(
     'submitted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _skrambledAtMeta = const VerificationMeta(
+    'skrambledAt',
+  );
+  @override
+  late final GeneratedColumn<int> skrambledAt = GeneratedColumn<int>(
+    'skrambled_at',
     aliasedName,
     true,
     type: DriftSqlType.int,
@@ -200,6 +222,18 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+  );
+  static const VerificationMeta _durationSecondsMeta = const VerificationMeta(
+    'durationSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> durationSeconds = GeneratedColumn<int>(
+    'duration_seconds',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
   );
   static const VerificationMeta _unsignedMessageB64Meta =
       const VerificationMeta('unsignedMessageB64');
@@ -241,8 +275,11 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
     launchSig,
     lastSig,
     draftedAt,
+    submittingAt,
     submittedAt,
+    skrambledAt,
     finalizedAt,
+    durationSeconds,
     unsignedMessageB64,
     lastError,
   ];
@@ -371,6 +408,15 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
     } else if (isInserting) {
       context.missing(_draftedAtMeta);
     }
+    if (data.containsKey('submitting_at')) {
+      context.handle(
+        _submittingAtMeta,
+        submittingAt.isAcceptableOrUnknown(
+          data['submitting_at']!,
+          _submittingAtMeta,
+        ),
+      );
+    }
     if (data.containsKey('submitted_at')) {
       context.handle(
         _submittedAtMeta,
@@ -380,12 +426,30 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
         ),
       );
     }
+    if (data.containsKey('skrambled_at')) {
+      context.handle(
+        _skrambledAtMeta,
+        skrambledAt.isAcceptableOrUnknown(
+          data['skrambled_at']!,
+          _skrambledAtMeta,
+        ),
+      );
+    }
     if (data.containsKey('finalized_at')) {
       context.handle(
         _finalizedAtMeta,
         finalizedAt.isAcceptableOrUnknown(
           data['finalized_at']!,
           _finalizedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('duration_seconds')) {
+      context.handle(
+        _durationSecondsMeta,
+        durationSeconds.isAcceptableOrUnknown(
+          data['duration_seconds']!,
+          _durationSecondsMeta,
         ),
       );
     }
@@ -477,14 +541,26 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
         DriftSqlType.int,
         data['${effectivePrefix}drafted_at'],
       )!,
+      submittingAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}submitting_at'],
+      ),
       submittedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}submitted_at'],
+      ),
+      skrambledAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}skrambled_at'],
       ),
       finalizedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}finalized_at'],
       ),
+      durationSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_seconds'],
+      )!,
       unsignedMessageB64: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}unsigned_message_b64'],
@@ -519,8 +595,11 @@ class Pod extends DataClass implements Insertable<Pod> {
   final String? launchSig;
   final String? lastSig;
   final int draftedAt;
+  final int? submittingAt;
   final int? submittedAt;
+  final int? skrambledAt;
   final int? finalizedAt;
+  final int durationSeconds;
   final String? unsignedMessageB64;
   final String? lastError;
   const Pod({
@@ -540,8 +619,11 @@ class Pod extends DataClass implements Insertable<Pod> {
     this.launchSig,
     this.lastSig,
     required this.draftedAt,
+    this.submittingAt,
     this.submittedAt,
+    this.skrambledAt,
     this.finalizedAt,
+    required this.durationSeconds,
     this.unsignedMessageB64,
     this.lastError,
   });
@@ -578,12 +660,19 @@ class Pod extends DataClass implements Insertable<Pod> {
       map['last_sig'] = Variable<String>(lastSig);
     }
     map['drafted_at'] = Variable<int>(draftedAt);
+    if (!nullToAbsent || submittingAt != null) {
+      map['submitting_at'] = Variable<int>(submittingAt);
+    }
     if (!nullToAbsent || submittedAt != null) {
       map['submitted_at'] = Variable<int>(submittedAt);
+    }
+    if (!nullToAbsent || skrambledAt != null) {
+      map['skrambled_at'] = Variable<int>(skrambledAt);
     }
     if (!nullToAbsent || finalizedAt != null) {
       map['finalized_at'] = Variable<int>(finalizedAt);
     }
+    map['duration_seconds'] = Variable<int>(durationSeconds);
     if (!nullToAbsent || unsignedMessageB64 != null) {
       map['unsigned_message_b64'] = Variable<String>(unsignedMessageB64);
     }
@@ -625,12 +714,19 @@ class Pod extends DataClass implements Insertable<Pod> {
           ? const Value.absent()
           : Value(lastSig),
       draftedAt: Value(draftedAt),
+      submittingAt: submittingAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(submittingAt),
       submittedAt: submittedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(submittedAt),
+      skrambledAt: skrambledAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(skrambledAt),
       finalizedAt: finalizedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(finalizedAt),
+      durationSeconds: Value(durationSeconds),
       unsignedMessageB64: unsignedMessageB64 == null && nullToAbsent
           ? const Value.absent()
           : Value(unsignedMessageB64),
@@ -662,8 +758,11 @@ class Pod extends DataClass implements Insertable<Pod> {
       launchSig: serializer.fromJson<String?>(json['launchSig']),
       lastSig: serializer.fromJson<String?>(json['lastSig']),
       draftedAt: serializer.fromJson<int>(json['draftedAt']),
+      submittingAt: serializer.fromJson<int?>(json['submittingAt']),
       submittedAt: serializer.fromJson<int?>(json['submittedAt']),
+      skrambledAt: serializer.fromJson<int?>(json['skrambledAt']),
       finalizedAt: serializer.fromJson<int?>(json['finalizedAt']),
+      durationSeconds: serializer.fromJson<int>(json['durationSeconds']),
       unsignedMessageB64: serializer.fromJson<String?>(
         json['unsignedMessageB64'],
       ),
@@ -690,8 +789,11 @@ class Pod extends DataClass implements Insertable<Pod> {
       'launchSig': serializer.toJson<String?>(launchSig),
       'lastSig': serializer.toJson<String?>(lastSig),
       'draftedAt': serializer.toJson<int>(draftedAt),
+      'submittingAt': serializer.toJson<int?>(submittingAt),
       'submittedAt': serializer.toJson<int?>(submittedAt),
+      'skrambledAt': serializer.toJson<int?>(skrambledAt),
       'finalizedAt': serializer.toJson<int?>(finalizedAt),
+      'durationSeconds': serializer.toJson<int>(durationSeconds),
       'unsignedMessageB64': serializer.toJson<String?>(unsignedMessageB64),
       'lastError': serializer.toJson<String?>(lastError),
     };
@@ -714,8 +816,11 @@ class Pod extends DataClass implements Insertable<Pod> {
     Value<String?> launchSig = const Value.absent(),
     Value<String?> lastSig = const Value.absent(),
     int? draftedAt,
+    Value<int?> submittingAt = const Value.absent(),
     Value<int?> submittedAt = const Value.absent(),
+    Value<int?> skrambledAt = const Value.absent(),
     Value<int?> finalizedAt = const Value.absent(),
+    int? durationSeconds,
     Value<String?> unsignedMessageB64 = const Value.absent(),
     Value<String?> lastError = const Value.absent(),
   }) => Pod(
@@ -735,8 +840,11 @@ class Pod extends DataClass implements Insertable<Pod> {
     launchSig: launchSig.present ? launchSig.value : this.launchSig,
     lastSig: lastSig.present ? lastSig.value : this.lastSig,
     draftedAt: draftedAt ?? this.draftedAt,
+    submittingAt: submittingAt.present ? submittingAt.value : this.submittingAt,
     submittedAt: submittedAt.present ? submittedAt.value : this.submittedAt,
+    skrambledAt: skrambledAt.present ? skrambledAt.value : this.skrambledAt,
     finalizedAt: finalizedAt.present ? finalizedAt.value : this.finalizedAt,
+    durationSeconds: durationSeconds ?? this.durationSeconds,
     unsignedMessageB64: unsignedMessageB64.present
         ? unsignedMessageB64.value
         : this.unsignedMessageB64,
@@ -766,12 +874,21 @@ class Pod extends DataClass implements Insertable<Pod> {
       launchSig: data.launchSig.present ? data.launchSig.value : this.launchSig,
       lastSig: data.lastSig.present ? data.lastSig.value : this.lastSig,
       draftedAt: data.draftedAt.present ? data.draftedAt.value : this.draftedAt,
+      submittingAt: data.submittingAt.present
+          ? data.submittingAt.value
+          : this.submittingAt,
       submittedAt: data.submittedAt.present
           ? data.submittedAt.value
           : this.submittedAt,
+      skrambledAt: data.skrambledAt.present
+          ? data.skrambledAt.value
+          : this.skrambledAt,
       finalizedAt: data.finalizedAt.present
           ? data.finalizedAt.value
           : this.finalizedAt,
+      durationSeconds: data.durationSeconds.present
+          ? data.durationSeconds.value
+          : this.durationSeconds,
       unsignedMessageB64: data.unsignedMessageB64.present
           ? data.unsignedMessageB64.value
           : this.unsignedMessageB64,
@@ -798,8 +915,11 @@ class Pod extends DataClass implements Insertable<Pod> {
           ..write('launchSig: $launchSig, ')
           ..write('lastSig: $lastSig, ')
           ..write('draftedAt: $draftedAt, ')
+          ..write('submittingAt: $submittingAt, ')
           ..write('submittedAt: $submittedAt, ')
+          ..write('skrambledAt: $skrambledAt, ')
           ..write('finalizedAt: $finalizedAt, ')
+          ..write('durationSeconds: $durationSeconds, ')
           ..write('unsignedMessageB64: $unsignedMessageB64, ')
           ..write('lastError: $lastError')
           ..write(')'))
@@ -807,7 +927,7 @@ class Pod extends DataClass implements Insertable<Pod> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     podPda,
     creator,
@@ -824,11 +944,14 @@ class Pod extends DataClass implements Insertable<Pod> {
     launchSig,
     lastSig,
     draftedAt,
+    submittingAt,
     submittedAt,
+    skrambledAt,
     finalizedAt,
+    durationSeconds,
     unsignedMessageB64,
     lastError,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -849,8 +972,11 @@ class Pod extends DataClass implements Insertable<Pod> {
           other.launchSig == this.launchSig &&
           other.lastSig == this.lastSig &&
           other.draftedAt == this.draftedAt &&
+          other.submittingAt == this.submittingAt &&
           other.submittedAt == this.submittedAt &&
+          other.skrambledAt == this.skrambledAt &&
           other.finalizedAt == this.finalizedAt &&
+          other.durationSeconds == this.durationSeconds &&
           other.unsignedMessageB64 == this.unsignedMessageB64 &&
           other.lastError == this.lastError);
 }
@@ -872,8 +998,11 @@ class PodsCompanion extends UpdateCompanion<Pod> {
   final Value<String?> launchSig;
   final Value<String?> lastSig;
   final Value<int> draftedAt;
+  final Value<int?> submittingAt;
   final Value<int?> submittedAt;
+  final Value<int?> skrambledAt;
   final Value<int?> finalizedAt;
+  final Value<int> durationSeconds;
   final Value<String?> unsignedMessageB64;
   final Value<String?> lastError;
   final Value<int> rowid;
@@ -894,8 +1023,11 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     this.launchSig = const Value.absent(),
     this.lastSig = const Value.absent(),
     this.draftedAt = const Value.absent(),
+    this.submittingAt = const Value.absent(),
     this.submittedAt = const Value.absent(),
+    this.skrambledAt = const Value.absent(),
     this.finalizedAt = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
     this.unsignedMessageB64 = const Value.absent(),
     this.lastError = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -917,8 +1049,11 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     this.launchSig = const Value.absent(),
     this.lastSig = const Value.absent(),
     required int draftedAt,
+    this.submittingAt = const Value.absent(),
     this.submittedAt = const Value.absent(),
+    this.skrambledAt = const Value.absent(),
     this.finalizedAt = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
     this.unsignedMessageB64 = const Value.absent(),
     this.lastError = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -946,8 +1081,11 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     Expression<String>? launchSig,
     Expression<String>? lastSig,
     Expression<int>? draftedAt,
+    Expression<int>? submittingAt,
     Expression<int>? submittedAt,
+    Expression<int>? skrambledAt,
     Expression<int>? finalizedAt,
+    Expression<int>? durationSeconds,
     Expression<String>? unsignedMessageB64,
     Expression<String>? lastError,
     Expression<int>? rowid,
@@ -969,8 +1107,11 @@ class PodsCompanion extends UpdateCompanion<Pod> {
       if (launchSig != null) 'launch_sig': launchSig,
       if (lastSig != null) 'last_sig': lastSig,
       if (draftedAt != null) 'drafted_at': draftedAt,
+      if (submittingAt != null) 'submitting_at': submittingAt,
       if (submittedAt != null) 'submitted_at': submittedAt,
+      if (skrambledAt != null) 'skrambled_at': skrambledAt,
       if (finalizedAt != null) 'finalized_at': finalizedAt,
+      if (durationSeconds != null) 'duration_seconds': durationSeconds,
       if (unsignedMessageB64 != null)
         'unsigned_message_b64': unsignedMessageB64,
       if (lastError != null) 'last_error': lastError,
@@ -995,8 +1136,11 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     Value<String?>? launchSig,
     Value<String?>? lastSig,
     Value<int>? draftedAt,
+    Value<int?>? submittingAt,
     Value<int?>? submittedAt,
+    Value<int?>? skrambledAt,
     Value<int?>? finalizedAt,
+    Value<int>? durationSeconds,
     Value<String?>? unsignedMessageB64,
     Value<String?>? lastError,
     Value<int>? rowid,
@@ -1018,8 +1162,11 @@ class PodsCompanion extends UpdateCompanion<Pod> {
       launchSig: launchSig ?? this.launchSig,
       lastSig: lastSig ?? this.lastSig,
       draftedAt: draftedAt ?? this.draftedAt,
+      submittingAt: submittingAt ?? this.submittingAt,
       submittedAt: submittedAt ?? this.submittedAt,
+      skrambledAt: skrambledAt ?? this.skrambledAt,
       finalizedAt: finalizedAt ?? this.finalizedAt,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
       unsignedMessageB64: unsignedMessageB64 ?? this.unsignedMessageB64,
       lastError: lastError ?? this.lastError,
       rowid: rowid ?? this.rowid,
@@ -1077,11 +1224,20 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     if (draftedAt.present) {
       map['drafted_at'] = Variable<int>(draftedAt.value);
     }
+    if (submittingAt.present) {
+      map['submitting_at'] = Variable<int>(submittingAt.value);
+    }
     if (submittedAt.present) {
       map['submitted_at'] = Variable<int>(submittedAt.value);
     }
+    if (skrambledAt.present) {
+      map['skrambled_at'] = Variable<int>(skrambledAt.value);
+    }
     if (finalizedAt.present) {
       map['finalized_at'] = Variable<int>(finalizedAt.value);
+    }
+    if (durationSeconds.present) {
+      map['duration_seconds'] = Variable<int>(durationSeconds.value);
     }
     if (unsignedMessageB64.present) {
       map['unsigned_message_b64'] = Variable<String>(unsignedMessageB64.value);
@@ -1114,8 +1270,11 @@ class PodsCompanion extends UpdateCompanion<Pod> {
           ..write('launchSig: $launchSig, ')
           ..write('lastSig: $lastSig, ')
           ..write('draftedAt: $draftedAt, ')
+          ..write('submittingAt: $submittingAt, ')
           ..write('submittedAt: $submittedAt, ')
+          ..write('skrambledAt: $skrambledAt, ')
           ..write('finalizedAt: $finalizedAt, ')
+          ..write('durationSeconds: $durationSeconds, ')
           ..write('unsignedMessageB64: $unsignedMessageB64, ')
           ..write('lastError: $lastError, ')
           ..write('rowid: $rowid')
@@ -1153,8 +1312,11 @@ typedef $$PodsTableCreateCompanionBuilder =
       Value<String?> launchSig,
       Value<String?> lastSig,
       required int draftedAt,
+      Value<int?> submittingAt,
       Value<int?> submittedAt,
+      Value<int?> skrambledAt,
       Value<int?> finalizedAt,
+      Value<int> durationSeconds,
       Value<String?> unsignedMessageB64,
       Value<String?> lastError,
       Value<int> rowid,
@@ -1177,8 +1339,11 @@ typedef $$PodsTableUpdateCompanionBuilder =
       Value<String?> launchSig,
       Value<String?> lastSig,
       Value<int> draftedAt,
+      Value<int?> submittingAt,
       Value<int?> submittedAt,
+      Value<int?> skrambledAt,
       Value<int?> finalizedAt,
+      Value<int> durationSeconds,
       Value<String?> unsignedMessageB64,
       Value<String?> lastError,
       Value<int> rowid,
@@ -1272,13 +1437,28 @@ class $$PodsTableFilterComposer extends Composer<_$LocalDatabase, $PodsTable> {
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get submittingAt => $composableBuilder(
+    column: $table.submittingAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get submittedAt => $composableBuilder(
     column: $table.submittedAt,
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get skrambledAt => $composableBuilder(
+    column: $table.skrambledAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get finalizedAt => $composableBuilder(
     column: $table.finalizedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1382,13 +1562,28 @@ class $$PodsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get submittingAt => $composableBuilder(
+    column: $table.submittingAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get submittedAt => $composableBuilder(
     column: $table.submittedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get skrambledAt => $composableBuilder(
+    column: $table.skrambledAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get finalizedAt => $composableBuilder(
     column: $table.finalizedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -1466,13 +1661,28 @@ class $$PodsTableAnnotationComposer
   GeneratedColumn<int> get draftedAt =>
       $composableBuilder(column: $table.draftedAt, builder: (column) => column);
 
+  GeneratedColumn<int> get submittingAt => $composableBuilder(
+    column: $table.submittingAt,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get submittedAt => $composableBuilder(
     column: $table.submittedAt,
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get skrambledAt => $composableBuilder(
+    column: $table.skrambledAt,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get finalizedAt => $composableBuilder(
     column: $table.finalizedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
     builder: (column) => column,
   );
 
@@ -1529,8 +1739,11 @@ class $$PodsTableTableManager
                 Value<String?> launchSig = const Value.absent(),
                 Value<String?> lastSig = const Value.absent(),
                 Value<int> draftedAt = const Value.absent(),
+                Value<int?> submittingAt = const Value.absent(),
                 Value<int?> submittedAt = const Value.absent(),
+                Value<int?> skrambledAt = const Value.absent(),
                 Value<int?> finalizedAt = const Value.absent(),
+                Value<int> durationSeconds = const Value.absent(),
                 Value<String?> unsignedMessageB64 = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -1551,8 +1764,11 @@ class $$PodsTableTableManager
                 launchSig: launchSig,
                 lastSig: lastSig,
                 draftedAt: draftedAt,
+                submittingAt: submittingAt,
                 submittedAt: submittedAt,
+                skrambledAt: skrambledAt,
                 finalizedAt: finalizedAt,
+                durationSeconds: durationSeconds,
                 unsignedMessageB64: unsignedMessageB64,
                 lastError: lastError,
                 rowid: rowid,
@@ -1575,8 +1791,11 @@ class $$PodsTableTableManager
                 Value<String?> launchSig = const Value.absent(),
                 Value<String?> lastSig = const Value.absent(),
                 required int draftedAt,
+                Value<int?> submittingAt = const Value.absent(),
                 Value<int?> submittedAt = const Value.absent(),
+                Value<int?> skrambledAt = const Value.absent(),
                 Value<int?> finalizedAt = const Value.absent(),
+                Value<int> durationSeconds = const Value.absent(),
                 Value<String?> unsignedMessageB64 = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -1597,8 +1816,11 @@ class $$PodsTableTableManager
                 launchSig: launchSig,
                 lastSig: lastSig,
                 draftedAt: draftedAt,
+                submittingAt: submittingAt,
                 submittedAt: submittedAt,
+                skrambledAt: skrambledAt,
                 finalizedAt: finalizedAt,
+                durationSeconds: durationSeconds,
                 unsignedMessageB64: unsignedMessageB64,
                 lastError: lastError,
                 rowid: rowid,

@@ -10,7 +10,10 @@ class PodDetailsTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [for (final r in rows) r]);
+    return Padding(
+      padding: EdgeInsetsGeometry.fromLTRB(0, 16, 0, 0),
+      child: Column(children: [for (final r in rows) r]),
+    );
   }
 }
 
@@ -27,9 +30,6 @@ class PodDetailRow extends StatelessWidget {
     final t = Theme.of(context).textTheme;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
-      // decoration: const BoxDecoration(
-      //   border: Border(bottom: BorderSide(color: Color(0x11000000))),
-      // ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -48,8 +48,10 @@ class PodDetailRow extends StatelessWidget {
           ),
           if (copyable)
             IconButton(
-              icon: const Icon(Icons.copy, size: 18),
+              icon: const Icon(Icons.copy, size: 16),
               tooltip: 'Copy $title',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
               onPressed: () async {
                 await Clipboard.setData(ClipboardData(text: value));
                 if (context.mounted) {

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:skrambl_app/data/local_database.dart';
+import 'package:skrambl_app/ui/pods/widgets/from_to_bar.dart';
 import 'package:skrambl_app/ui/shared/relative_time.dart'; // for withOpacityCompat if you use it elsewhere
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/ui/shared/solana_logo.dart';
-import 'package:skrambl_app/utils/colors.dart'; // for PodStatus
+import 'package:skrambl_app/utils/colors.dart';
+import 'package:skrambl_app/utils/formatters.dart'; // for PodStatus
 
 /// Professional header for the Pod details page.
 /// - Left: Big SOL amount with subtle "SOL" unit
@@ -12,6 +15,7 @@ class PodHeaderCard extends StatelessWidget {
   final Color chipColor;
   final DateTime? draftedAt;
   final int lamports; // raw lamports
+  final Pod pod;
 
   const PodHeaderCard({
     super.key,
@@ -19,46 +23,67 @@ class PodHeaderCard extends StatelessWidget {
     required this.chipColor,
     required this.draftedAt,
     required this.lamports,
+    required this.pod,
   });
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 255, 255, 255),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color.fromARGB(255, 223, 223, 223), width: 1),
-      ),
-      padding: const EdgeInsets.fromLTRB(22, 16, 22, 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Amount (prominent)
-          Expanded(
-            child: _AmountBlock(solText: _solString(lamports), textTheme: t),
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Card
+        Container(
+          margin: const EdgeInsets.only(top: 14), // room for the overlapping pill
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFDFDFDF), width: 1),
           ),
-
-          const SizedBox(width: 12),
-
-          // Status + time (compact, right-aligned)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.center,
+          padding: const EdgeInsets.fromLTRB(22, 16, 22, 16),
+          child: Column(
             children: [
-              _StatusPill(text: status.name.toUpperCase(), color: chipColor),
-              if (draftedAt != null) ...[
-                const SizedBox(height: 6),
-                // live “time since created”
-                RelativeTimeListen(
-                  time: draftedAt!,
-                  style: t.bodySmall?.copyWith(color: Colors.black),
-                ),
-              ],
+              const SizedBox(height: 6), // small spacer under the pill
+              FromToBar(from: pod.creator, to: pod.destination, shorten: shortenPubkey),
+              const SizedBox(height: 5),
+              const Divider(color: Colors.black38),
+              const SizedBox(height: 5),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: _AmountBlock(solText: _solString(lamports), textTheme: t),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (draftedAt != null) ...[
+                        const SizedBox(height: 6),
+                        RelativeTimeListen(
+                          time: draftedAt!,
+                          style: t.bodyMedium?.copyWith(color: Colors.black),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
+        ),
+
+        // Overlapping pill
+        Align(
+          alignment: Alignment.topCenter,
+          child: Transform.translate(
+            offset: const Offset(0, 26),
+            child: _StatusPill(text: status.name.toUpperCase(), color: chipColor),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -80,16 +105,17 @@ class _AmountBlock extends StatelessWidget {
 
       children: [
         Transform.translate(
-          offset: const Offset(0, -7), // x, y — move up 2px
-          child: SolanaLogo(size: 14, useDark: true),
+          offset: const Offset(0, -5), // x, y — move up 2px
+          child: SolanaLogo(size: 11, useDark: true),
         ),
-        SizedBox(width: 7),
+        SizedBox(width: 5),
         Text(
           amount,
           style: textTheme.displaySmall?.copyWith(
+            fontSize: 26,
             fontWeight: FontWeight.w900,
-            letterSpacing: 0.0,
-            height: 1.0,
+            letterSpacing: 0,
+            height: 1,
             color: Colors.black,
             // Use monospace digits to avoid jitter if your font supports it
             fontFeatures: const [FontFeature.tabularFigures()],
@@ -111,16 +137,16 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacityCompat(0.10),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withOpacityCompat(0.35)),
+        color: color.withOpacityCompat(0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacityCompat(0.45)),
       ),
       child: Text(
         text,
         style: const TextStyle(
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.5,
         ).copyWith(color: color),

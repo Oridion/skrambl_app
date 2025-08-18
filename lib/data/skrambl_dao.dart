@@ -90,6 +90,12 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
     );
   }
 
+  // Set submitting time to calculate duration
+  Future<void> markSubmitting({required String id}) async {
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    await (update(pods)..where((t) => t.id.equals(id))).write(PodsCompanion(submittingAt: Value(now)));
+  }
+
   // Once pod has on-chain then we update and mark the pod as scrambling
   Future<void> markSubmitted({required String id, required String signature}) async {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -113,8 +119,13 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
 
   // Mark pod as delivering. Hops have completed and now we are delivering to destination
   Future<void> markDelivering({required String id}) async {
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     await (update(pods)..where((t) => t.id.equals(id))).write(
-      PodsCompanion(status: Value(PodStatus.delivering.index), statusMsg: const Value('Delivering')),
+      PodsCompanion(
+        status: Value(PodStatus.delivering.index),
+        statusMsg: const Value('Delivering'),
+        skrambledAt: Value(now),
+      ),
     );
   }
 
@@ -122,15 +133,32 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
   // This also removes the escape code and unsigned message.
   Future<void> markFinalized({required String id}) async {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final existing = await (select(pods)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+    int durationSec = 0; // default
+    final submitTime = existing?.submittingAt;
+    if (submitTime != null) {
+      final d = now - submitTime;
+      durationSec = d >= 0 ? d : 0;
+    }
+
     await (update(pods)..where((t) => t.id.equals(id))).write(
       PodsCompanion(
         finalizedAt: Value(now),
         status: Value(PodStatus.finalized.index),
         statusMsg: const Value('Finalized'),
-        escapeCode: Value(null),
+        escapeCode: const Value(null),
         unsignedMessageB64: const Value(null),
+        durationSeconds: Value(durationSec), // always non-null now
       ),
     );
+  }
+
+  // Udpate skrambled delivery duration
+  Future<void> updateDuration({required String id, required int durationSeconds}) async {
+    await (update(
+      pods,
+    )..where((t) => t.id.equals(id))).write(PodsCompanion(durationSeconds: Value(durationSeconds)));
   }
 
   // Mark pod as failed. This is a critical error that prevents delivery.

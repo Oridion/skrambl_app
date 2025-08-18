@@ -38,7 +38,7 @@ class PodDetailsScreen extends StatelessWidget {
           final status = PodStatus.values[pod.status];
           final chipColor = statusColor(status);
 
-          final draftedAt = dateTimeOrNull(pod.draftedAt);
+          final draftedAt = dateTimeOrNull(pod.draftedAt * 1000);
           final submittedAt = dateTimeOrNull(pod.submittedAt);
           final finalizedAt = dateTimeOrNull(pod.finalizedAt);
 
@@ -47,10 +47,11 @@ class PodDetailsScreen extends StatelessWidget {
             submittedAt: submittedAt,
             finalizedAt: finalizedAt,
             status: status,
+            pod: pod,
           );
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             children: [
               // ===== HEADER CARD =====
               PodHeaderCard(
@@ -58,39 +59,27 @@ class PodDetailsScreen extends StatelessWidget {
                 chipColor: chipColor,
                 draftedAt: draftedAt,
                 lamports: pod.lamports,
+                pod: pod,
               ),
               const SizedBox(height: 16),
+
+              // ===== TIMELINE =====
+              VerticalTimeline(items: timeline, pod: pod),
+              // SectionWrapper(
+              //   label: 'TIMELINE',
+              //   child: VerticalTimeline(items: timeline, pod: pod),
+              // ),
 
               // ===== DETAILS =====
               SectionWrapper(
                 label: 'DETAILS',
                 child: PodDetailsTable(
                   rows: [
-                    PodDetailRow(
-                      'Destination',
-                      shortenPubkey(pod.destination),
-                      copyable: true,
-                      monospace: true,
-                    ),
-                    PodDetailRow('Delay', modeLabel(pod.mode)),
+                    PodDetailRow('TYPE', modeLabel(pod.mode)),
+                    PodDetailRow('CREATOR', shortenPubkey(pod.creator)),
+                    PodDetailRow('DESTINATION', shortenPubkey(pod.destination), copyable: true),
+                    PodDetailRow('PDA', shortenPubkey(pod.podPda!), copyable: true),
                   ],
-                ),
-              ),
-
-              // ===== TIMELINE =====
-              SectionWrapper(
-                label: 'JOUNEY',
-                child: VerticalTimeline(items: timeline),
-              ),
-
-              // ===== IDENTIFIERS =====
-              SectionWrapper(
-                label: 'META',
-                child: PodIdentityGrid(
-                  localId: pod.id,
-                  podId: pod.podId, // u16 (int)
-                  pda: pod.podPda ?? '',
-                  creator: pod.creator, // creating wallet (could be primary or burner)
                 ),
               ),
 

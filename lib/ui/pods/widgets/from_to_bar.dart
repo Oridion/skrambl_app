@@ -1,0 +1,93 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:skrambl_app/utils/colors.dart';
+
+class FromToBar extends StatelessWidget {
+  final String from;
+  final String to;
+  final String Function(String) shorten; // e.g. shortenPubkey
+  final EdgeInsets padding;
+
+  const FromToBar({
+    super.key,
+    required this.from,
+    required this.to,
+    required this.shorten,
+    this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final valueStyle = const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700);
+
+    Widget copyChip(String text) => InkWell(
+      onTap: () async {
+        await Clipboard.setData(ClipboardData(text: text));
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Address copied'), duration: Duration(milliseconds: 900)),
+        );
+      },
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.all(6), // small tap target without growing row height
+        child: const Icon(Icons.copy_rounded, size: 14, color: Colors.black54),
+      ),
+    );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // FROM
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('FROM', style: TextStyle(fontSize: 11, color: Colors.black54, letterSpacing: .6)),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(shorten(from), style: valueStyle, overflow: TextOverflow.ellipsis),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // ARROW
+        Transform.translate(
+          offset: const Offset(0, 10), // x = horizontal, y = vertical
+          child: Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.black.withOpacityCompat(0.65)),
+        ),
+
+        // TO
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text('TO', style: TextStyle(fontSize: 11, color: Colors.black54, letterSpacing: .6)),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  copyChip(to),
+                  const SizedBox(width: 2),
+                  Flexible(
+                    child: Text(
+                      shorten(to),
+                      style: valueStyle,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}

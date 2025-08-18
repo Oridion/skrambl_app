@@ -31,6 +31,8 @@ String modeLabel(int mode) {
       return 'Instant';
     case 1:
       return 'Delay';
+    case 5:
+      return 'Standard';
     default:
       return 'Mode $mode';
   }

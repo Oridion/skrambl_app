@@ -22,16 +22,21 @@ class RelativeTimeListen extends StatelessWidget {
     if (diff.inMinutes < 60) {
       displayText = timeago.format(time, locale: locale);
     } else {
-      final formatter = DateFormat('MMM d, yyyy • h:mm a');
+      final formatter = DateFormat('MMM d, yyyy');
       displayText = formatter.format(time);
     }
 
     return Row(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Icon(Icons.schedule, size: 11, color: Theme.of(context).textTheme.bodySmall?.color),
         const SizedBox(width: 4),
-        Text(displayText.toUpperCase(), style: Theme.of(context).textTheme.bodySmall),
+        Text(
+          displayText.toUpperCase(),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13),
+        ),
       ],
     );
   }

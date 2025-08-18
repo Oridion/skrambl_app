@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/ui/pods/widgets/dot.dart';
+import 'package:skrambl_app/ui/pods/widgets/from_to_bar.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 
@@ -27,13 +29,18 @@ class TimelineItem {
 // Timeline container
 class VerticalTimeline extends StatelessWidget {
   final List<TimelineItem> items;
-  const VerticalTimeline({super.key, required this.items});
+  final Pod? pod;
+
+  const VerticalTimeline({super.key, required this.items, this.pod});
 
   @override
   Widget build(BuildContext context) {
+    if (pod == null) return const SizedBox.shrink();
+
     return Padding(
-      padding: EdgeInsetsGeometry.fromLTRB(12, 20, 12, 20),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (int i = 0; i < items.length; i++)
             TimelineTile(item: items[i], isFirst: i == 0, isLast: i == items.length - 1),
@@ -57,29 +64,47 @@ class TimelineTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Left rail
+          // Left Column - timeline dots and lines
           Column(
             children: [
-              SizedBox(height: isFirst ? 6 : 0),
-              Dot(color: item.color, filled: item.completed),
+              SizedBox(height: isFirst ? 0 : 0),
+              Dot(color: item.color, filled: false),
               Expanded(
                 child: Container(
-                  width: 2,
-                  margin: EdgeInsets.only(top: isFirst ? 6 : 0, bottom: isLast ? 6 : 0),
+                  width: 3,
+                  margin: EdgeInsets.only(top: isFirst ? 0 : 0, bottom: isLast ? 6 : 0),
                   decoration: BoxDecoration(color: isLast ? Colors.transparent : Colors.black12),
                 ),
               ),
             ],
           ),
-          const SizedBox(width: 12),
 
-          // Content
+          const SizedBox(width: 16),
+
+          // Content - (2nd column row)
           Expanded(
             child: Container(
-              padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
+              margin: EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.grey.withOpacityCompat(0.5), width: 1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (item.time != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 0),
+                      child: Text(
+                        formatTime(item.time!.millisecondsSinceEpoch),
+                        style: t.bodyMedium?.copyWith(fontSize: 14),
+                      ),
+                    ),
+
                   Row(
                     children: [
                       Text(item.title, style: t.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
@@ -95,16 +120,16 @@ class TimelineTile extends StatelessWidget {
                         ),
                     ],
                   ),
+
                   if (item.subtitle != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Text(item.subtitle!, style: t.bodySmall?.copyWith(color: Colors.black54)),
+                      child: Text(
+                        item.subtitle!,
+                        style: t.bodyMedium?.copyWith(color: Colors.black54, fontSize: 14),
+                      ),
                     ),
-                  if (item.time != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(formatFullDateTime(item.time!.millisecondsSinceEpoch), style: t.bodySmall),
-                    ),
+
                   if (item.trailing != null)
                     Padding(padding: const EdgeInsets.only(top: 8), child: item.trailing!),
                 ],

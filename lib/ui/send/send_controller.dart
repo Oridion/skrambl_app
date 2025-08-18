@@ -200,7 +200,7 @@ class _SendControllerState extends State<SendController> {
       userWallet: userWallet.toString(),
       delay: _formModel.delaySeconds,
       passcode: passcode,
-      showMemo: 1,
+      showMemo: 0,
       returnType: "message",
     );
     //skrLogger.i("📦 Payload: $payload");

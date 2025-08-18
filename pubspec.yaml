@@ -51,6 +51,7 @@ dependencies:
   timeago: ^3.7.1
   url_launcher: ^6.3.2
   flutter_svg: ^2.2.0
+  timeline_tile: ^2.0.0
 
 
   # The following adds the Cupertino Icons font to your application.

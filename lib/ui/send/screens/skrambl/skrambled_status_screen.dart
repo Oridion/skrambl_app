@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:skrambl_app/data/local_database.dart';
+import 'package:skrambl_app/utils/duration.dart';
 import 'package:skrambl_app/utils/solana.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
@@ -62,6 +64,9 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
   int _elapsedSeconds = 0;
   Timer? _timer;
   Timer? _podWatcher;
+  int? _durationSec;
+  late Pod _latestPod;
+
   //bool _seenOnChain = false; // remember if we ever saw the account
   late final StreamSubscription _podRowSub;
   late final AnimationController _fadeController;
@@ -95,6 +100,7 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
       final dao = context.read<PodDao>();
       _podRowSub = dao.watchById(widget.localId).listen((pod) async {
         if (pod == null) return;
+        _latestPod = pod;
 
         // Delivering: when your backend flips the process or when status changes
         if (pod.status == PodStatus.delivering.index) {
@@ -105,10 +111,13 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
 
         // Completed
         if (pod.status == PodStatus.finalized.index) {
+          _timer?.cancel();
           if (!_isComplete) {
+            final dur = pod.durationSeconds; // non-null with your current schema
+
             setState(() {
+              _durationSec = dur;
               _isComplete = true;
-              _timer?.cancel();
             });
             _fadeController.forward();
           }
@@ -224,6 +233,9 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
     final dao = context.read<PodDao>();
     final status = context.read<TransactionStatusProvider>();
     try {
+      //Record the submitting time so we can calculate duration
+      await dao.markSubmitting(id: widget.localId);
+
       // Long-running send; UI is already visible
       final txSig = await sendTransactionWithRetry(widget.txBytes!, widget.signature!, 5, _onPhase);
 
@@ -309,6 +321,7 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
   Widget _buildCompletedView() {
     final amountStr = '${widget.amount} SOL';
     final sigBase58 = widget.launchSig ?? signatureToBase58(widget.signature!);
+
     return FadeTransition(
       opacity: _fadeController.drive(CurveTween(curve: Curves.easeOut)),
       child: Stack(
@@ -509,6 +522,28 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                                     //     );
                                     //   },
                                     // ),
+                                  ],
+                                ),
+
+                                // Duration row
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'DURATION',
+                                      style: TextStyle(fontSize: 13, color: Colors.black54),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.schedule_rounded, size: 18, color: Colors.black87),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          formatDurationHMS(_durationSec ?? _latestPod.durationSeconds),
+                                          style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
+                                        ),
+                                      ],
+                                    ),
                                   ],
                                 ),
                               ],

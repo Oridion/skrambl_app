@@ -33,8 +33,13 @@ class Pods extends Table {
 
   // Timestamps (unix seconds)
   IntColumn get draftedAt => integer()(); // local row creation
+  IntColumn get submittingAt => integer().nullable()(); //For duration
   IntColumn get submittedAt => integer().nullable()();
+  IntColumn get skrambledAt => integer().nullable()(); //completed skrambling
   IntColumn get finalizedAt => integer().nullable()();
+
+  // Skrambled duration in seconds to delivery finalization
+  IntColumn get durationSeconds => integer().withDefault(const Constant(0))();
 
   // Debug / resume
   TextColumn get unsignedMessageB64 => text().nullable()();
