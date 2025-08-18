@@ -11,7 +11,7 @@ class PodDetailsTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsetsGeometry.fromLTRB(0, 16, 0, 0),
+      padding: EdgeInsetsGeometry.fromLTRB(0, 3, 0, 0),
       child: Column(children: [for (final r in rows) r]),
     );
   }
@@ -36,13 +36,13 @@ class PodDetailRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           SizedBox(
-            width: 130,
+            width: 60,
             child: Text(title, style: t.labelMedium?.copyWith(color: Colors.black54)),
           ),
           Expanded(
             child: Text(
               value,
-              style: t.bodyMedium,
+              style: t.bodyMedium?.copyWith(fontSize: 14),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
               softWrap: false,
