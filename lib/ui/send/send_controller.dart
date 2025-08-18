@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 // Flutter
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/ui/send/screens/standard/standard_summary_screen.dart';
 
@@ -56,6 +57,7 @@ class _SendControllerState extends State<SendController> {
   bool _canResend = false; // Controls send button label/handler
   int _currentPage = 0;
   bool _isSubmitting = false;
+  String _appBarTitle = 'Send';
   final _navKey = GlobalKey<NavigatorState>();
 
   @override
@@ -68,6 +70,23 @@ class _SendControllerState extends State<SendController> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  late final _TitleNavObserver _navObserver = _TitleNavObserver(onTopRouteChange: _setTitleSafely);
+
+  void _setTitleSafely(String? routeName) {
+    skrLogger.i("CHANGE");
+    final newTitle = titleFor(routeName);
+    if (!mounted) return;
+
+    // If we're in the middle of a frame/build, defer to after this frame.
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
+      setState(() => _appBarTitle = newTitle);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _appBarTitle = newTitle);
+      });
+    }
   }
 
   Future<void> _initUserWallet() async {
@@ -274,7 +293,7 @@ class _SendControllerState extends State<SendController> {
         return;
       }
 
-      skrLogger.i("✅ Signature: $signature");
+      skrLogger.i("Signature: $signature");
 
       if (!context.mounted) return;
 
@@ -432,7 +451,7 @@ class _SendControllerState extends State<SendController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        //title: const Text('Send'),
+        title: Text(_appBarTitle),
         leading: BackButton(
           onPressed: () async {
             final didPop = await _navKey.currentState?.maybePop() ?? false;
@@ -442,12 +461,14 @@ class _SendControllerState extends State<SendController> {
       ),
       body: Navigator(
         key: _navKey,
+        observers: [_navObserver],
         initialRoute: SendRoutes.type,
         onGenerateRoute: (settings) {
           switch (settings.name) {
             // 1) choose type
             case SendRoutes.type:
               return MaterialPageRoute(
+                settings: settings,
                 builder: (_) => SendTypeSelectionScreen(
                   formModel: _formModel,
                   onNext: () => _navKey.currentState!.pushNamed(SendRoutes.destination),
@@ -459,6 +480,7 @@ class _SendControllerState extends State<SendController> {
               {
                 final repo = context.read<BurnerRepository>();
                 return MaterialPageRoute(
+                  settings: settings,
                   builder: (_) => SendDestinationScreen(
                     // NOTE: we reuse your existing destination screen for both flows.
                     // If standard needs a different destination UI, make a StandardDestinationScreen and branch here.
@@ -481,6 +503,7 @@ class _SendControllerState extends State<SendController> {
             // 3a) SKRAMBL amount
             case SendRoutes.skAmount:
               return MaterialPageRoute(
+                settings: settings,
                 builder: (_) => SkrambledAmountScreen(
                   formModel: _formModel,
                   onBack: () => _navKey.currentState!.maybePop(),
@@ -491,6 +514,7 @@ class _SendControllerState extends State<SendController> {
             // 4a) SKRAMBL summary
             case SendRoutes.skSummary:
               return MaterialPageRoute(
+                settings: settings,
                 builder: (_) => SkrambledSummaryScreen(
                   key: ValueKey('summary-$_canResend-${_currentDraftId ?? ""}'),
                   formModel: _formModel,
@@ -504,6 +528,7 @@ class _SendControllerState extends State<SendController> {
             // 3b) STANDARD Amount path
             case SendRoutes.stAmount:
               return MaterialPageRoute(
+                settings: settings,
                 builder: (_) => StandardAmountScreen(
                   formModel: _formModel,
                   onBack: () => _navKey.currentState!.maybePop(),
@@ -516,6 +541,7 @@ class _SendControllerState extends State<SendController> {
             // 4b) STANDARD Summary
             case SendRoutes.stSummary:
               return MaterialPageRoute(
+                settings: settings,
                 builder: (_) => StandardSummaryScreen(
                   formModel: _formModel,
                   onBack: () => _navKey.currentState!.maybePop(),
@@ -531,5 +557,38 @@ class _SendControllerState extends State<SendController> {
         },
       ),
     );
+  }
+}
+
+class _TitleNavObserver extends NavigatorObserver {
+  _TitleNavObserver({required this.onTopRouteChange});
+  final void Function(String? topRouteName) onTopRouteChange;
+
+  void _emit(Route<dynamic>? route) {
+    onTopRouteChange(route?.settings.name);
+  }
+
+  @override
+  void didPush(Route route, Route? previousRoute) {
+    super.didPush(route, previousRoute);
+    _emit(route);
+  }
+
+  @override
+  void didPop(Route route, Route? previousRoute) {
+    super.didPop(route, previousRoute);
+    _emit(previousRoute);
+  }
+
+  @override
+  void didReplace({Route? newRoute, Route? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    _emit(newRoute);
+  }
+
+  @override
+  void didRemove(Route route, Route? previousRoute) {
+    super.didRemove(route, previousRoute);
+    _emit(previousRoute);
   }
 }

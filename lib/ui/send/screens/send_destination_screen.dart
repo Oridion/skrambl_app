@@ -159,8 +159,7 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Header
-          Text('Choose destination', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-
+          //Text('Choose destination', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 20),
 
           // Tab header

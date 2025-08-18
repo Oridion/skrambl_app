@@ -17,7 +17,7 @@ class SendTypeSelectionScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(25, 10, 25, 24),
+          padding: const EdgeInsets.fromLTRB(25, 14, 25, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -27,11 +27,12 @@ class SendTypeSelectionScreen extends StatelessWidget {
                 'Choose how to send',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: Colors.black,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0,
+                  fontSize: 20,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 'Standard is near-instant. SKRAMBLED adds distance between you and the recipient.',
                 style: Theme.of(
@@ -246,7 +247,7 @@ class _ChoiceCardState extends State<ChoiceCard> {
                                 Text(
                                   widget.description,
                                   style: TextStyle(
-                                    fontSize: 13.5,
+                                    fontSize: 14,
                                     height: 1.35,
                                     color: Colors.black.withOpacityCompat(0.60),
                                   ),
