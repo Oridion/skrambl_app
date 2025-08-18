@@ -224,6 +224,12 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
     }
   }
 
+  //Mark pod failed
+  Future<void> _onSendFailure() async {
+    final dao = context.read<PodDao>();
+    await dao.markFailed(id: widget.localId);
+  }
+
   // SENDING PATH
   /// Sends the transaction
   /// Marks the pod db record as submitted
@@ -237,7 +243,13 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
       await dao.markSubmitting(id: widget.localId);
 
       // Long-running send; UI is already visible
-      final txSig = await sendTransactionWithRetry(widget.txBytes!, widget.signature!, 5, _onPhase);
+      final txSig = await sendTransactionWithRetry(
+        widget.txBytes!,
+        widget.signature!,
+        5,
+        _onPhase,
+        _onSendFailure,
+      );
 
       // Persist submitted and record the real transaction signature
       await dao.markSubmitted(id: widget.localId, signature: txSig);

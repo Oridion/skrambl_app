@@ -72,6 +72,7 @@ Future<String> sendTransactionWithRetry(
   Uint8List signature,
   int maxRetries,
   void Function(TransactionPhase phase)? onPhaseChange, // optional callback
+  void Function() onSendFailure,
 ) async {
   final RpcClient rpcClient = AppConstants.rpcClient;
 
@@ -126,6 +127,8 @@ Future<String> sendTransactionWithRetry(
     } catch (e) {
       lastError = e.toString();
       skrLogger.w("Send attempt ${attempt + 1} failed: $lastError");
+
+      onSendFailure();
 
       // Refresh blockhash if expired
       if (lastError.contains("BlockhashNotFound")) {
