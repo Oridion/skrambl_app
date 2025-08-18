@@ -25,6 +25,7 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
   late final TextEditingController _amountCtrl;
   String? _errorText;
   double? _amount;
+  bool _isSubmitting = false;
 
   static const double _minAmount = 0.000001;
 
@@ -80,6 +81,8 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
   }
 
   Future<void> _continue() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
     FocusScope.of(context).unfocus();
 
     // refresh price once here so summary has it
@@ -93,7 +96,9 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
       ..solUsdPrice = priceUsdPerSol;
 
     if (!mounted) return;
+    await Future.delayed(const Duration(milliseconds: 150)); // debounce
     widget.onNext();
+    setState(() => _isSubmitting = false);
   }
 
   double calculateFee(int delaySeconds) {
@@ -184,14 +189,20 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
                 children: [
                   if (widget.onBack != null) TextButton(onPressed: widget.onBack, child: const Text('Back')),
                   ElevatedButton(
-                    onPressed: isValid ? _continue : null,
+                    onPressed: isValid && !_isSubmitting ? _continue : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                     ),
-                    child: const Text('Next'),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('Next'),
                   ),
                 ],
               ),

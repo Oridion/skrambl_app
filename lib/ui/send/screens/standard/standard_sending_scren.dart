@@ -8,10 +8,11 @@ import 'package:skrambl_app/models/send_form_model.dart';
 import 'package:skrambl_app/services/seed_vault_service.dart';
 import 'package:skrambl_app/solana/solana_client_service.dart';
 import 'package:skrambl_app/ui/dashboard/dashboard_screen.dart';
+import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/logger.dart';
+import 'package:skrambl_app/utils/solana.dart';
 import 'package:solana/solana.dart';
 import 'package:solana_seed_vault/solana_seed_vault.dart';
-import 'package:url_launcher/url_launcher.dart'; // <-- add
 
 class StandardSendingScreen extends StatefulWidget {
   final SendFormModel form;
@@ -227,28 +228,26 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
     ).showSnackBar(SnackBar(content: Text('$label copied'), duration: const Duration(milliseconds: 1200)));
   }
 
-  Future<void> _openInExplorer(String sig) async {
-    final url = Uri.parse('https://solscan.io/tx/$sig');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isSuccess = _done && _error == null;
     final isError = _done && _error != null;
 
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: isSuccess ? _buildSuccessView() : (isError ? _buildErrorView() : _buildProgressView()),
+      body: Container(
+        color: isSuccess ? Colors.green.withOpacityCompat(0.1) : Colors.white,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: isSuccess
+                      ? _buildSuccessView()
+                      : (isError ? _buildErrorView() : _buildProgressView()),
+                ),
               ),
             ),
           ),
@@ -276,7 +275,7 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
           ),
           const SizedBox(height: 6),
           TextButton.icon(
-            onPressed: () => _openInExplorer(_signature!),
+            onPressed: () => openOnSolanaFM(context, _signature!),
             icon: const Icon(Icons.open_in_new, size: 16),
             label: const Text('View on Solscan'),
           ),
@@ -299,10 +298,12 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
           height: 92,
           width: 92,
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(.10),
+            color: Colors.green.withOpacityCompat(.10),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.green.withOpacity(.25), width: 2),
-            boxShadow: [BoxShadow(color: Colors.green.withOpacity(.18), blurRadius: 24, spreadRadius: 1)],
+            border: Border.all(color: Colors.green.withOpacityCompat(.25), width: 2),
+            // boxShadow: [
+            //   BoxShadow(color: Colors.green.withOpacityCompat(.18), blurRadius: 24, spreadRadius: 1),
+            // ],
           ),
           child: const Icon(Icons.check_rounded, size: 48, color: Colors.green),
         ),
@@ -320,7 +321,7 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Colors.white.withOpacityCompat(0.7),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.black12),
             boxShadow: const [BoxShadow(color: Color(0x11000000), blurRadius: 16, offset: Offset(0, 6))],
@@ -417,7 +418,7 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             OutlinedButton.icon(
-              onPressed: _signature == null ? null : () => _openInExplorer(_signature!),
+              onPressed: _signature == null ? null : () => openOnSolanaFM(context, _signature!),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.black,
                 side: const BorderSide(color: Colors.black26),
@@ -425,7 +426,7 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               icon: const Icon(Icons.open_in_new, size: 18),
-              label: const Text('View on Solscan'),
+              label: const Text('View on SolanaFM'),
             ),
             const SizedBox(width: 12),
             ElevatedButton.icon(
@@ -462,7 +463,7 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
         const SizedBox(height: 16),
         if (_signature != null)
           TextButton.icon(
-            onPressed: () => _openInExplorer(_signature!),
+            onPressed: () => openOnSolanaFM(context, _signature!),
             icon: const Icon(Icons.open_in_new, size: 16),
             label: const Text('View on Solscan'),
           ),
