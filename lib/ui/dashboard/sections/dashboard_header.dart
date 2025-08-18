@@ -38,7 +38,7 @@ class _DashboardHeaderState extends State<DashboardHeader> {
                 // ),
                 // const SizedBox(height: 32), // buffer space
                 WalletAddressTile(pubkey: widget.pubkey!),
-                WalletBalanceTile(authToken: widget.authToken, pubkey: widget.pubkey!),
+                WalletBalanceTile(pubkey: widget.pubkey!),
               ],
             )
           : const Center(

@@ -7,6 +7,9 @@ import 'package:http/http.dart' as http;
 class WalletBalanceStream {
   final String rpcUrl;
   WebSocketChannel? _channel;
+  bool _hasListener = false;
+  bool _intentionalClose = false;
+  int? _pendingSubReqId;
   StreamController<int>? _balanceController;
   dynamic _subscriptionId;
   Timer? _reconnectTimer;
@@ -15,6 +18,10 @@ class WalletBalanceStream {
   String? _currentPubkey;
   int? _lastLamports; // keep the latest known value
   Timer? _keepAlive; // for periodic tiny pings
+  int? _lastSubReqId;
+  int? _lastUnsubReqId;
+  String? _pendingPubkey;
+  String? _subscribedPubkey;
   WalletBalanceStream({
     this.rpcUrl = 'wss://mainnet.helius-rpc.com/?api-key=e9be3c89-9113-4c5d-be19-4dfc99d8c8f4',
   });
@@ -48,34 +55,33 @@ class WalletBalanceStream {
         _balanceController != null &&
         !_balanceController!.isClosed &&
         _currentPubkey == pubkey &&
-        _channel != null;
+        _channel != null &&
+        _subscriptionId != null; // must already be subscribed
 
-    //Switching to a new pubkey
     final isSamePubkey = _currentPubkey == pubkey;
+    final prevSubId = _subscriptionId; // keep previous sub id
     _currentPubkey = pubkey;
-    if (!isSamePubkey) _lastLamports = null; // 1)
+
+    if (!isSamePubkey) {
+      _lastLamports = null;
+      // unsubscribe old, then subscribe new on the SAME socket
+      if (prevSubId != null) _sendUnsubscribe(prevSubId);
+    }
 
     if (!reuse) {
-      _balanceController?.close(); // just in case
+      _balanceController?.close();
       _balanceController = StreamController<int>.broadcast(
         onListen: () {
           if (_lastLamports != null) {
-            // immediately seed the latest value to new subscribers
             _balanceController!.add(_lastLamports!);
           }
         },
       );
-
-      _openAndSubscribe(pubkey); // open WS, subscribe, set handlers
-      _refreshOnce(pubkey); // one-off RPC to fetch current balance
+      _sendSubscribe(pubkey);
     } else {
-      // Reusing: still make sure subscriber gets a value *now*
-      // Either seed via onListen (above), or push again if you want to force-refresh:
       if (_lastLamports == null) {
-        _refreshOnce(pubkey); // if we don't have a cached value yet
+        _refreshOnce(pubkey);
       } else {
-        // Optionally force a refresh even if we do:
-        // _refreshOnce(pubkey);
         scheduleMicrotask(() => _balanceController?.add(_lastLamports!));
       }
     }
@@ -97,78 +103,171 @@ class WalletBalanceStream {
     }
   }
 
-  void _openAndSubscribe(String pubkey) {
-    _channel?.sink.close(); // close existing if any
+  void _ensureChannelConnected() {
+    if (_channel != null) return;
+
     _channel = WebSocketChannel.connect(Uri.parse(rpcUrl));
     _subscriptionId = null;
-    _startKeepAlive(); // start periodic pings to keep connection alive
-    _channel!.stream.listen(
-      (message) {
-        final decoded = jsonDecode(message);
+    _startKeepAlive();
 
-        // subscription ack
-        if (decoded['result'] != null && _subscriptionId == null) {
-          _subscriptionId = decoded['result'];
-          skrLogger.i('[SKRAMBL WS] Subscribed with ID: $_subscriptionId');
-          _refreshOnce(pubkey);
-        }
+    if (!_hasListener) {
+      _hasListener = true;
+      _channel!.stream.listen(
+        (message) {
+          final decoded = jsonDecode(message);
 
-        // account notifications
-        final method = decoded['method'] as String?;
-        if (method == 'accountNotification') {
-          final value = decoded['params']?['result']?['value'];
-          final lamports = (value?['lamports'] as int?) ?? 0;
-          // Update only if changed
-          if (lamports != _lastLamports) {
-            _lastLamports = lamports;
-            _balanceController?.add(lamports);
+          // 1) Handle responses (they have an "id")
+          final respId = decoded['id'];
+          if (respId != null) {
+            // subscribe ack
+            if (respId == _lastSubReqId || respId == _pendingSubReqId) {
+              final result = decoded['result'];
+              if (result is int) {
+                _subscriptionId = result;
+                _subscribedPubkey = _pendingPubkey;
+                skrLogger.i('[SKRAMBL WS] Subscribed with ID: $_subscriptionId to $_subscribedPubkey');
+                if (_subscribedPubkey != null) _refreshOnce(_subscribedPubkey!);
+              }
+              _lastSubReqId = null;
+              _pendingSubReqId = null; // <-- clear pending flag
+              _pendingPubkey = null;
+              _reconnectAttempts = 0;
+              return;
+            }
+
+            // unsubscribe ack
+            if (respId == _lastUnsubReqId) {
+              // result is typically true; clear current subscription
+              _subscriptionId = null;
+              _subscribedPubkey = null;
+              skrLogger.i('[SKRAMBL WS] Unsubscribe ack received.');
+              _lastUnsubReqId = null;
+            }
+
+            _reconnectAttempts = 0;
+            return; // handled a response
           }
-        }
 
-        _reconnectAttempts = 0;
-      },
-      onError: (e) {
-        skrLogger.e('[SKRAMBL WS] Error: $e');
-        _scheduleReconnect();
-        _stopKeepAlive();
-      },
-      onDone: () {
-        skrLogger.w('[WS] Connection closed');
-        _scheduleReconnect();
-        _stopKeepAlive();
-      },
-      cancelOnError: true,
-    );
+          // 2) Handle notifications (they have a "method")
+          final method = decoded['method'] as String?;
+          if (method == 'accountNotification') {
+            // Ensure this notification is for our current subscription id
+            final subNum = decoded['params']?['subscription'];
+            if (_subscriptionId != null && subNum != _subscriptionId) {
+              // stale notification from a previous sub; ignore
+              return;
+            }
+
+            final value = decoded['params']?['result']?['value'];
+            final lamports = (value?['lamports'] as int?) ?? 0;
+            if (lamports != _lastLamports) {
+              _lastLamports = lamports;
+              _balanceController?.add(lamports);
+            }
+          }
+        },
+        onError: (e) {
+          skrLogger.e('[SKRAMBL WS] Error: $e');
+          _stopKeepAlive();
+          _scheduleReconnect();
+        },
+        onDone: () {
+          skrLogger.w('[WS] Connection closed');
+          _stopKeepAlive();
+          if (_intentionalClose) {
+            _intentionalClose = false; // don't reconnect
+            return;
+          }
+          _scheduleReconnect();
+        },
+        cancelOnError: true,
+      );
+    }
+  }
+
+  void _sendSubscribe(String pubkey) {
+    _ensureChannelConnected();
+
+    // Already fully subscribed to this key
+    if (_subscriptionId != null && _subscribedPubkey == pubkey) {
+      skrLogger.i('[WS] Already subscribed to $pubkey (reuse).');
+      if (_lastLamports != null) {
+        scheduleMicrotask(() => _balanceController?.add(_lastLamports!));
+      }
+      return;
+    }
+
+    // 🔒 Prevent duplicate subscribe while one is in-flight for same key
+    if (_pendingSubReqId != null && _pendingPubkey == pubkey) {
+      skrLogger.i('[WS] Subscribe already pending for $pubkey (reqId=$_pendingSubReqId) — skipping.');
+      return;
+    }
+
+    final reqId = DateTime.now().millisecondsSinceEpoch;
+    _lastSubReqId = reqId;
+    _pendingSubReqId = reqId; // <-- mark in-flight
+    _pendingPubkey = pubkey;
 
     final subRequest = jsonEncode({
       "jsonrpc": "2.0",
-      "id": 1,
+      "id": reqId,
       "method": "accountSubscribe",
       "params": [
         pubkey,
         {"encoding": "jsonParsed", "commitment": "processed"},
       ],
     });
-
-    skrLogger.i('[WS] Subscribing to pubkey: $pubkey');
+    skrLogger.i('[WS] Subscribing to $pubkey (id=$reqId)');
     _channel!.sink.add(subRequest);
+  }
+
+  void _sendUnsubscribe(dynamic subId) {
+    if (_channel == null || subId == null) return;
+    final reqId = DateTime.now().millisecondsSinceEpoch;
+    _lastUnsubReqId = reqId;
+
+    // If we were mid-subscribe to the same key, cancel the pending markers
+    if (_pendingSubReqId != null && _pendingPubkey == _subscribedPubkey) {
+      _pendingSubReqId = null;
+      _pendingPubkey = null;
+    }
+
+    final unsub = jsonEncode({
+      "jsonrpc": "2.0",
+      "id": reqId,
+      "method": "accountUnsubscribe",
+      "params": [subId],
+    });
+    skrLogger.i('[WS] Unsubscribing (subId=$subId, id=$reqId)');
+    _channel!.sink.add(unsub);
   }
 
   void _scheduleReconnect() {
     if (_isReconnecting || _currentPubkey == null) return;
+
     _isReconnecting = true;
-    _reconnectAttempts++;
-    final delay = Duration(seconds: 2 * _reconnectAttempts.clamp(1, 5));
+    _reconnectTimer?.cancel();
+
+    final attempt = (++_reconnectAttempts).clamp(1, 5);
+    final delay = Duration(seconds: 2 * attempt);
     skrLogger.w('[WS] Reconnecting in ${delay.inSeconds}s...');
 
     _reconnectTimer = Timer(delay, () {
       skrLogger.i('[WS] Attempting reconnect to $_currentPubkey...');
       _isReconnecting = false;
-      _stopKeepAlive();
-      _channel?.sink.close();
+
+      // Tear down without triggering another auto-reconnect from onDone
+      _intentionalClose = true;
+      try {
+        _channel?.sink.close();
+      } catch (_) {}
       _channel = null;
+      _subscriptionId = null;
+
       if (_currentPubkey != null) {
-        _openAndSubscribe(_currentPubkey!);
+        _ensureChannelConnected(); // opens socket and attaches the single listener
+        _sendSubscribe(_currentPubkey!); // resubscribe on the same socket
+        // _refreshOnce will be called after the subscription ACK in the listener
       }
     });
   }
@@ -180,23 +279,19 @@ class WalletBalanceStream {
     _reconnectAttempts = 0;
     _currentPubkey = null;
     _lastLamports = null;
-    _stopKeepAlive(); // stop periodic pings
+    _stopKeepAlive();
+
     if (_subscriptionId != null) {
-      final unsubRequest = jsonEncode({
-        "jsonrpc": "2.0",
-        "id": 2,
-        "method": "accountUnsubscribe",
-        "params": [_subscriptionId],
-      });
-      _channel?.sink.add(unsubRequest);
-      _subscriptionId = null;
+      _sendUnsubscribe(_subscriptionId);
     }
 
+    _intentionalClose = true;
     _channel?.sink.close();
-    _balanceController?.close();
     _channel = null;
-    _subscriptionId = null;
+
+    _balanceController?.close();
     _balanceController = null;
+    _subscriptionId = null;
   }
 
   Future<void> refresh(String pubkey) async {
@@ -212,7 +307,9 @@ class WalletBalanceStream {
     _keepAlive?.cancel();
     _keepAlive = Timer.periodic(const Duration(seconds: 40), (_) {
       try {
-        _channel?.sink.add(jsonEncode({"jsonrpc": "2.0", "id": 0, "method": "ping"}));
+        _channel?.sink.add(
+          jsonEncode({"jsonrpc": "2.0", "id": DateTime.now().millisecondsSinceEpoch, "method": "ping"}),
+        );
       } catch (_) {}
     });
   }

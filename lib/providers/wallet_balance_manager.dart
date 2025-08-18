@@ -22,6 +22,8 @@ class WalletBalanceProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   void start(String pubkey) {
+    skrLogger.i("WBM started");
+
     // Do nothing if we’re already on this key
     if (_pubkey == pubkey && _sub != null) return;
 
