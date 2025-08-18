@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/ui/pods/widgets/dot.dart';
-import 'package:skrambl_app/ui/pods/widgets/from_to_bar.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 

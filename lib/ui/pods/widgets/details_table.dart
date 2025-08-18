@@ -29,13 +29,15 @@ class PodDetailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Container(
+      height: 28,
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
-            child: Text(title, style: t.labelSmall?.copyWith(color: Colors.black54)),
+            width: 130,
+            child: Text(title, style: t.labelMedium?.copyWith(color: Colors.black54)),
           ),
           Expanded(
             child: Text(
@@ -48,7 +50,7 @@ class PodDetailRow extends StatelessWidget {
           ),
           if (copyable)
             IconButton(
-              icon: const Icon(Icons.copy, size: 16),
+              icon: const Icon(Icons.copy, size: 14),
               tooltip: 'Copy $title',
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),

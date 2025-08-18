@@ -4,7 +4,6 @@ import 'package:skrambl_app/ui/pods/helper/pod_timeline_builder.dart';
 import 'package:skrambl_app/ui/pods/widgets/actions_bar.dart';
 import 'package:skrambl_app/ui/pods/widgets/details_table.dart';
 import 'package:skrambl_app/ui/pods/widgets/pod_header_card.dart';
-import 'package:skrambl_app/ui/pods/widgets/pod_identity_grid.dart';
 import 'package:skrambl_app/ui/pods/widgets/section_wrapper.dart';
 import 'package:skrambl_app/ui/pods/widgets/vertical_timeline.dart';
 import 'package:skrambl_app/ui/shared/pod_status_colors.dart';
@@ -38,7 +37,7 @@ class PodDetailsScreen extends StatelessWidget {
           final status = PodStatus.values[pod.status];
           final chipColor = statusColor(status);
 
-          final draftedAt = dateTimeOrNull(pod.draftedAt * 1000);
+          final draftedAt = dateTimeOrNull(pod.draftedAt);
           final submittedAt = dateTimeOrNull(pod.submittedAt);
           final finalizedAt = dateTimeOrNull(pod.finalizedAt);
 
@@ -57,7 +56,7 @@ class PodDetailsScreen extends StatelessWidget {
               PodHeaderCard(
                 status: status,
                 chipColor: chipColor,
-                draftedAt: draftedAt,
+                draftedAt: dateTimeOrNull(pod.draftedAt * 1000),
                 lamports: pod.lamports,
                 pod: pod,
               ),

@@ -28,11 +28,11 @@ String modeLabel(int mode) {
   // 0=Instant, 1=Delay, extend if you add more modes
   switch (mode) {
     case 0:
-      return 'Instant';
+      return 'INSTANT';
     case 1:
-      return 'Delay';
+      return 'DELAY';
     case 5:
-      return 'Standard';
+      return 'STANDARD';
     default:
       return 'Mode $mode';
   }
