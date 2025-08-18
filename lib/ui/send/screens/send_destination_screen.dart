@@ -1,15 +1,16 @@
-// lib/screens/destination/skrambled_destination_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skrambl_app/services/burner_wallet_management.dart';
-import 'package:skrambl_app/ui/burners/burner_tile.dart';
+import 'package:skrambl_app/services/seed_vault_service.dart';
+import 'package:skrambl_app/ui/burners/widgets/burner_tile.dart';
 import 'package:skrambl_app/ui/burners/create_burner_sheet.dart';
 import 'package:skrambl_app/ui/burners/empty_burner_state.dart';
 import 'package:skrambl_app/models/send_form_model.dart';
 import 'package:skrambl_app/ui/send/widgets/destination_tab_header.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/launcher.dart';
+import 'package:solana_seed_vault/solana_seed_vault.dart';
 
 enum DestinationMode { address, burner }
 
@@ -20,7 +21,8 @@ class SendDestinationScreen extends StatefulWidget {
 
   /// Inject data flow so this widget is UI-only and reusable.
   final Future<List<BurnerWallet>> Function() fetchBurners;
-  final Future<BurnerWallet> Function(String label) createBurner;
+  //final Future<BurnerWallet> Function(String label) createBurner;
+  final Future<BurnerWallet?> Function({String? note, required AuthToken token}) createBurner;
 
   const SendDestinationScreen({
     super.key,
@@ -271,16 +273,29 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
     final created = await showModalBottomSheet<BurnerWallet>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.white,
+      barrierColor: Colors.black.withOpacityCompat(0.35),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (context) => CreateBurnerSheet(onCreate: widget.createBurner),
+      builder: (sheetCtx) => CreateBurnerSheet(
+        onCreate: (label) async {
+          final token = await SeedVaultService.getValidToken(sheetCtx);
+          if (token == null) {
+            throw Exception('Seed Vault permission denied');
+          }
+          final burner = await widget.createBurner(note: label, token: token);
+          if (burner == null) throw Exception('Failed to create burner');
+          return burner;
+        },
+      ),
     );
 
-    if (created != null) {
-      // Refresh + select new burner
-      await _loadBurners();
-      setState(() => _selectedBurnerAddress = created.publicKey);
-    }
+    if (!mounted || created == null) return;
+
+    await _loadBurners();
+    setState(() => _selectedBurnerAddress = created.publicKey);
+
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Burner created')));
   }
 }
 

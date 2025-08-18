@@ -1,10 +1,5 @@
-import 'package:solana_seed_vault/solana_seed_vault.dart';
 import 'package:collection/collection.dart';
-
-///	Tracks the current index
-///	Creates a new burner key
-///	Lists previously used keys
-///	Restores existing burners using saved indices
+import 'package:solana_seed_vault/solana_seed_vault.dart';
 
 class BurnerWallet {
   final int index;
@@ -12,28 +7,28 @@ class BurnerWallet {
   final String? note;
   final bool used;
 
-  BurnerWallet({
-    required this.index,
-    required this.publicKey,
-    this.note,
-    this.used = false,
-  });
+  const BurnerWallet({required this.index, required this.publicKey, this.note, this.used = false});
+
+  BurnerWallet copyWith({String? note, bool? used}) =>
+      BurnerWallet(index: index, publicKey: publicKey, note: note ?? this.note, used: used ?? this.used);
 }
 
+/// Stateless w.r.t. auth — fetches a fresh token via the injected callback
 class BurnerWalletManager {
-  final AuthToken authToken;
   final List<BurnerWallet> _wallets = [];
+  bool _allocating = false;
 
-  BurnerWalletManager({required this.authToken});
-
-  /// Derives the public key from a specific index
+  /// Derive / resolve a burner at `index`. Optionally attach a local `note`.
   Future<BurnerWallet?> createBurnerWallet({
+    required AuthToken token,
     required int index,
     String? note,
   }) async {
     try {
       final derivationPath = Bip44DerivationPath.toUri([
         BipLevel(index: index, hardened: true),
+        BipLevel(index: 0, hardened: true),
+        BipLevel(index: 0, hardened: true),
       ]);
 
       final resolvedPath = await SeedVault.instance.resolveDerivationPath(
@@ -42,52 +37,65 @@ class BurnerWalletManager {
       );
 
       final accounts = await SeedVault.instance.getParsedAccounts(
-        authToken,
+        token,
         filter: AccountFilter.byDerivationPath(resolvedPath),
       );
 
-      final publicKey = accounts.firstOrNull?.publicKeyEncoded;
-      if (publicKey == null) return null;
+      final pk = accounts.firstOrNull?.publicKeyEncoded;
+      if (pk == null) return null;
 
-      final wallet = BurnerWallet(
-        index: index,
-        publicKey: publicKey,
-        note: note,
-      );
-      _wallets.add(wallet);
-      return wallet;
+      final w = BurnerWallet(index: index, publicKey: pk, note: note);
+      if (_wallets.indexWhere((x) => x.index == index) == -1) _wallets.add(w);
+      return w;
     } catch (_) {
       return null;
     }
   }
 
-  /// Returns all created burner wallets
-  List<BurnerWallet> getAllBurners() => _wallets;
+  /// Rebuild a list of burners by indices (e.g., after reading indices from DB)
+  /// Probably not needed.
+  Future<List<BurnerWallet>> restoreByIndices({required AuthToken token, required List<int> indices}) async {
+    final out = <BurnerWallet>[];
+    for (final i in indices.toSet()..removeWhere((x) => x < 0)) {
+      final w = await createBurnerWallet(token: token, index: i);
+      if (w != null) out.add(w);
+    }
+    return out;
+  }
 
-  /// Gets the next available index (naive logic)
+  /// Naive next free index (guarded against double-taps)
+  Future<int> allocateNextIndex() async {
+    if (_allocating) await Future.delayed(const Duration(milliseconds: 150));
+    _allocating = true;
+    try {
+      final used = _wallets.map((w) => w.index).toSet();
+      var next = 0;
+      while (used.contains(next)) {
+        next++;
+      }
+      return next;
+    } finally {
+      _allocating = false;
+    }
+  }
+
+  List<BurnerWallet> getAllBurners() => List.unmodifiable(_wallets);
+
   int getNextIndex() {
     if (_wallets.isEmpty) return 0;
-    final usedIndices = _wallets.map((w) => w.index).toSet();
-    int next = 0;
-    while (usedIndices.contains(next)) {
+    final used = _wallets.map((w) => w.index).toSet();
+    var next = 0;
+    while (used.contains(next)) {
       next++;
     }
     return next;
+    // (kept for compatibility; allocateNextIndex() is the async/guarded version)
   }
 
-  /// Marks a burner wallet as used (helpful for hiding or tagging in UI)
   void markUsed(int index) {
-    final wallet = _wallets.firstWhereOrNull((w) => w.index == index);
-    if (wallet != null) {
-      _wallets.remove(wallet);
-      _wallets.add(
-        BurnerWallet(
-          index: wallet.index,
-          publicKey: wallet.publicKey,
-          note: wallet.note,
-          used: true,
-        ),
-      );
+    final idx = _wallets.indexWhere((w) => w.index == index);
+    if (idx != -1) {
+      _wallets[idx] = _wallets[idx].copyWith(used: true);
     }
   }
 }

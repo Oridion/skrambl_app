@@ -1283,15 +1283,588 @@ class PodsCompanion extends UpdateCompanion<Pod> {
   }
 }
 
+class $BurnersTable extends Burners with TableInfo<$BurnersTable, Burner> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BurnersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _pubkeyMeta = const VerificationMeta('pubkey');
+  @override
+  late final GeneratedColumn<String> pubkey = GeneratedColumn<String>(
+    'pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _derivationIndexMeta = const VerificationMeta(
+    'derivationIndex',
+  );
+  @override
+  late final GeneratedColumn<int> derivationIndex = GeneratedColumn<int>(
+    'derivation_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _usedMeta = const VerificationMeta('used');
+  @override
+  late final GeneratedColumn<bool> used = GeneratedColumn<bool>(
+    'used',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("used" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _txCountMeta = const VerificationMeta(
+    'txCount',
+  );
+  @override
+  late final GeneratedColumn<int> txCount = GeneratedColumn<int>(
+    'tx_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastUsedAtMeta = const VerificationMeta(
+    'lastUsedAt',
+  );
+  @override
+  late final GeneratedColumn<int> lastUsedAt = GeneratedColumn<int>(
+    'last_used_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastSeenAtMeta = const VerificationMeta(
+    'lastSeenAt',
+  );
+  @override
+  late final GeneratedColumn<int> lastSeenAt = GeneratedColumn<int>(
+    'last_seen_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _archivedMeta = const VerificationMeta(
+    'archived',
+  );
+  @override
+  late final GeneratedColumn<bool> archived = GeneratedColumn<bool>(
+    'archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    pubkey,
+    derivationIndex,
+    note,
+    used,
+    txCount,
+    createdAt,
+    lastUsedAt,
+    lastSeenAt,
+    archived,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'burners';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Burner> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('pubkey')) {
+      context.handle(
+        _pubkeyMeta,
+        pubkey.isAcceptableOrUnknown(data['pubkey']!, _pubkeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pubkeyMeta);
+    }
+    if (data.containsKey('derivation_index')) {
+      context.handle(
+        _derivationIndexMeta,
+        derivationIndex.isAcceptableOrUnknown(
+          data['derivation_index']!,
+          _derivationIndexMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_derivationIndexMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('used')) {
+      context.handle(
+        _usedMeta,
+        used.isAcceptableOrUnknown(data['used']!, _usedMeta),
+      );
+    }
+    if (data.containsKey('tx_count')) {
+      context.handle(
+        _txCountMeta,
+        txCount.isAcceptableOrUnknown(data['tx_count']!, _txCountMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('last_used_at')) {
+      context.handle(
+        _lastUsedAtMeta,
+        lastUsedAt.isAcceptableOrUnknown(
+          data['last_used_at']!,
+          _lastUsedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_seen_at')) {
+      context.handle(
+        _lastSeenAtMeta,
+        lastSeenAt.isAcceptableOrUnknown(
+          data['last_seen_at']!,
+          _lastSeenAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('archived')) {
+      context.handle(
+        _archivedMeta,
+        archived.isAcceptableOrUnknown(data['archived']!, _archivedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {pubkey};
+  @override
+  Burner map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Burner(
+      pubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pubkey'],
+      )!,
+      derivationIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}derivation_index'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      used: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}used'],
+      )!,
+      txCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tx_count'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      lastUsedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_used_at'],
+      ),
+      lastSeenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_seen_at'],
+      ),
+      archived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}archived'],
+      )!,
+    );
+  }
+
+  @override
+  $BurnersTable createAlias(String alias) {
+    return $BurnersTable(attachedDatabase, alias);
+  }
+}
+
+class Burner extends DataClass implements Insertable<Burner> {
+  final String pubkey;
+  final int derivationIndex;
+  final String? note;
+  final bool used;
+  final int txCount;
+  final int createdAt;
+  final int? lastUsedAt;
+  final int? lastSeenAt;
+  final bool archived;
+  const Burner({
+    required this.pubkey,
+    required this.derivationIndex,
+    this.note,
+    required this.used,
+    required this.txCount,
+    required this.createdAt,
+    this.lastUsedAt,
+    this.lastSeenAt,
+    required this.archived,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['pubkey'] = Variable<String>(pubkey);
+    map['derivation_index'] = Variable<int>(derivationIndex);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['used'] = Variable<bool>(used);
+    map['tx_count'] = Variable<int>(txCount);
+    map['created_at'] = Variable<int>(createdAt);
+    if (!nullToAbsent || lastUsedAt != null) {
+      map['last_used_at'] = Variable<int>(lastUsedAt);
+    }
+    if (!nullToAbsent || lastSeenAt != null) {
+      map['last_seen_at'] = Variable<int>(lastSeenAt);
+    }
+    map['archived'] = Variable<bool>(archived);
+    return map;
+  }
+
+  BurnersCompanion toCompanion(bool nullToAbsent) {
+    return BurnersCompanion(
+      pubkey: Value(pubkey),
+      derivationIndex: Value(derivationIndex),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      used: Value(used),
+      txCount: Value(txCount),
+      createdAt: Value(createdAt),
+      lastUsedAt: lastUsedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastUsedAt),
+      lastSeenAt: lastSeenAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSeenAt),
+      archived: Value(archived),
+    );
+  }
+
+  factory Burner.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Burner(
+      pubkey: serializer.fromJson<String>(json['pubkey']),
+      derivationIndex: serializer.fromJson<int>(json['derivationIndex']),
+      note: serializer.fromJson<String?>(json['note']),
+      used: serializer.fromJson<bool>(json['used']),
+      txCount: serializer.fromJson<int>(json['txCount']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      lastUsedAt: serializer.fromJson<int?>(json['lastUsedAt']),
+      lastSeenAt: serializer.fromJson<int?>(json['lastSeenAt']),
+      archived: serializer.fromJson<bool>(json['archived']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'pubkey': serializer.toJson<String>(pubkey),
+      'derivationIndex': serializer.toJson<int>(derivationIndex),
+      'note': serializer.toJson<String?>(note),
+      'used': serializer.toJson<bool>(used),
+      'txCount': serializer.toJson<int>(txCount),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'lastUsedAt': serializer.toJson<int?>(lastUsedAt),
+      'lastSeenAt': serializer.toJson<int?>(lastSeenAt),
+      'archived': serializer.toJson<bool>(archived),
+    };
+  }
+
+  Burner copyWith({
+    String? pubkey,
+    int? derivationIndex,
+    Value<String?> note = const Value.absent(),
+    bool? used,
+    int? txCount,
+    int? createdAt,
+    Value<int?> lastUsedAt = const Value.absent(),
+    Value<int?> lastSeenAt = const Value.absent(),
+    bool? archived,
+  }) => Burner(
+    pubkey: pubkey ?? this.pubkey,
+    derivationIndex: derivationIndex ?? this.derivationIndex,
+    note: note.present ? note.value : this.note,
+    used: used ?? this.used,
+    txCount: txCount ?? this.txCount,
+    createdAt: createdAt ?? this.createdAt,
+    lastUsedAt: lastUsedAt.present ? lastUsedAt.value : this.lastUsedAt,
+    lastSeenAt: lastSeenAt.present ? lastSeenAt.value : this.lastSeenAt,
+    archived: archived ?? this.archived,
+  );
+  Burner copyWithCompanion(BurnersCompanion data) {
+    return Burner(
+      pubkey: data.pubkey.present ? data.pubkey.value : this.pubkey,
+      derivationIndex: data.derivationIndex.present
+          ? data.derivationIndex.value
+          : this.derivationIndex,
+      note: data.note.present ? data.note.value : this.note,
+      used: data.used.present ? data.used.value : this.used,
+      txCount: data.txCount.present ? data.txCount.value : this.txCount,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastUsedAt: data.lastUsedAt.present
+          ? data.lastUsedAt.value
+          : this.lastUsedAt,
+      lastSeenAt: data.lastSeenAt.present
+          ? data.lastSeenAt.value
+          : this.lastSeenAt,
+      archived: data.archived.present ? data.archived.value : this.archived,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Burner(')
+          ..write('pubkey: $pubkey, ')
+          ..write('derivationIndex: $derivationIndex, ')
+          ..write('note: $note, ')
+          ..write('used: $used, ')
+          ..write('txCount: $txCount, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastUsedAt: $lastUsedAt, ')
+          ..write('lastSeenAt: $lastSeenAt, ')
+          ..write('archived: $archived')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    pubkey,
+    derivationIndex,
+    note,
+    used,
+    txCount,
+    createdAt,
+    lastUsedAt,
+    lastSeenAt,
+    archived,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Burner &&
+          other.pubkey == this.pubkey &&
+          other.derivationIndex == this.derivationIndex &&
+          other.note == this.note &&
+          other.used == this.used &&
+          other.txCount == this.txCount &&
+          other.createdAt == this.createdAt &&
+          other.lastUsedAt == this.lastUsedAt &&
+          other.lastSeenAt == this.lastSeenAt &&
+          other.archived == this.archived);
+}
+
+class BurnersCompanion extends UpdateCompanion<Burner> {
+  final Value<String> pubkey;
+  final Value<int> derivationIndex;
+  final Value<String?> note;
+  final Value<bool> used;
+  final Value<int> txCount;
+  final Value<int> createdAt;
+  final Value<int?> lastUsedAt;
+  final Value<int?> lastSeenAt;
+  final Value<bool> archived;
+  final Value<int> rowid;
+  const BurnersCompanion({
+    this.pubkey = const Value.absent(),
+    this.derivationIndex = const Value.absent(),
+    this.note = const Value.absent(),
+    this.used = const Value.absent(),
+    this.txCount = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.lastUsedAt = const Value.absent(),
+    this.lastSeenAt = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BurnersCompanion.insert({
+    required String pubkey,
+    required int derivationIndex,
+    this.note = const Value.absent(),
+    this.used = const Value.absent(),
+    this.txCount = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.lastUsedAt = const Value.absent(),
+    this.lastSeenAt = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : pubkey = Value(pubkey),
+       derivationIndex = Value(derivationIndex);
+  static Insertable<Burner> custom({
+    Expression<String>? pubkey,
+    Expression<int>? derivationIndex,
+    Expression<String>? note,
+    Expression<bool>? used,
+    Expression<int>? txCount,
+    Expression<int>? createdAt,
+    Expression<int>? lastUsedAt,
+    Expression<int>? lastSeenAt,
+    Expression<bool>? archived,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (pubkey != null) 'pubkey': pubkey,
+      if (derivationIndex != null) 'derivation_index': derivationIndex,
+      if (note != null) 'note': note,
+      if (used != null) 'used': used,
+      if (txCount != null) 'tx_count': txCount,
+      if (createdAt != null) 'created_at': createdAt,
+      if (lastUsedAt != null) 'last_used_at': lastUsedAt,
+      if (lastSeenAt != null) 'last_seen_at': lastSeenAt,
+      if (archived != null) 'archived': archived,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BurnersCompanion copyWith({
+    Value<String>? pubkey,
+    Value<int>? derivationIndex,
+    Value<String?>? note,
+    Value<bool>? used,
+    Value<int>? txCount,
+    Value<int>? createdAt,
+    Value<int?>? lastUsedAt,
+    Value<int?>? lastSeenAt,
+    Value<bool>? archived,
+    Value<int>? rowid,
+  }) {
+    return BurnersCompanion(
+      pubkey: pubkey ?? this.pubkey,
+      derivationIndex: derivationIndex ?? this.derivationIndex,
+      note: note ?? this.note,
+      used: used ?? this.used,
+      txCount: txCount ?? this.txCount,
+      createdAt: createdAt ?? this.createdAt,
+      lastUsedAt: lastUsedAt ?? this.lastUsedAt,
+      lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+      archived: archived ?? this.archived,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (pubkey.present) {
+      map['pubkey'] = Variable<String>(pubkey.value);
+    }
+    if (derivationIndex.present) {
+      map['derivation_index'] = Variable<int>(derivationIndex.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (used.present) {
+      map['used'] = Variable<bool>(used.value);
+    }
+    if (txCount.present) {
+      map['tx_count'] = Variable<int>(txCount.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (lastUsedAt.present) {
+      map['last_used_at'] = Variable<int>(lastUsedAt.value);
+    }
+    if (lastSeenAt.present) {
+      map['last_seen_at'] = Variable<int>(lastSeenAt.value);
+    }
+    if (archived.present) {
+      map['archived'] = Variable<bool>(archived.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BurnersCompanion(')
+          ..write('pubkey: $pubkey, ')
+          ..write('derivationIndex: $derivationIndex, ')
+          ..write('note: $note, ')
+          ..write('used: $used, ')
+          ..write('txCount: $txCount, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastUsedAt: $lastUsedAt, ')
+          ..write('lastSeenAt: $lastSeenAt, ')
+          ..write('archived: $archived, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$LocalDatabase extends GeneratedDatabase {
   _$LocalDatabase(QueryExecutor e) : super(e);
   $LocalDatabaseManager get managers => $LocalDatabaseManager(this);
   late final $PodsTable pods = $PodsTable(this);
+  late final $BurnersTable burners = $BurnersTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [pods];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [pods, burners];
 }
 
 typedef $$PodsTableCreateCompanionBuilder =
@@ -1847,9 +2420,287 @@ typedef $$PodsTableProcessedTableManager =
       Pod,
       PrefetchHooks Function()
     >;
+typedef $$BurnersTableCreateCompanionBuilder =
+    BurnersCompanion Function({
+      required String pubkey,
+      required int derivationIndex,
+      Value<String?> note,
+      Value<bool> used,
+      Value<int> txCount,
+      Value<int> createdAt,
+      Value<int?> lastUsedAt,
+      Value<int?> lastSeenAt,
+      Value<bool> archived,
+      Value<int> rowid,
+    });
+typedef $$BurnersTableUpdateCompanionBuilder =
+    BurnersCompanion Function({
+      Value<String> pubkey,
+      Value<int> derivationIndex,
+      Value<String?> note,
+      Value<bool> used,
+      Value<int> txCount,
+      Value<int> createdAt,
+      Value<int?> lastUsedAt,
+      Value<int?> lastSeenAt,
+      Value<bool> archived,
+      Value<int> rowid,
+    });
+
+class $$BurnersTableFilterComposer
+    extends Composer<_$LocalDatabase, $BurnersTable> {
+  $$BurnersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get pubkey => $composableBuilder(
+    column: $table.pubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get derivationIndex => $composableBuilder(
+    column: $table.derivationIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get used => $composableBuilder(
+    column: $table.used,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get txCount => $composableBuilder(
+    column: $table.txCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get archived => $composableBuilder(
+    column: $table.archived,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BurnersTableOrderingComposer
+    extends Composer<_$LocalDatabase, $BurnersTable> {
+  $$BurnersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get pubkey => $composableBuilder(
+    column: $table.pubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get derivationIndex => $composableBuilder(
+    column: $table.derivationIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get used => $composableBuilder(
+    column: $table.used,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get txCount => $composableBuilder(
+    column: $table.txCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get archived => $composableBuilder(
+    column: $table.archived,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BurnersTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $BurnersTable> {
+  $$BurnersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get pubkey =>
+      $composableBuilder(column: $table.pubkey, builder: (column) => column);
+
+  GeneratedColumn<int> get derivationIndex => $composableBuilder(
+    column: $table.derivationIndex,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<bool> get used =>
+      $composableBuilder(column: $table.used, builder: (column) => column);
+
+  GeneratedColumn<int> get txCount =>
+      $composableBuilder(column: $table.txCount, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get archived =>
+      $composableBuilder(column: $table.archived, builder: (column) => column);
+}
+
+class $$BurnersTableTableManager
+    extends
+        RootTableManager<
+          _$LocalDatabase,
+          $BurnersTable,
+          Burner,
+          $$BurnersTableFilterComposer,
+          $$BurnersTableOrderingComposer,
+          $$BurnersTableAnnotationComposer,
+          $$BurnersTableCreateCompanionBuilder,
+          $$BurnersTableUpdateCompanionBuilder,
+          (Burner, BaseReferences<_$LocalDatabase, $BurnersTable, Burner>),
+          Burner,
+          PrefetchHooks Function()
+        > {
+  $$BurnersTableTableManager(_$LocalDatabase db, $BurnersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BurnersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BurnersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BurnersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> pubkey = const Value.absent(),
+                Value<int> derivationIndex = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<bool> used = const Value.absent(),
+                Value<int> txCount = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int?> lastUsedAt = const Value.absent(),
+                Value<int?> lastSeenAt = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BurnersCompanion(
+                pubkey: pubkey,
+                derivationIndex: derivationIndex,
+                note: note,
+                used: used,
+                txCount: txCount,
+                createdAt: createdAt,
+                lastUsedAt: lastUsedAt,
+                lastSeenAt: lastSeenAt,
+                archived: archived,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String pubkey,
+                required int derivationIndex,
+                Value<String?> note = const Value.absent(),
+                Value<bool> used = const Value.absent(),
+                Value<int> txCount = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int?> lastUsedAt = const Value.absent(),
+                Value<int?> lastSeenAt = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BurnersCompanion.insert(
+                pubkey: pubkey,
+                derivationIndex: derivationIndex,
+                note: note,
+                used: used,
+                txCount: txCount,
+                createdAt: createdAt,
+                lastUsedAt: lastUsedAt,
+                lastSeenAt: lastSeenAt,
+                archived: archived,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BurnersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$LocalDatabase,
+      $BurnersTable,
+      Burner,
+      $$BurnersTableFilterComposer,
+      $$BurnersTableOrderingComposer,
+      $$BurnersTableAnnotationComposer,
+      $$BurnersTableCreateCompanionBuilder,
+      $$BurnersTableUpdateCompanionBuilder,
+      (Burner, BaseReferences<_$LocalDatabase, $BurnersTable, Burner>),
+      Burner,
+      PrefetchHooks Function()
+    >;
 
 class $LocalDatabaseManager {
   final _$LocalDatabase _db;
   $LocalDatabaseManager(this._db);
   $$PodsTableTableManager get pods => $$PodsTableTableManager(_db, _db.pods);
+  $$BurnersTableTableManager get burners =>
+      $$BurnersTableTableManager(_db, _db.burners);
 }

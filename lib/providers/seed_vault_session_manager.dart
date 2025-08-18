@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:skrambl_app/services/seed_vault_service.dart';
 import 'package:skrambl_app/utils/logger.dart';
 import 'package:solana_seed_vault/solana_seed_vault.dart';
 
@@ -50,17 +52,14 @@ class SeedVaultSessionManager extends ChangeNotifier {
       final authorizedSeeds = await SeedVault.instance.getAuthorizedSeeds();
       if (authorizedSeeds.isNotEmpty) {
         final seed = authorizedSeeds.first;
-        final token =
-            seed[WalletContractV1.authorizedSeedsAuthToken] as AuthToken?;
+        final token = seed[WalletContractV1.authorizedSeedsAuthToken] as AuthToken?;
         if (token != null) {
           skrLogger.i("✅ Restoring token from seed: $token");
           _authToken = token;
           await validateToken(); // Only if token exists
         }
       } else {
-        skrLogger.w(
-          '⚠️ No authorized seeds yet — waiting for user to authorize.',
-        );
+        skrLogger.w('⚠️ No authorized seeds yet — waiting for user to authorize.');
         _authToken = null; // Don't request inside init — do that manually in UI
       }
     } catch (e) {
@@ -71,6 +70,24 @@ class SeedVaultSessionManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Always returns a valid token, re-requesting if necessary
+  /// Not to be confused with seedVaultService.getValidToken.
+  Future<AuthToken?> getValidTokenFromManager(BuildContext context) async {
+    final isAvailable = await SeedVault.instance.isAvailable(allowSimulated: true);
+    if (!isAvailable) throw Exception("Seed Vault not available");
+
+    final permissionGranted = await SeedVaultService.requestPermission();
+    if (!permissionGranted) throw Exception("Seed Vault permission denied");
+
+    final token = await SeedVaultService.getValidToken(context);
+    if (token == null) {
+      skrLogger.e("❌ Seed Vault authorization denied.");
+      return null;
+    }
+    _authToken = token;
+    return token;
+  }
+
   void setAuthToken(AuthToken token) {
     _authToken = token;
     notifyListeners();
@@ -79,9 +96,7 @@ class SeedVaultSessionManager extends ChangeNotifier {
   /// Manually prompt for authorization (e.g., on user action)
   Future<bool> requestAuthorization() async {
     try {
-      _authToken = await SeedVault.instance.authorizeSeed(
-        Purpose.signSolanaTransaction,
-      );
+      _authToken = await SeedVault.instance.authorizeSeed(Purpose.signSolanaTransaction);
       _hasPermission = true;
       notifyListeners();
       return true;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:skrambl_app/data/burner_dao.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/providers/minute_ticker.dart';
 import 'package:skrambl_app/providers/pod_watcher_manager.dart';
@@ -24,36 +25,31 @@ void main() async {
 
   final db = LocalDatabase();
   final podDao = PodDao(db);
-
-  final seedVaultProvider = SeedVaultSessionManager();
-  await seedVaultProvider.initialize();
-
-  final balanceProvider = WalletBalanceProvider();
-
-  final sharedWs = SolanaWsService();
-  final watcherManager = PodWatcherManager(podDao, wsService: sharedWs);
+  final burnerDao = BurnerDao(db);
+  final seedVault = SeedVaultSessionManager();
+  await seedVault.initialize();
+  final balance = WalletBalanceProvider();
+  final ws = SolanaWsService();
+  final watcher = PodWatcherManager(podDao, wsService: ws);
 
   runApp(
     MultiProvider(
       providers: [
         Provider<LocalDatabase>.value(value: db),
         Provider<PodDao>.value(value: podDao),
-        Provider<SolanaWsService>.value(value: sharedWs),
-        ChangeNotifierProvider(create: (_) => seedVaultProvider),
-        ChangeNotifierProvider(create: (_) => balanceProvider),
+        Provider<BurnerDao>.value(value: burnerDao),
+        Provider<SolanaWsService>.value(value: ws),
+
+        ChangeNotifierProvider<SeedVaultSessionManager>.value(value: seedVault),
+        ChangeNotifierProvider<WalletBalanceProvider>.value(value: balance),
+        ChangeNotifierProvider<PodWatcherManager>.value(value: watcher),
         ChangeNotifierProvider(create: (_) => TransactionStatusProvider()),
+
         ChangeNotifierProvider(create: (_) => MinuteTicker()),
-        ChangeNotifierProvider<PodWatcherManager>.value(value: watcherManager),
+        Provider<BurnerWalletManager>(create: (_) => BurnerWalletManager()),
         Provider<BurnerRepository>(
-          create: (ctx) {
-            final token = ctx.read<SeedVaultSessionManager>().authToken;
-            if (token == null) {
-              // If this can happen on cold start, you can throw or return a dummy.
-              // Since you call initialize() before runApp, token should be ready.
-              throw StateError('AuthToken is not available for BurnerRepository.');
-            }
-            return BurnerRepository(manager: BurnerWalletManager(authToken: token));
-          },
+          create: (ctx) =>
+              BurnerRepository(manager: ctx.read<BurnerWalletManager>(), dao: ctx.read<BurnerDao>()),
         ),
       ],
       child: const AppLifecycleHandler(child: SkramblApp()),
@@ -61,7 +57,7 @@ void main() async {
   );
 
   // Start the watcher after providers are set up
-  watcherManager.start();
+  watcher.start();
 }
 
 class AppLifecycleHandler extends StatefulWidget {

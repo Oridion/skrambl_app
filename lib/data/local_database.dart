@@ -3,16 +3,16 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:skrambl_app/data/burner_entity.dart';
 import 'dart:io';
 
-import 'skrambl_entity.dart'; // will contain Pods and optional Skrambls
+import 'skrambl_entity.dart';
 
 part 'local_database.g.dart';
 
-@DriftDatabase(tables: [Pods /*, Skrambls if you still need it */])
+@DriftDatabase(tables: [Pods, Burners])
 class LocalDatabase extends _$LocalDatabase {
-  LocalDatabase({bool resetOnStart = false})
-    : super(_openConnection(resetOnStart));
+  LocalDatabase({bool resetOnStart = false}) : super(_openConnection(resetOnStart));
 
   @override
   int get schemaVersion => 1;
