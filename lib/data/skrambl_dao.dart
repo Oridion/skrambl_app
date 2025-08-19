@@ -49,6 +49,15 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
         .watch();
   }
 
+  // For burner wallet details screen
+  // All pods where this pubkey is either the sender (creator) or destination.
+  Stream<List<Pod>> watchByAddress(String pubkey) {
+    final q = select(pods)
+      ..where((p) => p.creator.equals(pubkey) | p.destination.equals(pubkey))
+      ..orderBy([(p) => OrderingTerm(expression: p.draftedAt, mode: OrderingMode.desc)]);
+    return q.watch();
+  }
+
   // Create local draft row when user hits "Launch"
   Future<String> createDraft({
     required String creator,

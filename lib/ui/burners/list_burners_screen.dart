@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'package:skrambl_app/data/burner_dao.dart';
 import 'package:skrambl_app/data/local_database.dart';
+import 'package:skrambl_app/ui/burners/burner_details_screen.dart';
 import 'package:skrambl_app/ui/burners/empty_burner_state.dart';
 import 'package:skrambl_app/ui/burners/widgets/list_burner_tile.dart';
 import 'package:skrambl_app/ui/shared/burner_flows.dart';
@@ -40,7 +41,7 @@ class BurnersScreen extends StatelessWidget {
           }
 
           return Padding(
-            padding: EdgeInsetsGeometry.fromLTRB(16, 0, 16, 12),
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
               itemCount: items.length,
@@ -50,7 +51,9 @@ class BurnersScreen extends StatelessWidget {
                 return ListBurnerTile(
                   burner: b,
                   onTap: () {
-                    // TODO: Navigate to burner detail (show pods from this pubkey, etc.)
+                    Navigator.of(
+                      context,
+                    ).push(MaterialPageRoute(builder: (_) => BurnerDetailsScreen(pubkey: b.pubkey)));
                   },
                   onCopy: () async {
                     await Clipboard.setData(ClipboardData(text: b.pubkey));

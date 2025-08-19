@@ -39,6 +39,11 @@ class BurnerDao extends DatabaseAccessor<LocalDatabase> with _$BurnerDaoMixin {
         .watch();
   }
 
+  // Watch a single burner wallet
+  Stream<Burner?> watchByPubkey(String pubkey) {
+    return (select(burners)..where((b) => b.pubkey.equals(pubkey))).watchSingleOrNull();
+  }
+
   //Is the address a burner address
   Future<bool> isBurner(String pubkey) async {
     final row = await (select(burners)..where((b) => b.pubkey.equals(pubkey))).getSingleOrNull();
