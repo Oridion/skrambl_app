@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:skrambl_app/data/burner_dao.dart';
 import 'package:skrambl_app/ui/pods/helper/pod_timeline_builder.dart';
 import 'package:skrambl_app/ui/pods/widgets/actions_bar.dart';
 import 'package:skrambl_app/ui/pods/widgets/details_table.dart';
@@ -12,6 +13,7 @@ import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/utils/launcher.dart';
+import 'package:skrambl_app/utils/logger.dart';
 
 class PodDetailsScreen extends StatelessWidget {
   final String localId; // pods.id from Drift table (string UUID or similar)
@@ -20,7 +22,7 @@ class PodDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dao = context.read<PodDao>();
-
+    final burnerDao = context.read<BurnerDao>();
     return Scaffold(
       appBar: AppBar(title: const Text('Delivery Details'), titleSpacing: 24),
       body: StreamBuilder<Pod?>(
@@ -49,46 +51,84 @@ class PodDetailsScreen extends StatelessWidget {
             pod: pod,
           );
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            children: [
-              // ===== HEADER CARD =====
-              PodHeaderCard(
-                status: status,
-                chipColor: chipColor,
-                draftedAt: dateTimeOrNull(pod.draftedAt * 1000),
-                lamports: pod.lamports,
-                pod: pod,
-              ),
-              const SizedBox(height: 16),
+          final addrs = {pod.creator, pod.destination};
+          return FutureBuilder<Set<String>>(
+            future: burnerDao.findBurnersIn(addrs),
+            builder: (context, bSnap) {
+              final burners = bSnap.data ?? const {};
+              final isSenderBurner = burners.contains(pod.creator);
+              final isDestinationBurner = burners.contains(pod.destination);
 
-              // ===== TIMELINE =====
-              VerticalTimeline(items: timeline, pod: pod),
-              // SectionWrapper(
-              //   label: 'TIMELINE',
-              //   child: VerticalTimeline(items: timeline, pod: pod),
-              // ),
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                children: [
+                  // ===== HEADER CARD =====
+                  PodHeaderCard(
+                    status: status,
+                    chipColor: chipColor,
+                    draftedAt: dateTimeOrNull(pod.draftedAt * 1000),
+                    lamports: pod.lamports,
+                    pod: pod,
+                    isSenderBurner: isSenderBurner,
+                    isDestinationBurner: isDestinationBurner,
+                  ),
+                  const SizedBox(height: 16),
 
-              // ===== DETAILS =====
-              SectionWrapper(
-                label: 'DETAILS',
-                child: PodDetailsTable(
-                  rows: [
-                    PodDetailRow('TYPE', modeLabel(pod.mode)),
-                    if (pod.mode != 5) PodDetailRow('DELAY', delayLabel(pod.delaySeconds)),
-                    // PodDetailRow('CREATOR', shortenPubkey(pod.creator)),
-                    // PodDetailRow('DESTINATION', shortenPubkey(pod.destination), copyable: true),
-                    if (pod.podPda != null) PodDetailRow('PDA', pod.podPda!, copyable: true),
-                  ],
-                ),
-              ),
+                  // ===== TIMELINE =====
+                  VerticalTimeline(items: timeline, pod: pod),
+                  // SectionWrapper(
+                  //   label: 'TIMELINE',
+                  //   child: VerticalTimeline(items: timeline, pod: pod),
+                  // ),
 
-              // ===== ACTIONS =====
-              PodActionsBar(pda: pod.podPda, signature: pod.launchSig),
-            ],
+                  // ===== DETAILS =====
+                  SectionWrapper(
+                    label: 'DETAILS',
+                    child: PodDetailsTable(
+                      rows: [
+                        PodDetailRow('TYPE', modeLabel(pod.mode)),
+                        if (pod.mode != 5) PodDetailRow('DELAY', delayLabel(pod.delaySeconds)),
+                        // PodDetailRow('CREATOR', shortenPubkey(pod.creator)),
+                        // PodDetailRow('DESTINATION', shortenPubkey(pod.destination), copyable: true),
+                        if (pod.podPda != null) PodDetailRow('PDA', pod.podPda!, copyable: true),
+                      ],
+                    ),
+                  ),
+
+                  // ===== ACTIONS =====
+                  PodActionsBar(pda: pod.podPda, signature: pod.launchSig),
+                ],
+              );
+            },
           );
         },
       ),
     );
   }
 }
+
+
+// 🔴 Meta warning row when sent to burner
+// if (isBurner) ...[
+//   const SizedBox(height: 12),
+//   Container(
+//     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+//     decoration: BoxDecoration(
+//       color: const Color(0xFFFFE9E9),
+//       borderRadius: BorderRadius.circular(8),
+//       border: Border.all(color: const Color(0xFFE53935), width: 1.5),
+//     ),
+//     child: Row(
+//       children: const [
+//         Icon(Icons.local_fire_department, color: Color(0xFFE53935), size: 18),
+//         SizedBox(width: 8),
+//         Expanded(
+//           child: Text(
+//             'Sent to burner',
+//             style: TextStyle(color: Color(0xFFE53935), fontWeight: FontWeight.w800),
+//           ),
+//         ),
+//       ],
+//     ),
+//   ),
+// ],

@@ -16,6 +16,8 @@ class PodHeaderCard extends StatelessWidget {
   final DateTime? draftedAt;
   final int lamports; // raw lamports
   final Pod pod;
+  final bool isSenderBurner;
+  final bool isDestinationBurner;
 
   const PodHeaderCard({
     super.key,
@@ -24,6 +26,8 @@ class PodHeaderCard extends StatelessWidget {
     required this.draftedAt,
     required this.lamports,
     required this.pod,
+    required this.isSenderBurner,
+    required this.isDestinationBurner,
   });
 
   @override
@@ -45,7 +49,7 @@ class PodHeaderCard extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 6), // small spacer under the pill
-              FromToBar(from: pod.creator, to: pod.destination, shorten: shortenPubkey),
+              FromToBar(from: pod.creator, to: pod.destination),
               const SizedBox(height: 5),
               const Divider(color: Colors.black38),
               const SizedBox(height: 5),

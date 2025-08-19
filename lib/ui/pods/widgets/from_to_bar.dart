@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skrambl_app/utils/colors.dart';
+import 'package:skrambl_app/utils/formatters.dart';
 
 class FromToBar extends StatelessWidget {
   final String from;
   final String to;
-  final String Function(String) shorten; // e.g. shortenPubkey
   final EdgeInsets padding;
 
   const FromToBar({
     super.key,
     required this.from,
     required this.to,
-    required this.shorten,
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
   });
 
@@ -48,7 +47,7 @@ class FromToBar extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(shorten(from), style: valueStyle, overflow: TextOverflow.ellipsis),
+                    child: Text(shortenPubkey(from), style: valueStyle, overflow: TextOverflow.ellipsis),
                   ),
                 ],
               ),
@@ -76,7 +75,7 @@ class FromToBar extends StatelessWidget {
                   const SizedBox(width: 2),
                   Flexible(
                     child: Text(
-                      shorten(to),
+                      shortenPubkey(to),
                       style: valueStyle,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
