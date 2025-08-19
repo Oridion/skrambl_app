@@ -13,7 +13,6 @@ import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/utils/launcher.dart';
-import 'package:skrambl_app/utils/logger.dart';
 
 class PodDetailsScreen extends StatelessWidget {
   final String localId; // pods.id from Drift table (string UUID or similar)
@@ -43,14 +42,6 @@ class PodDetailsScreen extends StatelessWidget {
           final submittedAt = dateTimeOrNull(pod.submittedAt);
           final finalizedAt = dateTimeOrNull(pod.finalizedAt);
 
-          final timeline = buildTimeline(
-            draftedAt: draftedAt,
-            submittedAt: submittedAt,
-            finalizedAt: finalizedAt,
-            status: status,
-            pod: pod,
-          );
-
           final addrs = {pod.creator, pod.destination};
           return FutureBuilder<Set<String>>(
             future: burnerDao.findBurnersIn(addrs),
@@ -58,6 +49,16 @@ class PodDetailsScreen extends StatelessWidget {
               final burners = bSnap.data ?? const {};
               final isSenderBurner = burners.contains(pod.creator);
               final isDestinationBurner = burners.contains(pod.destination);
+
+              final timeline = buildTimeline(
+                draftedAt: draftedAt,
+                submittedAt: submittedAt,
+                finalizedAt: finalizedAt,
+                status: status,
+                pod: pod,
+                isSenderBurner: isSenderBurner,
+                isDestinationBurner: isDestinationBurner,
+              );
 
               return ListView(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),

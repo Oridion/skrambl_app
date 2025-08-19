@@ -22,6 +22,8 @@ class AppConstants {
   static const IconData skramblIcon = Icons.token;
 
   static final TextStyle solFontStyle = GoogleFonts.archivoBlack(fontSize: 77, color: Colors.black);
+
+  static final Color burnerColor = Color.fromARGB(255, 191, 37, 35);
 }
 
 class AppAssets {

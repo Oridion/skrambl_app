@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:skrambl_app/data/local_database.dart';
 
 @DataClassName('Pod')
 class Pods extends Table {
@@ -62,4 +63,24 @@ enum PodStatus {
 extension PodStatusX on PodStatus {
   int get code => index;
   static PodStatus fromCode(int c) => PodStatus.values[c];
+}
+
+extension PodDuration on Pod {
+  Duration? get submitDuration {
+    final a = submittingAt;
+    final b = submittedAt;
+    if (a == null || b == null) return null;
+
+    final start = DateTime.fromMillisecondsSinceEpoch(a * 1000);
+    final end = DateTime.fromMillisecondsSinceEpoch(b * 1000);
+    return end.difference(start);
+  }
+
+  /// Handy if you want “N s” directly
+  int? get submitDurationSeconds {
+    final a = submittingAt;
+    final b = submittedAt;
+    if (a == null || b == null) return null;
+    return b - a; // already seconds
+  }
 }

@@ -71,3 +71,9 @@ String formatDelay(int seconds) {
     return "${leftover}s";
   }
 }
+
+String formatDurationShort(Duration d) => d.inSeconds < 1
+    ? '${d.inMilliseconds} ms'
+    : d.inMinutes < 1
+    ? '${d.inSeconds}s'
+    : '${d.inMinutes}m ${d.inSeconds % 60}s';

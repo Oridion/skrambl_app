@@ -10,46 +10,59 @@ List<TimelineItem> buildTimeline({
   required DateTime? finalizedAt,
   required PodStatus status,
   required Pod pod,
+  required bool isSenderBurner,
+  required bool isDestinationBurner,
 }) {
   final items = <TimelineItem>[];
   String draftedDetails;
   if (pod.mode == 5) {
-    draftedDetails = "Standard delivery drafted";
+    draftedDetails = "Standard delivery drafted ";
   } else if (pod.mode == 0) {
-    draftedDetails = "Skrambled immediate delivery drafted";
+    draftedDetails = "Skrambled immediate delivery drafted ";
     // fallback if other modes
   } else {
-    draftedDetails = "Skrambled delayed delivery drafted";
+    draftedDetails = "Skrambled delayed delivery drafted ";
+  }
+
+  if (isSenderBurner) {
+    draftedDetails += 'from burner wallet';
+  } else {
+    draftedDetails += 'from primary wallet';
+  }
+
+  if (isDestinationBurner) {
+    draftedDetails += ' to burner wallet';
+  } else {
+    draftedDetails += ' to ${shortenPubkey(pod.destination)}';
   }
 
   items.add(
     TimelineItem(
       title: 'Drafted',
-      subtitle: '$draftedDetails for delievery',
+      subtitle: draftedDetails,
       color: Colors.grey,
       completed: draftedAt != null,
       time: draftedAt,
     ),
   );
 
+  final d = pod.submitDuration;
+  final submittedSubtitle = d == null
+      ? 'Submitted to network'
+      : 'Submitted to network (${formatDurationShort(d)})';
+
   items.add(
     TimelineItem(
       title: 'Submitted',
-      subtitle: 'Launched to network',
+      subtitle: submittedSubtitle,
       color: Colors.blue,
       completed: submittedAt != null,
       time: submittedAt,
     ),
   );
 
-
   //Show this section for skrambled pods only
-  if (pod.mode != 5) {
-
-    
-
-
-  }
+  if (pod.mode != 5) {}
 
   // If failed
   if (status == PodStatus.failed) {

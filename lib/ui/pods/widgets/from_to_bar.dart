@@ -1,23 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 
 class FromToBar extends StatelessWidget {
   final String from;
   final String to;
+  final bool isSenderBurner;
+  final bool isDestinationBurner;
   final EdgeInsets padding;
-
   const FromToBar({
     super.key,
     required this.from,
     required this.to,
+    required this.isSenderBurner,
+    required this.isDestinationBurner,
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
   });
 
   @override
   Widget build(BuildContext context) {
     final valueStyle = const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700);
+    final burnerStyle = TextStyle(
+      fontSize: 13.5,
+      fontWeight: FontWeight.w700,
+      color: AppConstants.burnerColor,
+    );
 
     Widget copyChip(String text) => InkWell(
       onTap: () async {
@@ -46,8 +55,15 @@ class FromToBar extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
+                  if (isSenderBurner)
+                    Icon(Icons.local_fire_department, color: AppConstants.burnerColor, size: 18),
+
                   Expanded(
-                    child: Text(shortenPubkey(from), style: valueStyle, overflow: TextOverflow.ellipsis),
+                    child: Text(
+                      shortenPubkey(from),
+                      style: isSenderBurner ? burnerStyle : valueStyle,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
@@ -72,11 +88,14 @@ class FromToBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   copyChip(to),
+                  if (isDestinationBurner)
+                    Icon(Icons.local_fire_department, color: AppConstants.burnerColor, size: 18),
+
                   const SizedBox(width: 2),
                   Flexible(
                     child: Text(
                       shortenPubkey(to),
-                      style: valueStyle,
+                      style: isDestinationBurner ? burnerStyle : valueStyle,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
                     ),

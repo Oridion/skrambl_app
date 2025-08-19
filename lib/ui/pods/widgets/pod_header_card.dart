@@ -49,7 +49,12 @@ class PodHeaderCard extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 6), // small spacer under the pill
-              FromToBar(from: pod.creator, to: pod.destination),
+              FromToBar(
+                from: pod.creator,
+                to: pod.destination,
+                isSenderBurner: isSenderBurner,
+                isDestinationBurner: isDestinationBurner,
+              ),
               const SizedBox(height: 5),
               const Divider(color: Colors.black38),
               const SizedBox(height: 5),
@@ -57,7 +62,12 @@ class PodHeaderCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: _AmountBlock(solText: _solString(lamports), textTheme: t),
+                    child: _AmountBlock(
+                      solText: _solString(lamports),
+                      textTheme: t,
+                      isSenderBurner: isSenderBurner,
+                      isDestinationBurner: isDestinationBurner,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Column(
@@ -96,7 +106,14 @@ class PodHeaderCard extends StatelessWidget {
 class _AmountBlock extends StatelessWidget {
   final String solText;
   final TextTheme textTheme;
-  const _AmountBlock({required this.solText, required this.textTheme});
+  final bool isSenderBurner;
+  final bool isDestinationBurner;
+  const _AmountBlock({
+    required this.solText,
+    required this.textTheme,
+    required this.isSenderBurner,
+    required this.isDestinationBurner,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +130,7 @@ class _AmountBlock extends StatelessWidget {
           child: SolanaLogo(size: 11, useDark: true),
         ),
         SizedBox(width: 5),
+
         Text(
           amount,
           style: textTheme.displaySmall?.copyWith(
@@ -126,6 +144,7 @@ class _AmountBlock extends StatelessWidget {
           ),
         ),
         SizedBox(width: 3),
+
         Text(unit, style: textTheme.labelLarge?.copyWith(color: Colors.black, letterSpacing: 0.3)),
       ],
     );
