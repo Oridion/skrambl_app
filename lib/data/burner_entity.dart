@@ -8,7 +8,7 @@ class Burners extends Table {
   IntColumn get derivationIndex => integer()();
 
   // Optional user note/label
-  TextColumn get note => text().nullable()();
+  TextColumn get note => text().withLength(min: 0, max: 64).nullable()();
 
   // Flags & counters
   BoolColumn get used => boolean().withDefault(const Constant(false))();

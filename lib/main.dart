@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/data/burner_dao.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
+import 'package:skrambl_app/providers/burner_balances_provider.dart';
 import 'package:skrambl_app/providers/minute_ticker.dart';
 import 'package:skrambl_app/providers/pod_watcher_manager.dart';
+import 'package:skrambl_app/providers/price_provider.dart';
 import 'package:skrambl_app/providers/transaction_status_provider.dart';
 import 'package:skrambl_app/solana/solana_ws_service.dart';
 import 'package:skrambl_app/ui/root_shell.dart';
@@ -28,7 +31,7 @@ void main() async {
   final burnerDao = BurnerDao(db);
   final seedVault = SeedVaultSessionManager();
   await seedVault.initialize();
-  final balance = WalletBalanceProvider();
+
   final ws = SolanaWsService();
   final watcher = PodWatcherManager(podDao, wsService: ws);
 
@@ -39,9 +42,13 @@ void main() async {
         Provider<PodDao>.value(value: podDao),
         Provider<BurnerDao>.value(value: burnerDao),
         Provider<SolanaWsService>.value(value: ws),
-
+        ChangeNotifierProvider(create: (_) => PriceProvider()),
         ChangeNotifierProvider<SeedVaultSessionManager>.value(value: seedVault),
-        ChangeNotifierProvider<WalletBalanceProvider>.value(value: balance),
+        ChangeNotifierProxyProvider<PriceProvider, WalletBalanceProvider>(
+          create: (ctx) => WalletBalanceProvider(ctx.read<PriceProvider>()),
+          update: (ctx, price, wallet) => wallet!..attachPriceProvider(price),
+        ),
+
         ChangeNotifierProvider<PodWatcherManager>.value(value: watcher),
         ChangeNotifierProvider(create: (_) => TransactionStatusProvider()),
 
@@ -50,6 +57,13 @@ void main() async {
         Provider<BurnerRepository>(
           create: (ctx) =>
               BurnerRepository(manager: ctx.read<BurnerWalletManager>(), dao: ctx.read<BurnerDao>()),
+        ),
+        ChangeNotifierProvider(
+          create: (ctx) => BurnerBalancesProvider(
+            dao: ctx.read<BurnerDao>(),
+            rpcHttpUrl: AppConstants.rawAPIURL,
+            refreshEvery: const Duration(seconds: 45),
+          ),
         ),
       ],
       child: const AppLifecycleHandler(child: SkramblApp()),
@@ -73,6 +87,12 @@ class _AppLifecycleHandlerState extends State<AppLifecycleHandler> with WidgetsB
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Warm burner cache once app is up and Providers exist
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final repo = context.read<BurnerRepository>();
+      await repo.warmCacheFromDb(); // DB → in-memory cache
+    });
   }
 
   @override
@@ -158,6 +178,18 @@ class SkramblApp extends StatelessWidget {
             fontWeight: FontWeight.w400,
             color: Colors.grey[600],
             letterSpacing: 0.2,
+          ),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating, // makes it float above UI
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6), // pill style
+          ),
+          backgroundColor: Colors.black87,
+          contentTextStyle: const TextStyle(color: Colors.white),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 12, // bottom margin
           ),
         ),
       ),
