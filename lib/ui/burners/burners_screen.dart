@@ -1,8 +1,12 @@
 // lib/ui/burners/burners_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import 'package:skrambl_app/data/burner_dao.dart';
 import 'package:skrambl_app/data/local_database.dart';
+import 'package:skrambl_app/ui/burners/empty_burner_state.dart';
+import 'package:skrambl_app/ui/shared/burner_flows.dart';
 
 class BurnersScreen extends StatelessWidget {
   const BurnersScreen({super.key});
@@ -20,25 +24,30 @@ class BurnersScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           final items = snap.data ?? const [];
-
           if (items.isEmpty) {
-            return _EmptyState(onCreate: () => _onCreate(context));
+            return EmptyBurnerState(onCreate: () => openCreateBurnerSheet(context));
           }
 
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
             itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, i) {
               final b = items[i];
               return _BurnerTile(
                 burner: b,
                 onTap: () {
-                  // TODO: open burner detail (pods from this burner, etc.)
+                  // TODO: Navigate to burner detail (show pods from this pubkey, etc.)
                 },
-                onEditNote: () => _editNote(context, dao, b),
+                onCopy: () async {
+                  await Clipboard.setData(ClipboardData(text: b.pubkey));
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Address copied')));
+                },
+                onEditNote: () => editNote(context, dao, b),
                 onArchive: () async {
                   await dao.archive(b.pubkey, archived: true);
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(const SnackBar(content: Text('Burner archived')));
@@ -48,80 +57,6 @@ class BurnersScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _onCreate(context),
-        icon: const Icon(Icons.add),
-        label: const Text('New Burner'),
-      ),
-    );
-  }
-
-  void _onCreate(BuildContext context) {
-    // TODO: Navigate to your “Create Burner” flow
-    // e.g. Navigator.pushNamed(context, Routes.newBurner);
-  }
-
-  Future<void> _editNote(BuildContext context, BurnerDao dao, Burner b) async {
-    final controller = TextEditingController(text: b.note ?? '');
-    final note = await showDialog<String?>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit note'),
-        content: TextField(
-          controller: controller,
-          maxLines: 2,
-          decoration: const InputDecoration(hintText: 'Add a note (optional)', border: OutlineInputBorder()),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-
-    if (note != null) {
-      await dao.setNote(b.pubkey, note.isEmpty ? null : note);
-      // optional toast
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Note saved')));
-      }
-    }
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final VoidCallback onCreate;
-  const _EmptyState({required this.onCreate});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.local_fire_department_rounded, size: 56, color: Colors.black54),
-            const SizedBox(height: 10),
-            const Text('No burners yet', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 6),
-            const Text(
-              'Create a burner address to send privately or compartmentalize funds.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black54),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: onCreate,
-              icon: const Icon(Icons.add),
-              label: const Text('Create burner'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -129,12 +64,14 @@ class _EmptyState extends StatelessWidget {
 class _BurnerTile extends StatelessWidget {
   final Burner burner;
   final VoidCallback onTap;
+  final VoidCallback onCopy;
   final VoidCallback onEditNote;
   final VoidCallback onArchive;
 
   const _BurnerTile({
     required this.burner,
     required this.onTap,
+    required this.onCopy,
     required this.onEditNote,
     required this.onArchive,
   });
@@ -145,9 +82,7 @@ class _BurnerTile extends StatelessWidget {
     if ((burner.note ?? '').isNotEmpty) subtitle.add(burner.note!);
     subtitle.add('Index ${burner.derivationIndex}');
     subtitle.add('Txs ${burner.txCount}');
-    if (burner.lastUsedAt != null) {
-      subtitle.add('Used ${_relative(burner.lastUsedAt!)}');
-    }
+    if (burner.lastUsedAt != null) subtitle.add('Used ${_relative(burner.lastUsedAt!)}');
 
     return Material(
       color: Colors.white,
@@ -160,13 +95,10 @@ class _BurnerTile extends StatelessWidget {
           child: Row(
             children: [
               const SizedBox(width: 12),
-
-              // Texts
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Pubkey row
                     Row(
                       children: [
                         Flexible(
@@ -197,11 +129,12 @@ class _BurnerTile extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Menu
               PopupMenuButton<String>(
                 onSelected: (v) {
                   switch (v) {
+                    case 'copy':
+                      onCopy();
+                      break;
                     case 'edit':
                       onEditNote();
                       break;
@@ -211,6 +144,7 @@ class _BurnerTile extends StatelessWidget {
                   }
                 },
                 itemBuilder: (ctx) => const [
+                  PopupMenuItem(value: 'copy', child: Text('Copy address')),
                   PopupMenuItem(value: 'edit', child: Text('Edit note')),
                   PopupMenuItem(value: 'archive', child: Text('Archive')),
                 ],
@@ -233,6 +167,5 @@ class _BurnerTile extends StatelessWidget {
     if (d.inMinutes < 60) return '${d.inMinutes}m ago';
     if (d.inHours < 24) return '${d.inHours}h ago';
     return '${d.inDays}d ago';
-    // (you can swap in your RelativeTimeListen widget if you like)
   }
 }

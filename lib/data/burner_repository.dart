@@ -14,7 +14,7 @@ class BurnerRepository {
   /// Returns the in-memory BurnerWallet (index + publicKey + optional note).
   Future<BurnerWallet?> createBurner({required AuthToken token, String? note}) async {
     final index = await manager.allocateNextIndex();
-    final wallet = await manager.createBurnerWallet(token: token, index: index, note: note);
+    final wallet = await manager.createBurnerWallet(dao: dao, token: token, index: index, note: note);
     if (wallet == null) return null;
     await dao.upsertBurner(pubkey: wallet.publicKey, derivationIndex: index, note: note);
     return wallet;
@@ -24,7 +24,7 @@ class BurnerRepository {
   Future<void> warmCacheFromDb({required AuthToken token}) async {
     final rows = await dao.getAll();
     final indices = rows.map((b) => b.derivationIndex).toList();
-    await manager.restoreByIndices(token: token, indices: indices);
+    await manager.restoreByIndices(dao: dao, token: token, indices: indices);
   }
 
   /// Stream the active burners (archived=false), newest used first.
