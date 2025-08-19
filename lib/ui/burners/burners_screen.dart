@@ -17,7 +17,17 @@ class BurnersScreen extends StatelessWidget {
     final dao = context.read<BurnerDao>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Burners')),
+      appBar: AppBar(
+        title: const Text('Burners'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Create burner',
+            icon: const Icon(Icons.add),
+            onPressed: () => openCreateBurnerSheet(context),
+          ),
+        ],
+      ),
       body: StreamBuilder<List<Burner>>(
         stream: dao.watchAllActive(),
         builder: (context, snap) {

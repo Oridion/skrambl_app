@@ -45,6 +45,16 @@ class BurnerDao extends DatabaseAccessor<LocalDatabase> with _$BurnerDaoMixin {
 
   Future<List<Burner>> getAll() => select(burners).get();
 
+  //Get next index.
+  Future<int> nextBurnerIndex() async {
+    // SELECT MAX(derivation_index) FROM burners;
+    final q = await (selectOnly(burners)..addColumns([burners.derivationIndex.max()])).getSingle();
+
+    final maxIdx = q.read(burners.derivationIndex.max());
+    // start at 100 if table empty
+    return (maxIdx ?? 99) + 1;
+  }
+
   // ---------- Updates ----------
 
   Future<int> setNote(String pubkey, String? note) {

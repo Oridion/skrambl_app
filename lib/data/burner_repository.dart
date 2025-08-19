@@ -13,18 +13,17 @@ class BurnerRepository {
   /// Create a new burner key (derives from Seed Vault), then persist it in DB.
   /// Returns the in-memory BurnerWallet (index + publicKey + optional note).
   Future<BurnerWallet?> createBurner({required AuthToken token, String? note}) async {
-    final index = await manager.allocateNextIndex();
-    final wallet = await manager.createBurnerWallet(dao: dao, token: token, index: index, note: note);
-    if (wallet == null) return null;
-    await dao.upsertBurner(pubkey: wallet.publicKey, derivationIndex: index, note: note);
-    return wallet;
+    final index = await dao.nextBurnerIndex();
+    final pubkey = await manager.derivePublicKey(token: token, accountIndex: index);
+    await dao.upsertBurner(pubkey: pubkey, derivationIndex: index, note: note);
+    final burner = BurnerWallet(index: index, publicKey: pubkey, note: note);
+    manager.memoize(burner);
+    return burner;
   }
 
   /// Restore manager’s in-memory cache from DB (useful on cold start).
-  Future<void> warmCacheFromDb({required AuthToken token}) async {
-    final rows = await dao.getAll();
-    final indices = rows.map((b) => b.derivationIndex).toList();
-    await manager.restoreByIndices(dao: dao, token: token, indices: indices);
+  Future<void> warmCacheFromDb() async {
+    await manager.loadBurnersFromDb(dao); // DB → cache
   }
 
   /// Stream the active burners (archived=false), newest used first.
@@ -59,13 +58,4 @@ class BurnerRepository {
     // If you later persist to Drift, read from DB here instead of manager memory.
     return manager.getAllBurners();
   }
-
-  // Future<BurnerWallet> createBurner(String label) async {
-  //   final next = manager.getNextIndex();
-  //   final created = await manager.createBurnerWallet(index: next, note: label);
-  //   if (created == null) {
-  //     throw Exception('Failed to create burner wallet via Seed Vault.');
-  //   }
-  //   return created;
-  // }
 }

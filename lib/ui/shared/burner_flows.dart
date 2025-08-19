@@ -7,6 +7,7 @@ import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/services/seed_vault_service.dart';
 import 'package:skrambl_app/services/burner_wallet_management.dart';
 import 'package:skrambl_app/ui/burners/create_burner_sheet.dart';
+import 'package:skrambl_app/utils/colors.dart';
 
 String _short(String s, {int head = 6, int tail = 6}) =>
     s.length <= head + tail + 1 ? s : '${s.substring(0, head)}…${s.substring(s.length - tail)}';
@@ -17,22 +18,60 @@ Future<void> openCreateBurnerSheet(BuildContext context) async {
   final created = await showModalBottomSheet<BurnerWallet>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.white,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-    builder: (ctx) => CreateBurnerSheet(
-      onCreate: (label) async {
-        // Fetch a fresh token right before the sensitive op
-        final token = await SeedVaultService.getValidToken(ctx);
-        if (token == null) {
-          throw Exception('Seed Vault authorization denied');
-        }
-        final burner = await repo.createBurner(token: token, note: label);
-        if (burner == null) {
-          throw Exception('Burner creation failed');
-        }
-        return burner;
-      },
-    ),
+    backgroundColor: Colors.transparent, // floating card
+    barrierColor: Colors.black.withOpacityCompat(0.35),
+
+    builder: (ctx) {
+      final insets = MediaQuery.of(ctx).viewInsets;
+
+      return AnimatedPadding(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.only(bottom: insets.bottom), // lift with keyboard
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.all(16), // margin around the sheet
+            child: Material(
+              elevation: 8,
+              color: Colors.white,
+              //borderRadius: BorderRadius.circular(16),
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(
+                  color: Colors.black, // border color
+                  width: 2, // thickness
+                ),
+              ),
+              child: FractionallySizedBox(
+                heightFactor: 0.40, // fixed height feel
+                child: LayoutBuilder(
+                  builder: (ctx, constraints) {
+                    return SingleChildScrollView(
+                      padding: EdgeInsets.only(bottom: insets.bottom),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                        child: CreateBurnerSheet(
+                          onCreate: (label) async {
+                            final token = await SeedVaultService.getValidToken(ctx);
+                            if (token == null) throw Exception('Seed Vault authorization denied');
+
+                            final burner = await repo.createBurner(token: token, note: label);
+                            if (burner == null) throw Exception('Burner creation failed');
+                            return burner;
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
   );
 
   if (created != null && context.mounted) {

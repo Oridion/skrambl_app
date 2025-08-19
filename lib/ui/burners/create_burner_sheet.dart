@@ -56,7 +56,7 @@ class _CreateBurnerSheetState extends State<CreateBurnerSheet> with TickerProvid
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -69,7 +69,7 @@ class _CreateBurnerSheetState extends State<CreateBurnerSheet> with TickerProvid
                   IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 20),
               TextField(
                 controller: _labelCtrl,
                 autofocus: true,
@@ -78,7 +78,7 @@ class _CreateBurnerSheetState extends State<CreateBurnerSheet> with TickerProvid
                 maxLength: 60,
                 decoration: InputDecoration(
                   counterText: '',
-                  labelText: 'Label / note (e.g., “Coffee”, “Ticket #123”)',
+                  labelText: 'Optional note (e.g., “Coffee”, “Ticket #123”)',
                   border: const OutlineInputBorder(),
                 ),
                 onChanged: (_) {
@@ -101,11 +101,11 @@ class _CreateBurnerSheetState extends State<CreateBurnerSheet> with TickerProvid
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
                 child: _submitting
                     ? const SizedBox(
-                        height: 18,
+                        height: 20,
                         width: 18,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Create'),
+                    : const Text('Create Burner'),
               ),
             ],
           ),

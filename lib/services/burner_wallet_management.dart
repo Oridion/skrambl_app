@@ -17,60 +17,37 @@ class BurnerWallet {
 
 /// Stateless w.r.t. auth — fetches a fresh token via the injected callback
 class BurnerWalletManager {
+  //Cache
   final List<BurnerWallet> _wallets = [];
-  bool _allocating = false;
+  List<BurnerWallet> getAllBurners() => List.unmodifiable(_wallets);
 
-  /// Derive / resolve a burner at `index`. Optionally attach a local `note`.
-  Future<BurnerWallet?> createBurnerWallet({
-    required BurnerDao dao,
-    required AuthToken token,
-    required int index,
-    String? note,
-  }) async {
-    skrLogger.i("index: $index");
-
-    // try {
-    //   final derivationPath = Bip44DerivationPath.toUri([
-    //     const BipLevel(index: 44, hardened: true), // Standard BIP44
-    //     const BipLevel(index: 501, hardened: true), // Solana's coin type
-    //     BipLevel(index: index, hardened: true), // Burner wallet index
-    //   ]);
-
-    //   skrLogger.i("path: $derivationPath");
-
-    //   final resolvedPath = await SeedVault.instance.resolveDerivationPath(
-    //     derivationPath: derivationPath,
-    //     purpose: Purpose.signSolanaTransaction,
-    //   );
-
-    //   final accounts = await SeedVault.instance.getParsedAccounts(
-    //     token,
-    //     filter: AccountFilter.byDerivationPath(resolvedPath),
-    //   );
-
-    //   final pk = accounts.firstOrNull?.publicKeyEncoded;
-
-    //   skrLogger.i("HERE");
-    //   skrLogger.i(pk);
-
-    //   if (pk == null) return null;
-
-    //   final w = BurnerWallet(index: index, publicKey: pk, note: note);
-    //   if (_wallets.indexWhere((x) => x.index == index) == -1) _wallets.add(w);
-    //   return w;
-    // } catch (e) {
-    //   skrLogger.i("FAILED HERE: $e");
-    //   return null;
-    // }
-    final pubkey = await ensureBurnerPublicKey(authToken: token, accountIndex: index);
-
-    // Keep your in-memory list in sync (optional)
-    // manager.memoize(BurnerWallet(index: index, publicKey: pubkey, note: note));
-
-    // Persist in Drift so it shows in UI
-    await dao.upsertBurner(pubkey: pubkey, derivationIndex: index, note: note);
-    return BurnerWallet(index: index, publicKey: pubkey, note: note);
+  /// Replace the whole cache
+  void memoizeAll(List<BurnerWallet> burners) {
+    _wallets
+      ..clear()
+      ..addAll(burners);
   }
+
+  /// Append/replace a single burner (de-dupe by index or pubkey)
+  void memoize(BurnerWallet b) {
+    final i = _wallets.indexWhere((w) => w.index == b.index || w.publicKey == b.publicKey);
+    if (i >= 0) {
+      _wallets[i] = b;
+    } else {
+      _wallets.add(b);
+    }
+  }
+
+  Future<void> loadBurnersFromDb(BurnerDao dao) async {
+    final rows = await dao.getAll(); // DB = source of truth
+    final list = rows
+        .map((r) => BurnerWallet(index: r.derivationIndex, publicKey: r.pubkey, note: r.note, used: r.used))
+        .toList();
+    memoizeAll(list);
+  }
+
+  Future<String> derivePublicKey({required AuthToken token, required int accountIndex}) =>
+      ensureBurnerPublicKey(authToken: token, accountIndex: accountIndex);
 
   /// Returns the public key at m/44'/501'/accountIndex', creating the account if missing.
   Future<String> ensureBurnerPublicKey({required AuthToken authToken, required int accountIndex}) async {
@@ -99,40 +76,6 @@ class BurnerWalletManager {
     skrLogger.i(pk);
     return pk;
   }
-
-  /// Rebuild a list of burners by indices (e.g., after reading indices from DB)
-  /// Probably not needed.
-  Future<List<BurnerWallet>> restoreByIndices({
-    required BurnerDao dao,
-    required AuthToken token,
-    required List<int> indices,
-  }) async {
-    final out = <BurnerWallet>[];
-    for (final i in indices.toSet()..removeWhere((x) => x < 0)) {
-      final w = await createBurnerWallet(dao: dao, token: token, index: i);
-      if (w != null) out.add(w);
-    }
-    return out;
-  }
-
-  /// Naive next free index (guarded against double-taps)
-  /// Starts from 100 for burners
-  Future<int> allocateNextIndex() async {
-    if (_allocating) await Future.delayed(const Duration(milliseconds: 150));
-    _allocating = true;
-    try {
-      final used = _wallets.map((w) => w.index).toSet();
-      var next = 100;
-      while (used.contains(next)) {
-        next++;
-      }
-      return next;
-    } finally {
-      _allocating = false;
-    }
-  }
-
-  List<BurnerWallet> getAllBurners() => List.unmodifiable(_wallets);
 
   int getNextIndex() {
     if (_wallets.isEmpty) return 0;
