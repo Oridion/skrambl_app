@@ -175,8 +175,8 @@ class _HeaderCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    usd <= 0 ? '— USD' : '\$${usd.toStringAsFixed(2)} USD',
-                    style: TextStyle(color: Colors.black.withOpacity(0.65), fontSize: 13),
+                    usd <= 0 ? '0 USD' : '\$${usd.toStringAsFixed(2)} USD',
+                    style: TextStyle(color: Colors.black.withOpacityCompat(0.65), fontSize: 13),
                   ),
                 ],
               ),
@@ -221,7 +221,7 @@ class _EmptyDeliveries extends StatelessWidget {
             Text(
               'Transactions sent from or to this burner will appear here.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black.withOpacity(0.6)),
+              style: TextStyle(color: Colors.black.withOpacityCompat(0.6)),
             ),
           ],
         ),
@@ -253,7 +253,6 @@ class _PodRow extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
-          // Navigate to pod details
           // Navigator.push(context, MaterialPageRoute(builder: (_) => PodDetailsScreen(localId: pod.id)));
         },
         child: Padding(
@@ -261,11 +260,10 @@ class _PodRow extends StatelessWidget {
           child: Row(
             children: [
               // left color dot
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
+
+              // direction icon
+              Icon(isSender ? Icons.north_east : Icons.south_west, size: 16, color: color),
+
               const SizedBox(width: 12),
 
               // center text
