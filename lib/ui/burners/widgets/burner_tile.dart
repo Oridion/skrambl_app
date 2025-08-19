@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:skrambl_app/services/burner_wallet_management.dart';
 import 'package:skrambl_app/utils/colors.dart';
+import 'package:skrambl_app/utils/formatters.dart';
 
 class BurnerTile extends StatelessWidget {
   final BurnerWallet burner;
@@ -11,7 +12,9 @@ class BurnerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final note = burner.note ?? 'Burner #${burner.index}';
+    final note = burner.note ?? '';
+    final isUsed = burner.used;
+
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
@@ -24,14 +27,6 @@ class BurnerTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              height: 40,
-              width: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(10)),
-              child: const Icon(Icons.shield, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,18 +34,36 @@ class BurnerTile extends StatelessWidget {
                   Text(note, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                   const SizedBox(height: 4),
                   Text(
-                    _shorten(burner.publicKey),
+                    shortenPubkey(burner.publicKey),
                     style: TextStyle(color: Colors.black.withOpacityCompat(0.65)),
                   ),
                 ],
               ),
             ),
-            if (selected) const Icon(Icons.check_circle, color: Colors.black, size: 20),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: isUsed ? Colors.red[100] : const Color.fromARGB(255, 231, 231, 231),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                isUsed ? "Used" : "Unused",
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isUsed ? Colors.red[700] : const Color.fromARGB(255, 72, 72, 72),
+                ),
+              ),
+            ),
+            if (selected)
+              const Padding(
+                padding: EdgeInsets.only(left: 8),
+                child: Icon(Icons.check_circle, color: Colors.black, size: 20),
+              ),
           ],
         ),
       ),
     );
   }
-
-  String _shorten(String pk) => pk.length <= 10 ? pk : '${pk.substring(0, 4)}…${pk.substring(pk.length - 4)}';
 }

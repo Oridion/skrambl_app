@@ -47,16 +47,41 @@ Future<void> editNote(BuildContext context, BurnerDao dao, Burner b) async {
   final note = await showDialog<String?>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Edit note'),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8), // square-ish dialog
+        side: const BorderSide(color: Colors.black, width: 2), // black border
+      ),
+      title: const Text('Edit note', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
       content: TextField(
         controller: controller,
         maxLines: 2,
-        decoration: const InputDecoration(hintText: 'Add a note (optional)', border: OutlineInputBorder()),
+        style: const TextStyle(fontSize: 16),
+        decoration: const InputDecoration(
+          hintText: 'Add a note (optional)',
+          border: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.black), // black outline
+          ),
+          contentPadding: EdgeInsets.all(12),
+        ),
       ),
+      contentPadding: const EdgeInsets.fromLTRB(24, 10, 24, 10),
+      actionsPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          style: TextButton.styleFrom(foregroundColor: Colors.black87),
+          child: const Text('Cancel'),
+        ),
         ElevatedButton(
           onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.black, // black save button
+            foregroundColor: Colors.white, // white text
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6), // matches dialog
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
           child: const Text('Save'),
         ),
       ],

@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:skrambl_app/data/burner_dao.dart';
+import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/services/burner_wallet_management.dart';
 import 'package:skrambl_app/services/seed_vault_service.dart';
 import 'package:skrambl_app/ui/burners/widgets/burner_tile.dart';
@@ -218,54 +221,70 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
   /* ------------------------- Burner tab ------------------------- */
 
   Widget _buildBurnerTab(BuildContext context) {
-    if (_loadingBurners) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    final dao = context.read<BurnerDao>();
 
-    if (_burners.isEmpty) {
-      return EmptyBurnerState(onCreate: _openCreateBurnerSheet);
-    }
+    return StreamBuilder<List<Burner>>(
+      stream: dao.watchAllActive(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return Column(
-      children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: OutlinedButton.icon(
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Create burner'),
-            onPressed: _openCreateBurnerSheet,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.black,
-              side: const BorderSide(color: Colors.black12),
+        final burners = snap.data ?? const [];
+
+        if (burners.isEmpty) {
+          return EmptyBurnerState(onCreate: _openCreateBurnerSheet);
+        }
+
+        // keep selection in sync if the list changed
+        if (_selectedBurnerAddress != null && !burners.any((b) => b.pubkey == _selectedBurnerAddress)) {
+          _selectedBurnerAddress = null;
+        }
+
+        return Column(
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Create burner'),
+                onPressed: _openCreateBurnerSheet,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.black,
+                  side: const BorderSide(color: Colors.black12),
+                ),
+              ),
             ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: ListView.separated(
-            itemCount: _burners.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, i) {
-              final b = _burners[i];
-              final selected = b.publicKey == _selectedBurnerAddress;
-              return BurnerTile(
-                burner: b,
-                selected: selected,
-                onTap: () {
-                  HapticFeedback.selectionClick(); // NEW: subtle haptic
-                  setState(() => _selectedBurnerAddress = b.publicKey);
-
-                  // reflect + persist immediately
-                  widget.formModel.destinationWallet = b.publicKey;
-                  if (_lastPersisted != b.publicKey) {
-                    _lastPersisted = b.publicKey;
-                  }
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.separated(
+                itemCount: burners.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, i) {
+                  final b = burners[i];
+                  final selected = b.pubkey == _selectedBurnerAddress;
+                  return BurnerTile(
+                    // adapt your BurnerTile to accept either type; if it's the DB row:
+                    burner: BurnerWallet(
+                      index: b.derivationIndex,
+                      publicKey: b.pubkey,
+                      note: b.note,
+                      used: b.used,
+                    ),
+                    selected: selected,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _selectedBurnerAddress = b.pubkey);
+                      widget.formModel.destinationWallet = b.pubkey;
+                      _lastPersisted = b.pubkey;
+                    },
+                  );
                 },
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
