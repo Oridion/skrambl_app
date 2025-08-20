@@ -77,7 +77,7 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
   void initState() {
     super.initState();
 
-    _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
+    _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
     _startTimer();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -13,7 +13,6 @@ import 'package:skrambl_app/models/pod_model.dart' as model;
 class PodWatcherTask {
   final PodDao dao;
   final Pod pod;
-
   final SolanaWsService ws;
   final rpc = SolanaClientService().rpcClient;
 
