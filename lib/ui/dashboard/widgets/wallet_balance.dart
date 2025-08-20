@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -20,29 +21,36 @@ class WalletBalanceTile extends StatelessWidget {
     final w = context.watch<WalletBalanceProvider>();
     final lamports = w.lamports ?? 0;
     final sol = formatSol(lamports / 1e9);
+    //final sol = "891.2658";
     final usd = w.usdBalance.toStringAsFixed(2);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 58,
+          height: 77,
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
-              Transform.translate(
-                offset: Offset(0, -2), // x, y — move up 2px
+              Baseline(
+                baseline: 55, // tune this until it feels right
+                baselineType: TextBaseline.alphabetic,
                 child: SolanaLogo(size: 18, useDark: true),
               ),
-              const SizedBox(width: 6),
-              Text(
-                sol,
-                style: GoogleFonts.archivoBlack(fontSize: 54, color: Colors.black, letterSpacing: -2),
+              const SizedBox(width: 5),
+              Expanded(
+                child: AutoSizeText(
+                  sol,
+                  maxLines: 1,
+                  minFontSize: 20,
+                  maxFontSize: 64,
+                  style: GoogleFonts.archivoBlack(fontSize: 64, color: Colors.black, letterSpacing: -1.0),
+                ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 15),
         Text(' ~\$$usd USD', style: TextStyle(color: Colors.grey[600], fontSize: 18)),
       ],
     );
