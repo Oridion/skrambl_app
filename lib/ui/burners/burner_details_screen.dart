@@ -281,6 +281,7 @@ class _PodRow extends StatelessWidget {
     final amountSol = pod.lamports / 1e9;
     final direction = isSender ? 'Sent' : (isReceiver ? 'Received' : 'Delivery');
     final otherParty = isSender ? pod.destination : pod.creator;
+    final details = '${isSender ? "To" : "From"} ${shortenPubkey(otherParty)}';
 
     return Material(
       color: Colors.white,
@@ -311,10 +312,7 @@ class _PodRow extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      'From ${shortenPubkey(otherParty)}',
-                      style: const TextStyle(color: Colors.black54, fontSize: 12.5),
-                    ),
+                    Text(details, style: const TextStyle(color: Colors.black54, fontSize: 12.5)),
                   ],
                 ),
               ),
