@@ -85,9 +85,9 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
       if (!_started) {
         _started = true;
         if (widget.queueOnly) {
-          _retryQueueOnly(); // <— new
+          _retryQueueOnly();
         } else {
-          _send(); // existing send path
+          _send();
         }
       }
 
@@ -403,14 +403,14 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                       // Receipt card
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.fromLTRB(36, 36, 36, 28),
+                        padding: const EdgeInsets.fromLTRB(36, 30, 36, 28),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacityCompat(0.4),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.black38),
-                          boxShadow: const [
-                            BoxShadow(color: Color(0x11000000), blurRadius: 16, offset: Offset(0, 6)),
-                          ],
+                          border: Border.all(color: Colors.black54, width: 1.5),
+                          // boxShadow: const [
+                          //   BoxShadow(color: Color(0x11000000), blurRadius: 16, offset: Offset(0, 6)),
+                          // ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -564,13 +564,13 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                         ),
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 14),
 
                       // Actions
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          OutlinedButton.icon(
+                          ElevatedButton.icon(
                             onPressed: () {
                               context.read<WalletBalanceProvider>().refresh();
 
@@ -579,33 +579,33 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                                 (route) => false,
                               );
                             },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.black,
-                              side: const BorderSide(color: Colors.black26),
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
                             ),
 
                             label: const Text('Done'),
                           ),
                           const SizedBox(width: 12),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              context.read<WalletBalanceProvider>().refresh();
-                              Navigator.popUntil(
-                                context,
-                                (route) => route.isFirst,
-                              ); // back one: returns to amount/summary step
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            icon: const Icon(Icons.autorenew_rounded, size: 18),
-                            label: const Text('Send another'),
-                          ),
+                          // ElevatedButton.icon(
+                          //   onPressed: () {
+                          //     context.read<WalletBalanceProvider>().refresh();
+                          //     Navigator.popUntil(
+                          //       context,
+                          //       (route) => route.isFirst,
+                          //     ); // back one: returns to amount/summary step
+                          //   },
+                          //   style: ElevatedButton.styleFrom(
+                          //     backgroundColor: Colors.black,
+                          //     foregroundColor: Colors.white,
+                          //     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+                          //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          //   ),
+                          //   icon: const Icon(Icons.autorenew_rounded, size: 18),
+                          //   label: const Text('Send another'),
+                          // ),
                         ],
                       ),
 

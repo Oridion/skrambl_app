@@ -47,7 +47,7 @@ class SendTypeSelectionScreen extends StatelessWidget {
                 icon: Icons.auto_awesome,
                 description:
                     'Route through Oridion for a privacy-preserving path.\n• Adds separation layer\n• Harder to trace\n• Optional delay window',
-                etaText: '~1 min - 1 hr',
+                etaText: 'min ~ 30s',
                 accent: brandTan,
                 background: card,
                 badgeText: 'Recommended',
