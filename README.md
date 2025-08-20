@@ -106,5 +106,5 @@ Blockchain analysis tools rely on **three main weaknesses** in standard wallet t
 
 ---
 
-[![SKRAMBL Demo](https://img.youtube.com/vi/QREn8qQmtyU/0.jpg)](https://youtube.com/shorts/QREn8qQmtyU?feature=share)
+[![SKRAMBL Demo](https://img.youtube.com/vi/QREn8qQmtyU/0.jpg)](https://youtube.com/shorts/V_B_B4QPfFI)
 - **ORIDION Program ID**: `ord1qJZ3DB52s9NoG8nuoacW85aCyNvECa5kAqcBVBu`
