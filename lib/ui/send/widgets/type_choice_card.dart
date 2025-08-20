@@ -42,7 +42,7 @@ class _ChoiceCardState extends State<ChoiceCard> {
     //final theme = Theme.of(context);
     final black = Colors.black;
     final white = Colors.white;
-    final borderRadius = BorderRadius.circular(14);
+    final borderRadius = BorderRadius.circular(10);
 
     // Subtle gradient fill only when highlighted
     final BoxDecoration? highlightedBg = widget.isHighlighted
@@ -65,7 +65,7 @@ class _ChoiceCardState extends State<ChoiceCard> {
         : null;
 
     final border = _GradientBorder(
-      radius: 14,
+      radius: 10,
       strokeWidth: widget.isHighlighted ? 3.5 : 2.0,
       colors: widget.isHighlighted
           ? [
@@ -103,7 +103,7 @@ class _ChoiceCardState extends State<ChoiceCard> {
                     hoverColor: widget.accent.withAlpha(24),
                     customBorder: RoundedRectangleBorder(borderRadius: borderRadius),
                     child: Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -145,19 +145,22 @@ class _ChoiceCardState extends State<ChoiceCard> {
                                       ),
                                     ),
                                     if (widget.badgeText != null)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFBFA346), // tan badge
-                                          borderRadius: BorderRadius.circular(999),
-                                        ),
-                                        child: const Text(
-                                          'Recommended',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.black,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 0.2,
+                                      Transform.translate(
+                                        offset: const Offset(0, -2),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: const Color.fromARGB(255, 203, 176, 86), // tan badge
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: const Text(
+                                            'Recommended',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.3,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -191,7 +194,7 @@ class _ChoiceCardState extends State<ChoiceCard> {
                                   bulletSize: 5,
                                   bulletColor: Colors.black.withOpacityCompat(0.45),
                                 ),
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 7),
                                 Row(
                                   children: [
                                     _EtaChip(text: widget.etaText),
