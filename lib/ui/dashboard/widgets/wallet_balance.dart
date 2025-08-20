@@ -37,7 +37,7 @@ class WalletBalanceTile extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 sol,
-                style: GoogleFonts.archivoBlack(fontSize: 54, color: Colors.black, letterSpacing: -1),
+                style: GoogleFonts.archivoBlack(fontSize: 54, color: Colors.black, letterSpacing: -2),
               ),
             ],
           ),

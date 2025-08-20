@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:intl/intl.dart';
 import 'package:solana/base58.dart';
 
-String formatSol(double value, {int maxDecimals = 6}) {
+String formatSol(double value, {int maxDecimals = 4}) {
   if (value == 0) return '0';
   String formatted = value.toStringAsFixed(maxDecimals);
 
