@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:ui';
 import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
+import 'package:skrambl_app/providers/transaction_status_provider.dart';
 import 'package:skrambl_app/services/pod_service.dart';
 import 'package:skrambl_app/solana/solana_client_service.dart';
 import 'package:skrambl_app/solana/solana_ws_service.dart';
@@ -14,6 +15,7 @@ class PodWatcherTask {
   final PodDao dao;
   final Pod pod;
   final SolanaWsService ws;
+  final void Function(String podId, TransactionPhase phase)? onPhase;
   final rpc = SolanaClientService().rpcClient;
 
   StreamSubscription? _wsSub;
@@ -23,7 +25,9 @@ class PodWatcherTask {
   late final DateTime _startedAt;
   bool _finished = false;
 
-  PodWatcherTask({required this.dao, required this.pod, SolanaWsService? wsService})
+  bool _seenDelivering = false;
+
+  PodWatcherTask({required this.dao, required this.pod, this.onPhase, SolanaWsService? wsService})
     : ws = wsService ?? SolanaWsService() {
     assert(pod.podPda != null, 'Watcher should only be created for pods with a PDA');
   }
@@ -66,44 +70,47 @@ class PodWatcherTask {
 
   void _wireWebSocket({VoidCallback? onDone}) {
     try {
-      _wsSub = ws
-          .accountSubscribe(
-            pod.podPda!, // safe because watcher only created for skrambled pods
-            commitment: 'confirmed',
-            encoding: 'base64',
-          )
-          .listen((acct) async {
-            if (_finished) return;
+      _wsSub = ws.accountSubscribe(pod.podPda!, commitment: 'finalized', encoding: 'base64').listen((
+        acct,
+      ) async {
+        if (_finished) return;
 
-            final isClosed = acct == null || ((acct['value'] == null || acct['data'] == null));
+        final isClosed = acct == null || (acct['value'] == null || acct['data'] == null);
 
-            // Account closed => finalized
-            if (isClosed) {
-              skrLogger.i("WS detected account closed. Closing");
-              await dao.markFinalized(id: pod.id);
-              _finish(onDone);
-              return;
+        // Account closed => finalized
+        if (isClosed) {
+          // If we never showed delivering, briefly surface it for UX continuity
+          if (!_seenDelivering) {
+            onPhase?.call(pod.id, TransactionPhase.delivering);
+            await Future.delayed(const Duration(milliseconds: 250));
+          }
+          await dao.markFinalized(id: pod.id); // persist to DB
+          onPhase?.call(pod.id, TransactionPhase.completed); // immediate UI update
+          _finish(onDone);
+          return;
+        }
+
+        // Detect delivering stage depending on mode
+        final dataField = acct['data'];
+        if (dataField is List && dataField.isNotEmpty && dataField.first is String) {
+          try {
+            final b64 = dataField.first as String;
+            final bytes = base64.decode(b64);
+            final model.Pod? live = await parsePod(bytes);
+            if (live == null) return;
+
+            final delivering =
+                (live.mode == 0 && live.lastProcess == 1) || (live.mode != 0 && live.nextProcess == 1);
+
+            if (delivering && !_seenDelivering) {
+              _seenDelivering = true;
+              onPhase?.call(pod.id, TransactionPhase.delivering); // UI first…
+              await dao.markDelivering(id: pod.id); // …then DB
             }
-
-            // Detect delivering stage depending on mode
-            final dataField = acct['data'];
-            if (dataField is List && dataField.isNotEmpty && dataField.first is String) {
-              try {
-                final b64 = dataField.first as String;
-                final bytes = base64.decode(b64);
-                final model.Pod? live = await parsePod(bytes);
-                if (live == null) return;
-
-                if (live.mode == 0) {
-                  if (live.lastProcess == 1) await dao.markDelivering(id: pod.id);
-                } else {
-                  if (live.nextProcess == 1) await dao.markDelivering(id: pod.id);
-                }
-              } catch (_) {}
-            }
-          });
+          } catch (_) {}
+        }
+      });
     } catch (e) {
-      // WS may fail temporarily; instant flow still has polling/timeout backup
       skrLogger.w('WS subscribe failed for ${pod.id}: $e');
     }
   }

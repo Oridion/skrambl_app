@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
+import 'package:skrambl_app/providers/transaction_status_provider.dart';
 import 'package:skrambl_app/providers/watch/pod_watcher_task.dart';
 import 'package:skrambl_app/solana/solana_ws_service.dart';
 
@@ -12,13 +13,17 @@ class PodWatcherManager with ChangeNotifier {
   /// Shared WS instance for all tasks (single socket).
   final SolanaWsService ws;
 
+  /// NEW: optional callback the UI layer can provide
+  final void Function(String podId, TransactionPhase phase)? onPhase;
+
   /// key = pod.podPda
   final Map<String, PodWatcherTask> _active = {};
 
   StreamSubscription<List<Pod>>? _sub;
   bool _started = false;
 
-  PodWatcherManager(this.dao, {SolanaWsService? wsService}) : ws = wsService ?? SolanaWsService();
+  PodWatcherManager(this.dao, {SolanaWsService? wsService, this.onPhase})
+    : ws = wsService ?? SolanaWsService();
 
   bool get isRunning => _started;
   int get activeCount => _active.length;
@@ -39,7 +44,7 @@ class PodWatcherManager with ChangeNotifier {
         if (pda == null) continue;
         if (_active.containsKey(pda)) continue;
 
-        final task = PodWatcherTask(dao: dao, pod: p, wsService: ws);
+        final task = PodWatcherTask(dao: dao, pod: p, wsService: ws, onPhase: onPhase);
         _active[pda] = task;
         task.start(
           onDone: () {

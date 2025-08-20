@@ -33,15 +33,17 @@ void main() async {
   await seedVault.initialize();
 
   final ws = SolanaWsService();
-  final watcher = PodWatcherManager(podDao, wsService: ws);
 
   runApp(
     MultiProvider(
       providers: [
+        // Base services / DAOs
         Provider<LocalDatabase>.value(value: db),
         Provider<PodDao>.value(value: podDao),
         Provider<BurnerDao>.value(value: burnerDao),
         Provider<SolanaWsService>.value(value: ws),
+
+        // App state providers
         ChangeNotifierProvider(create: (_) => PriceProvider()),
         ChangeNotifierProvider<SeedVaultSessionManager>.value(value: seedVault),
         ChangeNotifierProxyProvider<PriceProvider, WalletBalanceProvider>(
@@ -49,9 +51,30 @@ void main() async {
           update: (ctx, price, wallet) => wallet!..attachPriceProvider(price),
         ),
 
-        ChangeNotifierProvider<PodWatcherManager>.value(value: watcher),
+        // IMPORTANT: Provide TransactionStatusProvider BEFORE PodWatcherManager
         ChangeNotifierProvider(create: (_) => TransactionStatusProvider()),
 
+        // 🔗 PodWatcherManager with onPhase callback + auto-start
+        ChangeNotifierProvider<PodWatcherManager>(
+          create: (ctx) {
+            final dao = ctx.read<PodDao>();
+            final ws = ctx.read<SolanaWsService>();
+            final status = ctx.read<TransactionStatusProvider>();
+
+            final mgr = PodWatcherManager(
+              dao,
+              wsService: ws,
+              onPhase: (podId, phase) {
+                // Only update the UI for the pod whose status screen is visible
+                status.onPhaseFromWatcher(podId, phase);
+              },
+            );
+            mgr.start();
+            return mgr;
+          },
+        ),
+
+        // The rest
         ChangeNotifierProvider(create: (_) => MinuteTicker()),
         Provider<BurnerWalletManager>(create: (_) => BurnerWalletManager()),
         Provider<BurnerRepository>(
@@ -69,9 +92,6 @@ void main() async {
       child: const AppLifecycleHandler(child: SkramblApp()),
     ),
   );
-
-  // Start the watcher after providers are set up
-  watcher.start();
 }
 
 class AppLifecycleHandler extends StatefulWidget {

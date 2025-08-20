@@ -63,7 +63,6 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
   bool _isFailed = false;
   int _elapsedSeconds = 0;
   Timer? _timer;
-  Timer? _podWatcher;
   int? _durationSec;
   late Pod _latestPod;
 
@@ -77,10 +76,18 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
   void initState() {
     super.initState();
 
+    // Wire provider listener for your internal send transitions (unchanged)
+    _status = context.read<TransactionStatusProvider>();
+    _statusListener = _onStatusProviderChange;
+    _status.addListener(_statusListener);
+
     _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
     _startTimer();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      //Set the active one for UI updates
+      context.read<TransactionStatusProvider>().setActivePod(widget.localId);
+
       // Kick off the send as soon as the screen renders
       if (!_started) {
         _started = true;
@@ -90,11 +97,6 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
           _send();
         }
       }
-
-      // Wire provider listener for your internal send transitions (unchanged)
-      _status = context.read<TransactionStatusProvider>();
-      _statusListener = _onStatusProviderChange;
-      _status.addListener(_statusListener);
 
       // subscribe to the pod row and mirror to UI phases
       final dao = context.read<PodDao>();
@@ -163,14 +165,18 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
 
   @override
   void dispose() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _status.clearActivePod(widget.localId);
+      }
+    });
+
     _fadeController.dispose();
     _podRowSub.cancel();
     _timer?.cancel();
-    // remove the listener to avoid leaks
     try {
       _status.removeListener(_statusListener);
     } catch (_) {}
-    _podWatcher?.cancel();
     super.dispose();
   }
 
@@ -438,7 +444,7 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                               ],
                             ),
 
-                            const SizedBox(height: 30),
+                            const SizedBox(height: 20),
 
                             // Destination row (copyable)
                             Column(
@@ -537,6 +543,8 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                                   ],
                                 ),
 
+                                SizedBox(height: 10),
+
                                 // Duration row
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -582,7 +590,7 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 44),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
                             ),
 

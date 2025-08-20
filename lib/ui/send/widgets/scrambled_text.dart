@@ -23,8 +23,8 @@ class ScrambledText extends StatefulWidget {
     super.key,
     required this.text,
     this.style,
-    this.maxDuration = const Duration(milliseconds: 180),
-    this.loop = true, // <-- default: loop for ALL phases
+    this.maxDuration = const Duration(milliseconds: 380),
+    this.loop = true,
     this.loopIdleDelay = const Duration(seconds: 2),
     this.fastOnChange = true,
   });
