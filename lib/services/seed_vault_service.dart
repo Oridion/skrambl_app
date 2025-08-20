@@ -9,14 +9,43 @@ import 'package:solana_seed_vault/solana_seed_vault.dart';
 /// This is the main service class used to interact with the seed vault
 /// throughout the application.
 class SeedVaultService {
+  //Resolve the derivation path
+  static Future<Uri> resolvePathForIndex({required int index, required Purpose purpose}) async {
+    final raw = getWalletUri(index);
+    return SeedVault.instance.resolveDerivationPath(derivationPath: raw, purpose: purpose);
+  }
+
+  // Expose and get the publick key at index (for burner wallet)
+  static Future<String> exposeAndGetPubkeyAtIndex({required AuthToken authToken, required int index}) async {
+    final resolved = await resolvePathForIndex(index: index, purpose: Purpose.signSolanaTransaction);
+    final res = await SeedVault.instance.requestPublicKeys(authToken: authToken, derivationPaths: [resolved]);
+    final pk = res.first.publicKeyEncoded;
+    if (pk == null) {
+      throw Exception('No public key returned for $resolved');
+    }
+    return pk;
+  }
+
+  // Explicitly sign a single message with a specific resolved derivation path
+  static Future<Uint8List> signMessageWithResolvedPath({
+    required AuthToken authToken,
+    required Uint8List messageBytes,
+    required Uri resolvedPath,
+  }) async {
+    final req = SigningRequest(payload: messageBytes, requestedSignatures: [resolvedPath]);
+    final out = await SeedVault.instance.signMessages(authToken: authToken, signingRequests: [req]);
+    final sig = out.first.signatures.firstOrNull;
+    if (sig == null || sig.length != 64) {
+      throw Exception('Invalid signature from Seed Vault');
+    }
+    return sig;
+  }
+
   /// Helper function to always get a valid token.
   /// final token = await getValidToken(context);
   /// if (token == null) return; // User denied
   static Future<AuthToken?> getValidToken(BuildContext context) async {
-    final session = Provider.of<SeedVaultSessionManager>(
-      context,
-      listen: false,
-    );
+    final session = Provider.of<SeedVaultSessionManager>(context, listen: false);
     if (session.authToken != null) return session.authToken;
 
     final success = await session.requestAuthorization();
@@ -39,62 +68,11 @@ class SeedVaultService {
 
   /// Gets the AuthToken (required for most Seed Vault operations)
   static Future<AuthToken> getAuthToken() async {
-    return await SeedVault.instance.authorizeSeed(
-      Purpose.signSolanaTransaction,
-    );
-  }
-
-  /**
-    Pros:
-      •	Gives you access to the full Account object (not just the public key).
-      •	Useful if you want to read metadata like:
-      •	accountId
-      •	isUserWallet
-      •	custom name
-      •	Lets you verify if a key is already marked as a user wallet.
-      •	Good for apps like SKRAMBL where you might show wallet history or tag accounts.
-    Cons:
-      •	A bit more verbose.
-      •	Slightly more overhead if all you care about is the public key.
-   */
-  ///getFirstPublicKey(AuthToken) using getParsedAccounts
-  Future<String?> getPublicKeyFull(AuthToken token, {int index = 0}) async {
-    try {
-      final derivationPath = Bip44DerivationPath.toUri([
-        const BipLevel(index: 44, hardened: true), // Standard BIP44
-        const BipLevel(index: 501, hardened: true), // Solana's coin type
-        BipLevel(index: index, hardened: true), // Burner wallet index
-      ]);
-
-      final resolvedPath = await SeedVault.instance.resolveDerivationPath(
-        derivationPath: derivationPath,
-        purpose: Purpose.signSolanaTransaction,
-      );
-
-      final accounts = await SeedVault.instance.getParsedAccounts(
-        token,
-        filter: AccountFilter.byDerivationPath(resolvedPath),
-      );
-
-      return accounts.firstOrNull?.publicKeyEncoded;
-    } catch (e) {
-      debugPrint('Error getting burner public key (index $index): $e');
-      return null;
-    }
-  }
-
-  //Get parent wallet URI
-  static Uri getParentWalletUri() {
-    return Bip44DerivationPath.toUri([
-      BipLevel(index: 44, hardened: true),
-      BipLevel(index: 501, hardened: true),
-      BipLevel(index: 0, hardened: true),
-      BipLevel(index: 0, hardened: true),
-    ]);
+    return await SeedVault.instance.authorizeSeed(Purpose.signSolanaTransaction);
   }
 
   /// Derives a single hardened path URI
-  static Uri getBurnerWalletUri(int index) {
+  static Uri getWalletUri(int index) {
     return Bip44DerivationPath.toUri([
       BipLevel(index: 44, hardened: true),
       BipLevel(index: 501, hardened: true),
@@ -102,31 +80,10 @@ class SeedVaultService {
     ]);
   }
 
-  /**
-   * Pros:
-  •	Faster and lighter: Doesn’t resolve metadata or account info.
-	•	Great when you’re just displaying addresses (like a burner wallet list).
-	•	Easier to request multiple at once.
-	•	Simple and clean if you only want the Base58-encoded public key.
-	•	Requires fewer lines and no additional parsing.
-	•	Recommended for lightweight key fetching.
-
-Cons:
-	•	You don’t get extra parsed data (e.g., name, optional labels, or future metadata).
-	•	May not handle advanced filters as flexibly as getParsedAccounts().
-	•	Doesn’t give you access to account metadata.
-	•	Doesn’t tell you if that path is already being used, marked invalid, or user-tagged.
-   */
   /// Requests a single public key using a derived path
-  static Future<String?> getPublicKeyString({
-    required AuthToken authToken,
-    int index = defaultIndex,
-  }) async {
-    final uri = getBurnerWalletUri(index);
-    final result = await SeedVault.instance.requestPublicKeys(
-      authToken: authToken,
-      derivationPaths: [uri],
-    );
+  static Future<String?> getPublicKeyString({required AuthToken authToken, int index = defaultIndex}) async {
+    final uri = getWalletUri(index);
+    final result = await SeedVault.instance.requestPublicKeys(authToken: authToken, derivationPaths: [uri]);
     return result.isNotEmpty ? result.first.publicKeyEncoded : null;
   }
 
@@ -134,17 +91,11 @@ Cons:
     required AuthToken authToken,
     int index = defaultIndex,
   }) async {
-    final uri = getBurnerWalletUri(index);
-
-    final result = await SeedVault.instance.requestPublicKeys(
-      authToken: authToken,
-      derivationPaths: [uri],
-    );
-
+    final uri = getWalletUri(index);
+    final result = await SeedVault.instance.requestPublicKeys(authToken: authToken, derivationPaths: [uri]);
     if (result.isEmpty || result.first.publicKeyEncoded == null) {
       throw Exception("❌ No public key returned");
     }
-
     final encoded = result.first.publicKeyEncoded!;
     return Ed25519HDPublicKey.fromBase58(encoded);
   }
@@ -154,12 +105,9 @@ Cons:
     required AuthToken authToken,
     int index = defaultIndex,
   }) async {
-    final uri = getBurnerWalletUri(index);
+    final uri = getWalletUri(index);
 
-    final signingRequest = SigningRequest(
-      payload: messageBytes,
-      requestedSignatures: [uri],
-    );
+    final signingRequest = SigningRequest(payload: messageBytes, requestedSignatures: [uri]);
 
     final result = await SeedVault.instance.signMessages(
       authToken: authToken,
@@ -196,5 +144,30 @@ Cons:
   //   }
 
   //   return result.first.signatures.first;
+  // }
+
+  // Future<String?> getPublicKeyFull(AuthToken token, {int index = 0}) async {
+  //   try {
+  //     final derivationPath = Bip44DerivationPath.toUri([
+  //       const BipLevel(index: 44, hardened: true), // Standard BIP44
+  //       const BipLevel(index: 501, hardened: true), // Solana's coin type
+  //       BipLevel(index: index, hardened: true), // Burner wallet index
+  //     ]);
+
+  //     final resolvedPath = await SeedVault.instance.resolveDerivationPath(
+  //       derivationPath: derivationPath,
+  //       purpose: Purpose.signSolanaTransaction,
+  //     );
+
+  //     final accounts = await SeedVault.instance.getParsedAccounts(
+  //       token,
+  //       filter: AccountFilter.byDerivationPath(resolvedPath),
+  //     );
+
+  //     return accounts.firstOrNull?.publicKeyEncoded;
+  //   } catch (e) {
+  //     debugPrint('Error getting burner public key (index $index): $e');
+  //     return null;
+  //   }
   // }
 }

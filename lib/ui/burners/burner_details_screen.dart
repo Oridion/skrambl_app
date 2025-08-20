@@ -8,6 +8,8 @@ import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/providers/burner_balances_provider.dart';
 import 'package:skrambl_app/providers/price_provider.dart';
+import 'package:skrambl_app/providers/seed_vault_session_manager.dart';
+import 'package:skrambl_app/ui/send/send_controller.dart';
 import 'package:skrambl_app/ui/shared/pod_status_colors.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
@@ -19,8 +21,8 @@ class BurnerDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final burnerDao = context.read<BurnerDao>();
+    final session = context.watch<SeedVaultSessionManager>();
     final podDao = context.read<PodDao>();
-
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
@@ -59,6 +61,39 @@ class BurnerDetailsScreen extends StatelessWidget {
               const SizedBox(height: 8),
               _HeaderCard(pubkey: pubkey, burner: burner),
               const SizedBox(height: 12),
+
+              // SEND BUTTON
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SendController(
+                            authToken: session.authToken!,
+                            fromWalletOverride: burner?.pubkey,
+                            fromBurnerIndexOverride: burner?.derivationIndex,
+                          ),
+                        ),
+                      );
+                    },
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.send, size: 18, color: Colors.white),
+                    label: const Text(
+                      "Send",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
 
               // Deliveries
               Expanded(
@@ -189,15 +224,15 @@ class _HeaderCard extends StatelessWidget {
 
   Widget _chip(String label, Color bg, Color fg) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.black12),
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: fg),
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fg),
       ),
     );
   }
@@ -277,7 +312,7 @@ class _PodRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      shortenPubkey(otherParty),
+                      'From ${shortenPubkey(otherParty)}',
                       style: const TextStyle(color: Colors.black54, fontSize: 12.5),
                     ),
                   ],

@@ -45,36 +45,67 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
       final token = await SeedVaultService.getValidToken(context);
       if (token == null) throw Exception('Seed Vault permission denied');
 
-      setState(() => _phase = 'Resolving wallet…');
-      final sender = await SeedVaultService.getPublicKey(authToken: token);
-      if (sender == null) throw Exception('Failed to get public key');
+      // Burner index or null for primary
+      final int? burnerIdx = widget.form.userBurnerIndex;
 
+      // ----- 1) Resolve sender pubkey (primary vs burner) -----
+      setState(() => _phase = 'Resolving wallet…');
+
+      final Ed25519HDPublicKey sender;
+      Uri? resolvedBurnerPath; // only for burner sign
+
+      if (burnerIdx == null) {
+        // PRIMARY (unchanged)
+        final pk = await SeedVaultService.getPublicKey(authToken: token);
+        if (pk == null) throw Exception('Failed to get public key');
+        sender = pk;
+      } else {
+        // BURNER
+        resolvedBurnerPath = await SeedVaultService.resolvePathForIndex(
+          index: burnerIdx,
+          purpose: Purpose.signSolanaTransaction,
+        );
+        // expose the burner account so the wallet knows it
+        final exposed = await SeedVaultService.exposeAndGetPubkeyAtIndex(authToken: token, index: burnerIdx);
+        sender = Ed25519HDPublicKey.fromBase58(exposed);
+      }
+
+      // ----- 2) Build the message (unchanged) -----
       setState(() => _phase = 'Building transaction…');
       final dest = Ed25519HDPublicKey.fromBase58(widget.form.destinationWallet!);
       final lamports = (widget.form.amount! * lamportsPerSol).round();
-
       final rpc = SolanaClientService().rpcClient;
-      final recent = await rpc.getLatestBlockhash();
-      final blockhash = recent.value.blockhash;
+      final blockhash = (await rpc.getLatestBlockhash()).value.blockhash;
 
       final messageBytes = await _buildSystemTransferSignable(
         recentBlockhash: blockhash,
-        from: sender,
+        from: sender, // fee payer = chosen wallet
         to: dest,
         lamports: lamports,
       );
 
+      // ----- 3) Sign (primary unchanged; burner uses path) -----
       setState(() => _phase = 'Awaiting signature…');
-      final signature = await SeedVaultService.signMessage(messageBytes: messageBytes, authToken: token);
+
+      final Uint8List signature;
+      if (resolvedBurnerPath == null) {
+        // primary as before
+        signature = await SeedVaultService.signMessage(messageBytes: messageBytes, authToken: token);
+      } else {
+        // burner with explicit path
+        signature = await SeedVaultService.signMessageWithResolvedPath(
+          authToken: token,
+          messageBytes: messageBytes,
+          resolvedPath: resolvedBurnerPath,
+        );
+      }
       if (signature.length != 64) throw Exception('Invalid signature length');
 
-      skrLogger.i('signable len: ${messageBytes.length}');
-      skrLogger.i('sig len: ${signature.length}');
-
+      // ----- 4) Submit (unchanged) -----
       setState(() => _phase = 'Submitting…');
       final txSig = await _sendSignedTransaction(rpc: rpc, messageBytes: messageBytes, signature: signature);
 
-      // Persist pending standard entry
+      // persist pending standard entry (unchanged)
       try {
         final dao = context.read<PodDao>();
         await dao.upsertStandardPendingBySig(
@@ -84,7 +115,6 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
           lamports: lamports,
         );
       } catch (e) {
-        // Don’t break the UX if local DB write fails
         skrLogger.w('DB upsert (standard pending) failed: $e');
       }
 
@@ -92,10 +122,8 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
         _signature = txSig;
         _phase = 'Confirming…';
       });
-
       await _confirmSignature(rpc, txSig);
 
-      //Confirmed
       if (!mounted) return;
       try {
         final dao = context.read<PodDao>();
@@ -112,7 +140,10 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
       skrLogger.e('Standard send failed: $e\n$st');
       if (!mounted) return;
       final dao = context.read<PodDao>();
-      await dao.markStandardFailedBySig(_signature!, message: _error ?? 'Unknown error');
+      // _signature can be null if we failed before submit; guard it.
+      if (_signature != null) {
+        await dao.markStandardFailedBySig(_signature!, message: _error ?? 'Unknown error');
+      }
       setState(() {
         _error = e.toString();
         _done = true;

@@ -21,10 +21,7 @@ class SendDestinationScreen extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onBack;
   final SendFormModel formModel;
-
-  /// Inject data flow so this widget is UI-only and reusable.
   final Future<List<BurnerWallet>> Function() fetchBurners;
-  //final Future<BurnerWallet> Function(String label) createBurner;
   final Future<BurnerWallet?> Function({String? note, required AuthToken token}) createBurner;
 
   const SendDestinationScreen({
@@ -313,7 +310,6 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
 
     await _loadBurners();
     setState(() => _selectedBurnerAddress = created.publicKey);
-
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Burner created')));
   }
 }

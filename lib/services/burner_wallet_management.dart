@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:skrambl_app/data/burner_dao.dart';
 import 'package:skrambl_app/utils/logger.dart';
+import 'package:solana/solana.dart';
 import 'package:solana_seed_vault/solana_seed_vault.dart';
 
 class BurnerWallet {
@@ -46,6 +47,13 @@ class BurnerWalletManager {
     memoizeAll(list);
   }
 
+  // Return the pubkey object
+  Future<Ed25519HDPublicKey> derivePublicKeyObj({required AuthToken token, required int accountIndex}) async {
+    final pkStr = await ensureBurnerPublicKey(authToken: token, accountIndex: accountIndex);
+    return Ed25519HDPublicKey.fromBase58(pkStr);
+  }
+
+  // Return the pubkey string
   Future<String> derivePublicKey({required AuthToken token, required int accountIndex}) =>
       ensureBurnerPublicKey(authToken: token, accountIndex: accountIndex);
 

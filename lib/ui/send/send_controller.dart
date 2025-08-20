@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/ui/send/screens/standard/standard_summary_screen.dart';
+import 'package:skrambl_app/ui/send/widgets/with_wallet_balance.dart';
 
 // Third-party
 import 'package:solana/solana.dart';
@@ -44,7 +45,14 @@ import 'package:skrambl_app/utils/logger.dart';
 
 class SendController extends StatefulWidget {
   final AuthToken authToken;
-  const SendController({super.key, required this.authToken});
+  final String? fromWalletOverride;
+  final int? fromBurnerIndexOverride; // only when using burner
+  const SendController({
+    super.key,
+    required this.authToken,
+    this.fromWalletOverride,
+    this.fromBurnerIndexOverride,
+  });
 
   @override
   State<SendController> createState() => _SendControllerState();
@@ -91,20 +99,25 @@ class _SendControllerState extends State<SendController> {
 
   Future<void> _initUserWallet() async {
     try {
-      // If you sometimes need a fresh token, you could call SeedVaultService.getValidToken(context) here instead.
+      if (widget.fromWalletOverride != null) {
+        _formModel.userWallet = widget.fromWalletOverride;
+        _formModel.userBurnerIndex = widget.fromBurnerIndexOverride; // may be null
+        setState(() {}); // if UI depends on it
+        return;
+      }
+
+      // Fallback: primary wallet from Seed Vault
       final pubkey = await SeedVaultService.getPublicKeyString(authToken: widget.authToken);
       if (!mounted) return;
       if (pubkey == null) {
         skrLogger.e('Failed to retrieve public key.');
-        // Optionally show a toast/snackbar instead of throwing.
         return;
       }
       _formModel.userWallet = pubkey;
-      skrLogger.i('User wallet set: $pubkey');
-      setState(() {}); // only if UI depends on it immediately
+      _formModel.userBurnerIndex = null;
+      setState(() {});
     } catch (e, st) {
       skrLogger.e('Error getting public key: $e\n$st');
-      // Optionally notify the user here.
     }
   }
 
@@ -527,14 +540,16 @@ class _SendControllerState extends State<SendController> {
 
             // 3b) STANDARD Amount path
             case SendRoutes.stAmount:
+              final fromPk = _formModel.userWallet!; // primary or burner (you set this earlier)
               return MaterialPageRoute(
                 settings: settings,
-                builder: (_) => StandardAmountScreen(
-                  formModel: _formModel,
-                  onBack: () => _navKey.currentState!.maybePop(),
-                  onNext: () => _navKey.currentState!.pushNamed(SendRoutes.stSummary),
-                  // If SendStandardScreen ends by sending, you can navigate out or push a tiny status.
-                  // You can also change this to two routes (stAmount, stSummary) later without touching this controller.
+                builder: (_) => WithWalletBalance(
+                  pubkey: fromPk,
+                  child: StandardAmountScreen(
+                    formModel: _formModel,
+                    onBack: () => _navKey.currentState!.maybePop(),
+                    onNext: () => _navKey.currentState!.pushNamed(SendRoutes.stSummary),
+                  ),
                 ),
               );
 

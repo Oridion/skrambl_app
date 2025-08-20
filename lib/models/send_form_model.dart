@@ -1,6 +1,10 @@
 class SendFormModel {
   // Shared across both standard and skrambled
   String? userWallet;
+
+  int? userBurnerIndex; // null = primary; set when using a burner
+  bool get isFromBurner => userBurnerIndex != null;
+
   String? destinationWallet;
   double? amount; // in SOL
   String? usdAmount; // USD equivalent, if applicable
