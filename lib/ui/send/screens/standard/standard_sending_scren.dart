@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:skrambl_app/data/burner_dao.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/models/send_form_model.dart';
 import 'package:skrambl_app/services/seed_vault_service.dart';
@@ -127,7 +128,9 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
       if (!mounted) return;
       try {
         final dao = context.read<PodDao>();
+        final burnerDao = context.read<BurnerDao>();
         await dao.markStandardFinalizedBySig(txSig);
+        await burnerDao.markUsed(pubkey: sender.toBase58());
       } catch (e) {
         skrLogger.w('DB finalize (standard) failed: $e');
       }

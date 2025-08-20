@@ -83,12 +83,11 @@ class BurnerDao extends DatabaseAccessor<LocalDatabase> with _$BurnerDaoMixin {
 
   Future<int> markUsed({required String pubkey, bool used = true}) {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    return (update(burners)..where((b) => b.pubkey.equals(pubkey))).write(
-      BurnersCompanion(
-        used: Value(used),
-        lastUsedAt: Value(now),
-        txCount: const Value.absent(), // don’t change here
-      ),
+
+    return customUpdate(
+      'UPDATE burners SET used = ?, last_used_at = ?, tx_count = tx_count + 1 WHERE pubkey = ?',
+      variables: [Variable.withBool(used), Variable.withInt(now), Variable.withString(pubkey)],
+      updates: {burners},
     );
   }
 

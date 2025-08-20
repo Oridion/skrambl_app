@@ -73,7 +73,7 @@ class PodDetailsScreen extends StatelessWidget {
                     isSenderBurner: isSenderBurner,
                     isDestinationBurner: isDestinationBurner,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   // ===== TIMELINE =====
                   VerticalTimeline(items: timeline, pod: pod),

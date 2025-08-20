@@ -26,10 +26,6 @@ class ListBurnerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    final title = (burner.note ?? '').trim().isEmpty
-        ? 'Burner #${burner.derivationIndex}'
-        : burner.note!.trim();
-
     // Narrow watches: only this pubkey’s lamports + a single SOL price
     final lamports = context.select<BurnerBalancesProvider, int>((p) => p.lamportsFor(burner.pubkey));
     final solUsd = context.select<PriceProvider, double>((p) => p.solUsd);

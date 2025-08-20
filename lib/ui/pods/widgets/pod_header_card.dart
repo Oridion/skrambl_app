@@ -5,7 +5,6 @@ import 'package:skrambl_app/ui/shared/relative_time.dart'; // for withOpacityCom
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart';
-import 'package:skrambl_app/utils/formatters.dart'; // for PodStatus
 
 /// Professional header for the Pod details page.
 /// - Left: Big SOL amount with subtle "SOL" unit
@@ -39,13 +38,13 @@ class PodHeaderCard extends StatelessWidget {
       children: [
         // Card
         Container(
-          margin: const EdgeInsets.only(top: 14), // room for the overlapping pill
+          margin: const EdgeInsets.only(top: 4), // room for the overlapping pill
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: const Color(0xFFDFDFDF), width: 1),
           ),
-          padding: const EdgeInsets.fromLTRB(22, 16, 22, 16),
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 16),
           child: Column(
             children: [
               const SizedBox(height: 6), // small spacer under the pill
@@ -93,7 +92,7 @@ class PodHeaderCard extends StatelessWidget {
         Align(
           alignment: Alignment.topCenter,
           child: Transform.translate(
-            offset: const Offset(0, 26),
+            offset: const Offset(0, 16),
             child: _StatusPill(text: status.name.toUpperCase(), color: chipColor),
           ),
         ),
