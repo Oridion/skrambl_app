@@ -39,6 +39,7 @@ class AmountInput extends StatelessWidget {
         const SizedBox(height: 10),
 
         TextField(
+          autofocus: false,
           controller: controller,
           style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w600, color: Colors.black),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),

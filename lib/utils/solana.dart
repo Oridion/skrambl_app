@@ -32,6 +32,24 @@ Future<void> openOnSolanaFM(BuildContext context, String sigBase58) async {
   }
 }
 
+Future<void> openAccountOnSolanaFM(BuildContext context, String accountBase58) async {
+  final url = Uri.parse('https://solana.fm/address/$accountBase58'); // add ?cluster=devnet-solana if needed
+  try {
+    final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      // Fallback to default mode
+      final ok2 = await launchUrl(url);
+      if (!ok2 && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open SolanaFM')));
+      }
+    }
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open SolanaFM')));
+    }
+  }
+}
+
 //Check if pubkey has history. (For creating burner wallets)
 Future<bool> hasOnChainHistory(String pubkey) async {
   final rpc = SolanaClientService().rpcClient;

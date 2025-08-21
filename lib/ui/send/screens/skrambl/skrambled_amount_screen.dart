@@ -35,6 +35,7 @@ class SkrambledAmountScreen extends StatefulWidget {
 
 class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
   late final TextEditingController _amountController;
+  bool _isNextLoading = false;
   double? _amount;
   int _delaySeconds = 30;
   String? _errorText;
@@ -329,27 +330,41 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                 children: [
                   TextButton(onPressed: widget.onBack, child: const Text('Back')),
                   ElevatedButton(
-                    onPressed: isValid
+                    onPressed: (isValid && !_isNextLoading)
                         ? () async {
-                            final amt = _amount ?? 0;
-                            final delay = _delaySeconds;
-                            final feeLamports = fee;
-
+                            // 1) Dismiss keyboard immediately
                             FocusScope.of(context).unfocus();
 
+                            setState(() => _isNextLoading = true);
+
+                            final amt = _amount ?? 0;
+                            final delay = _delaySeconds;
+                            final feeSol = fee; // already computed above
+
+                            // 2) Do work in parallel with a small UX delay (~2s)
                             double? priceUsdPerSol;
-                            try {
-                              priceUsdPerSol = await fetchSolPriceUsd(); // one HTTP call
-                            } catch (_) {}
+                            await Future.wait([
+                              Future.delayed(const Duration(seconds: 1)),
+                              (() async {
+                                try {
+                                  priceUsdPerSol = await fetchSolPriceUsd();
+                                } catch (_) {
+                                  // leave as null on failure
+                                }
+                              })(),
+                            ]);
 
-                            if (!context.mounted) return;
+                            if (!mounted) return;
 
+                            // 3) Persist form values
                             widget.formModel
                               ..amount = amt
                               ..delaySeconds = delay
-                              ..fee = feeLamports
-                              ..solUsdPrice = priceUsdPerSol; // <— store the numeric price once
+                              ..fee = feeSol
+                              ..solUsdPrice = priceUsdPerSol;
 
+                            // 4) Stop spinner and move on
+                            setState(() => _isNextLoading = false);
                             widget.onNext();
                           }
                         : null,
@@ -358,7 +373,21 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
-                    child: const Text('Next'),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      transitionBuilder: (c, a) => FadeTransition(opacity: a, child: c),
+                      child: _isNextLoading
+                          ? const SizedBox(
+                              key: ValueKey('loading'),
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text('Next', key: ValueKey('label')),
+                    ),
                   ),
                 ],
               ),

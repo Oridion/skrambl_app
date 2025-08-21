@@ -10,6 +10,7 @@ import 'package:skrambl_app/ui/burners/widgets/burner_header_card.dart';
 import 'package:skrambl_app/ui/burners/widgets/burner_send_button.dart';
 import 'package:skrambl_app/ui/burners/widgets/pod_row.dart';
 import 'package:skrambl_app/utils/formatters.dart';
+import 'package:skrambl_app/utils/solana.dart';
 
 class BurnerDetailsScreen extends StatefulWidget {
   final String pubkey; // burner address
@@ -100,9 +101,7 @@ class _BurnerDetailsScreenState extends State<BurnerDetailsScreen> {
             IconButton(
               tooltip: 'View on explorer',
               icon: const Icon(Icons.open_in_new),
-              onPressed: () {
-                // TODO: openSolanaExplorerAccount(widget.pubkey)
-              },
+              onPressed: () => openAccountOnSolanaFM(context, widget.pubkey.toString()),
             ),
           ],
         ),

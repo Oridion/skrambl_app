@@ -23,9 +23,11 @@ class BulletList extends StatelessWidget {
   Widget build(BuildContext context) {
     final style =
         textStyle ??
-        Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(fontSize: 14, height: 1.25, color: Colors.black.withOpacity(0.65));
+        Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontSize: 14,
+          height: 1.25,
+          color: Colors.black.withOpacityCompat(0.65),
+        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -18,13 +18,23 @@ class Dashboard extends StatefulWidget {
   State<Dashboard> createState() => _DashboardState();
 }
 
-class _DashboardState extends State<Dashboard> {
+class _DashboardState extends State<Dashboard> with RouteAware {
   late Future<void> _initFuture;
 
   @override
   void initState() {
     super.initState();
     _initFuture = _initialize();
+    context.read<SelectedWalletProvider>().selectPrimary();
+  }
+
+  @override
+  void didPopNext() {
+    // Defer to avoid “markNeedsBuild during build”
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<SelectedWalletProvider>().selectPrimary();
+    });
   }
 
   /// Performs the one-time startup sequence:
