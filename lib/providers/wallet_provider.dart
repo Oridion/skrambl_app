@@ -1,10 +1,11 @@
+// lib/providers/wallet_provider.dart
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:skrambl_app/providers/price_provider.dart';
 import 'package:skrambl_app/services/wallet_balance_stream.dart';
 
-class WalletBalanceProvider extends ChangeNotifier {
-  WalletBalanceProvider(PriceProvider priceProvider) {
+class WalletProvider extends ChangeNotifier {
+  WalletProvider(PriceProvider priceProvider) {
     _attachPriceProvider(priceProvider);
   }
 
@@ -24,28 +25,36 @@ class WalletBalanceProvider extends ChangeNotifier {
   double get usdBalance => solBalance * (_priceProvider?.solUsd ?? 0);
   bool get isLoading => _isLoading;
 
-  // Exposed for ProxyProvider.update
+  // Called by ProxyProvider.update
   void attachPriceProvider(PriceProvider priceProvider) {
     _attachPriceProvider(priceProvider);
-    notifyListeners(); // safe: we're inside the notifier
+    notifyListeners(); // propagate USD recalcs
   }
 
   void _attachPriceProvider(PriceProvider priceProvider) {
-    // detach old
     if (_priceProvider != null) {
       _priceProvider!.removeListener(_priceListener);
     }
-    // attach new
     _priceProvider = priceProvider;
-    _priceListener = () => notifyListeners(); // propagate USD changes
+    _priceListener = () => notifyListeners(); // when SOL→USD changes
     _priceProvider!.addListener(_priceListener);
   }
 
-  void start(String pubkey) {
+  /// Follow this account. Pass null to clear.
+  Future<void> setAccount(String? pubkey) async {
     if (_pubkey == pubkey && _sub != null) return;
 
     _sub?.cancel();
+    _sub = null;
     _pubkey = pubkey;
+
+    if (pubkey == null) {
+      _lamports = null;
+      _isLoading = true;
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     notifyListeners();
 
@@ -54,21 +63,13 @@ class WalletBalanceProvider extends ChangeNotifier {
       if (_isLoading) _isLoading = false;
       notifyListeners();
     });
+
+    notifyListeners();
   }
 
   Future<void> refresh() async {
     final key = _pubkey;
     if (key != null) await _stream.refresh(key);
-  }
-
-  void stop() {
-    _sub?.cancel();
-    _sub = null;
-    _stream.stop();
-    _pubkey = null;
-    _lamports = null;
-    _isLoading = true;
-    notifyListeners();
   }
 
   @override

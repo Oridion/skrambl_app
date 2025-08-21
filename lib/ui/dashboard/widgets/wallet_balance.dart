@@ -2,7 +2,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:skrambl_app/providers/wallet_balance_manager.dart';
+import 'package:skrambl_app/providers/wallet_provider.dart';
 import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 
@@ -14,11 +14,11 @@ class WalletBalanceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     // Ensure provider is started for this pubkey (no-op if already same key)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final w = context.read<WalletBalanceProvider>();
-      if (w.pubkey != pubkey) w.start(pubkey);
+      final w = context.read<WalletProvider>();
+      if (w.pubkey != pubkey) w.setAccount(pubkey);
     });
 
-    final w = context.watch<WalletBalanceProvider>();
+    final w = context.watch<WalletProvider>();
     final lamports = w.lamports ?? 0;
     final sol = formatSol(lamports / 1e9);
     //final sol = "891.2658";

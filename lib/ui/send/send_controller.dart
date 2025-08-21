@@ -83,7 +83,6 @@ class _SendControllerState extends State<SendController> {
   late final _TitleNavObserver _navObserver = _TitleNavObserver(onTopRouteChange: _setTitleSafely);
 
   void _setTitleSafely(String? routeName) {
-    skrLogger.i("CHANGE");
     final newTitle = titleFor(routeName);
     if (!mounted) return;
 

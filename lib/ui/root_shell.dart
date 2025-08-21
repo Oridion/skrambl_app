@@ -23,8 +23,8 @@ class _RootShellState extends State<RootShell> {
   Widget build(BuildContext context) {
     final pages = const [
       _KeepAlive(child: Dashboard()),
-      _KeepAlive(child: BurnersScreen()),
       _KeepAlive(child: AllPods()),
+      _KeepAlive(child: BurnersScreen()),
     ];
 
     return Scaffold(
@@ -70,10 +70,10 @@ class _RootShellState extends State<RootShell> {
                         tooltip: 'Pods',
                         icon: AppConstants.skramblIconOutlined,
                         activeIcon: AppConstants.skramblIcon,
-                        selected: _index == 2,
+                        selected: _index == 1,
                         onTap: () {
                           HapticFeedback.selectionClick();
-                          setState(() => _index = 2);
+                          setState(() => _index = 1);
                         },
                       ),
                     ),
@@ -81,10 +81,10 @@ class _RootShellState extends State<RootShell> {
                       tooltip: 'Burners',
                       icon: Icons.local_fire_department_outlined,
                       activeIcon: Icons.local_fire_department,
-                      selected: _index == 1,
+                      selected: _index == 2,
                       onTap: () {
                         HapticFeedback.selectionClick();
-                        setState(() => _index = 1);
+                        setState(() => _index = 2);
                       },
                     ),
                   ],

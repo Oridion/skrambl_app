@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:skrambl_app/solana/solana_client_service.dart';
+import 'package:skrambl_app/utils/logger.dart';
 import 'package:solana/solana.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -42,5 +46,31 @@ Future<bool> hasOnChainHistory(String pubkey) async {
   } catch (_) {
     // On transient RPC errors, be conservative and retry upstream or treat as used
     return true;
+  }
+}
+
+/// Returns the current network fee in lamports for a simple SOL transfer.
+/// Falls back to ~5000 lamports if RPC fails.
+Future<int> getNetworkFee() async {
+  final rpc = SolanaClientService().rpcClient;
+  try {
+    final dummyPayer = Ed25519HDPublicKey.fromBase58('7f2YjYvV43sjzkQbqN4dR7xt9nsu1dUQ5G9zMWF42pR3');
+    // 🔹 Fetch a real blockhash from cluster
+    final latestBlockhash = await rpc.getLatestBlockhash();
+    final instruction = SystemInstruction.transfer(
+      fundingAccount: dummyPayer,
+      recipientAccount: dummyPayer,
+      lamports: 0,
+    );
+
+    final message = Message.only(instruction);
+    final compiled = message.compile(recentBlockhash: latestBlockhash.value.blockhash, feePayer: dummyPayer);
+    final msgBase64 = base64Encode(Uint8List.fromList(compiled.toByteArray().toList()));
+    final fee = await rpc.getFeeForMessage(msgBase64);
+    if (fee == null) return 5000;
+    return fee;
+  } catch (e) {
+    skrLogger.e("Failed to get fee");
+    return 5000; // fallback
   }
 }

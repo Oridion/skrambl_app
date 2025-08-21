@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/constants/app.dart';
-import 'package:skrambl_app/providers/wallet_balance_manager.dart';
+import 'package:skrambl_app/providers/wallet_provider.dart';
 import 'package:skrambl_app/services/price_service.dart';
 import 'package:skrambl_app/solana/solana_client_service.dart';
 import 'package:skrambl_app/solana/universe/universe_service.dart';
@@ -54,7 +54,7 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
     _amountController = TextEditingController(text: _amount?.toString() ?? '');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<WalletBalanceProvider>();
+      final provider = context.read<WalletProvider>();
 
       _amountController.addListener(() {
         final text = _amountController.text.trim();
@@ -214,7 +214,7 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
   Widget build(BuildContext context) {
     final fee = calculateFee(_delaySeconds);
 
-    final balanceProvider = context.watch<WalletBalanceProvider>();
+    final balanceProvider = context.watch<WalletProvider>();
     final walletBalance = balanceProvider.solBalance;
     final isBalanceLoading = balanceProvider.isLoading;
 

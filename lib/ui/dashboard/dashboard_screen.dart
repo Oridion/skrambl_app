@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/providers/seed_vault_session_manager.dart';
-import 'package:skrambl_app/providers/wallet_balance_manager.dart';
+import 'package:skrambl_app/providers/selected_wallet_provider.dart';
+import 'package:skrambl_app/providers/wallet_provider.dart';
 import 'package:skrambl_app/services/seed_vault_service.dart';
 import 'package:skrambl_app/ui/dashboard/sections/dashboard_header.dart';
 import 'package:skrambl_app/ui/dashboard/sections/dashboard_pods.dart';
 import 'package:skrambl_app/ui/pods/all_pods_screen.dart';
 import 'package:skrambl_app/ui/send/send_controller.dart';
-import 'package:skrambl_app/utils/logger.dart';
 
 /// A screen that handles Seed Vault authorization, wallet balance subscription,
 /// and displays the dashboard UI once initialization completes.
@@ -32,26 +32,12 @@ class _DashboardState extends State<Dashboard> {
   /// 2️⃣ Retrieves the public key
   /// 3️⃣ Starts the balance provider
   Future<void> _initialize() async {
-    final session = Provider.of<SeedVaultSessionManager>(context, listen: false);
-    final balance = Provider.of<WalletBalanceProvider>(context, listen: false);
-
-    // Get or request a valid AuthToken
+    final session = context.read<SeedVaultSessionManager>();
     final authToken = await SeedVaultService.getValidToken(context);
     if (authToken == null) {
       throw Exception('Authorization declined or failed.');
     }
     session.setAuthToken(authToken);
-    skrLogger.i('Seed Vault authorized.');
-
-    // Fetch public key
-    final pubkey = await SeedVaultService.getPublicKeyString(authToken: authToken);
-    if (pubkey == null) {
-      throw Exception('Failed to retrieve public key.');
-    }
-    skrLogger.i('Retrieved public key: $pubkey');
-
-    // Start wallet balance stream
-    balance.start(pubkey);
   }
 
   @override
@@ -104,10 +90,12 @@ class _DashboardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<SeedVaultSessionManager>();
-    final balance = context.watch<WalletBalanceProvider>();
-    final pubkey = balance.pubkey;
-    final isLoading = balance.isLoading;
-    final sol = balance.solBalance;
+    final selected = context.watch<SelectedWalletProvider>(); // <- selection
+    final wallet = context.watch<WalletProvider>(); // <- balance for selected
+
+    final pubkey = selected.pubkey;
+    final isLoading = wallet.isLoading;
+    final sol = wallet.solBalance;
     final canSend = !isLoading && sol > 0;
 
     // add bottom padding so last items aren't hidden behind the footer nav
@@ -128,7 +116,15 @@ class _DashboardContent extends StatelessWidget {
               sliver: SliverToBoxAdapter(
                 child: pubkey != null
                     ? DashboardHeader(authToken: session.authToken!, pubkey: pubkey)
-                    : const Text("Failed to load wallet.", style: TextStyle(color: Colors.redAccent)),
+                    : Container(
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        alignment: Alignment.center,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      ),
               ),
             ),
 

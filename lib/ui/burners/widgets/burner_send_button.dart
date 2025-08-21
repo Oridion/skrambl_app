@@ -1,8 +1,9 @@
 // lib/ui/burner/burner_send_button.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:skrambl_app/providers/network_fee_provider.dart';
 import 'package:skrambl_app/providers/seed_vault_session_manager.dart';
-import 'package:skrambl_app/providers/wallet_balance_manager.dart';
+import 'package:skrambl_app/providers/wallet_provider.dart';
 import 'package:skrambl_app/ui/send/send_controller.dart';
 
 class BurnerSendButton extends StatefulWidget {
@@ -34,11 +35,12 @@ class _BurnerSendButtonState extends State<BurnerSendButton> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_started) return;
+
     // Ensure the balance watcher is started for this pubkey
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final w = context.read<WalletBalanceProvider>();
+      final w = context.read<WalletProvider>();
       if (w.pubkey != widget.burnerPubkey) {
-        w.start(widget.burnerPubkey);
+        w.setAccount(widget.burnerPubkey);
       }
     });
     _started = true;
@@ -47,12 +49,16 @@ class _BurnerSendButtonState extends State<BurnerSendButton> {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<SeedVaultSessionManager>();
-    final w = context.watch<WalletBalanceProvider>();
+    final w = context.watch<WalletProvider>();
+    final nf = context.read<NetworkFeeProvider>();
+
+    // Default: disabled until balance is actually known
+    final isLoading = w.isLoading || w.pubkey != widget.burnerPubkey;
     final lamports = (w.pubkey == widget.burnerPubkey) ? (w.lamports ?? 0) : 0;
-    final hasFunds = lamports >= widget.minLamports;
+    final hasFunds = !isLoading && lamports >= widget.minLamports + nf.fee;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16), // keep your page rhythm
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: SizedBox(
         width: double.infinity,
         child: FilledButton.icon(
@@ -69,7 +75,7 @@ class _BurnerSendButtonState extends State<BurnerSendButton> {
                     ),
                   );
                 }
-              : null, // disabled when not enough funds
+              : null, // stays null if still loading or no funds
           style: FilledButton.styleFrom(
             padding: widget.padding,
             backgroundColor: hasFunds ? Colors.black : Colors.grey.shade500,

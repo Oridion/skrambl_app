@@ -41,7 +41,7 @@ class BurnersScreen extends StatelessWidget {
           }
 
           return Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: EdgeInsets.fromLTRB(14, 0, 14, 12),
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
               itemCount: items.length,
@@ -51,9 +51,11 @@ class BurnersScreen extends StatelessWidget {
                 return ListBurnerTile(
                   burner: b,
                   onTap: () {
-                    Navigator.of(
-                      context,
-                    ).push(MaterialPageRoute(builder: (_) => BurnerDetailsScreen(pubkey: b.pubkey)));
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => BurnerDetailsScreen(pubkey: b.pubkey, burnerIndex: b.derivationIndex),
+                      ),
+                    );
                   },
                   onCopy: () async {
                     await Clipboard.setData(ClipboardData(text: b.pubkey));

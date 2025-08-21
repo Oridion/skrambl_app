@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:skrambl_app/models/send_form_model.dart';
-import 'package:skrambl_app/providers/wallet_balance_manager.dart';
+import 'package:skrambl_app/providers/wallet_provider.dart';
 import 'package:skrambl_app/services/price_service.dart';
 import 'package:skrambl_app/ui/send/widgets/amount_input.dart';
 import 'package:skrambl_app/utils/colors.dart';
@@ -44,8 +44,8 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
   }
 
   void _onAmountChanged() {
-    final balance = context.read<WalletBalanceProvider>().solBalance;
-    final isLoading = context.read<WalletBalanceProvider>().isLoading;
+    final balance = context.read<WalletProvider>().solBalance;
+    final isLoading = context.read<WalletProvider>().isLoading;
 
     final text = _amountCtrl.text.trim();
     if (text.isEmpty) {
@@ -106,7 +106,7 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final balanceProvider = context.watch<WalletBalanceProvider>();
+    final balanceProvider = context.watch<WalletProvider>();
     final walletBalance = balanceProvider.solBalance;
     final isBalanceLoading = balanceProvider.isLoading;
 

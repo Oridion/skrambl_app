@@ -7,14 +7,19 @@ import 'package:skrambl_app/data/burner_dao.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/providers/burner_balances_provider.dart';
 import 'package:skrambl_app/providers/minute_ticker.dart';
+import 'package:skrambl_app/providers/network_fee_provider.dart';
 import 'package:skrambl_app/providers/pod_watcher_manager.dart';
 import 'package:skrambl_app/providers/price_provider.dart';
+import 'package:skrambl_app/providers/selected_wallet_provider.dart';
 import 'package:skrambl_app/providers/transaction_status_provider.dart';
+import 'package:skrambl_app/services/network_fee_service.dart';
+import 'package:skrambl_app/services/seed_vault_service.dart';
 import 'package:skrambl_app/solana/solana_ws_service.dart';
 import 'package:skrambl_app/ui/root_shell.dart';
+import 'package:skrambl_app/utils/logger.dart';
 import 'data/local_database.dart';
 import 'package:skrambl_app/providers/seed_vault_session_manager.dart';
-import 'package:skrambl_app/providers/wallet_balance_manager.dart';
+import 'package:skrambl_app/providers/wallet_provider.dart';
 import 'package:skrambl_app/ui/errors/seed_vault_required.dart';
 import 'package:skrambl_app/data/burner_repository.dart';
 import 'package:skrambl_app/services/burner_wallet_management.dart';
@@ -43,31 +48,40 @@ void main() async {
         Provider<BurnerDao>.value(value: burnerDao),
         Provider<SolanaWsService>.value(value: ws),
 
-        // App state providers
+        // App state
         ChangeNotifierProvider(create: (_) => PriceProvider()),
         ChangeNotifierProvider<SeedVaultSessionManager>.value(value: seedVault),
-        ChangeNotifierProxyProvider<PriceProvider, WalletBalanceProvider>(
-          create: (ctx) => WalletBalanceProvider(ctx.read<PriceProvider>()),
-          update: (ctx, price, wallet) => wallet!..attachPriceProvider(price),
+
+        // Selection FIRST
+        ChangeNotifierProvider(create: (_) => SelectedWalletProvider()),
+
+        // WalletProvider follows selection + reacts to price
+        ChangeNotifierProxyProvider2<PriceProvider, SelectedWalletProvider, WalletProvider>(
+          create: (ctx) => WalletProvider(ctx.read<PriceProvider>()),
+          update: (ctx, price, selected, wallet) {
+            final w = wallet ?? WalletProvider(price);
+            w.attachPriceProvider(price);
+            w.setAccount(selected.pubkey); // null clears, non-null switches
+            return w;
+          },
         ),
 
-        // IMPORTANT: Provide TransactionStatusProvider BEFORE PodWatcherManager
+        // Tx status must come before watcher manager
         ChangeNotifierProvider(create: (_) => TransactionStatusProvider()),
 
-        // 🔗 PodWatcherManager with onPhase callback + auto-start
+        // Network fee
+        ChangeNotifierProvider(create: (_) => NetworkFeeProvider(NetworkFeeService())),
+
+        // Pod watcher
         ChangeNotifierProvider<PodWatcherManager>(
           create: (ctx) {
             final dao = ctx.read<PodDao>();
             final ws = ctx.read<SolanaWsService>();
             final status = ctx.read<TransactionStatusProvider>();
-
             final mgr = PodWatcherManager(
               dao,
               wsService: ws,
-              onPhase: (podId, phase) {
-                // Only update the UI for the pod whose status screen is visible
-                status.onPhaseFromWatcher(podId, phase);
-              },
+              onPhase: (podId, phase) => status.onPhaseFromWatcher(podId, phase),
             );
             mgr.start();
             return mgr;
@@ -111,7 +125,23 @@ class _AppLifecycleHandlerState extends State<AppLifecycleHandler> with WidgetsB
     // Warm burner cache once app is up and Providers exist
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final repo = context.read<BurnerRepository>();
-      await repo.warmCacheFromDb(); // DB → in-memory cache
+      await repo.warmCacheFromDb();
+
+      final seedVault = context.read<SeedVaultSessionManager>();
+      if (seedVault.authToken == null) {
+        await seedVault.initialize();
+      }
+
+      final token = seedVault.authToken;
+      if (token != null) {
+        final pk = await SeedVaultService.getPublicKey(authToken: token);
+        if (pk != null && mounted) {
+          context.read<SelectedWalletProvider>().setPrimary(pk.toBase58());
+          skrLogger.i("Set primary to ${pk.toBase58()}");
+        }
+      }
+
+      await context.read<NetworkFeeProvider>().refresh();
     });
   }
 
@@ -127,12 +157,12 @@ class _AppLifecycleHandlerState extends State<AppLifecycleHandler> with WidgetsB
     if (state == AppLifecycleState.resumed) {
       watcher.start();
       final seedVault = Provider.of<SeedVaultSessionManager>(context, listen: false);
-      final balance = Provider.of<WalletBalanceProvider>(context, listen: false);
+      final wp = Provider.of<WalletProvider>(context, listen: false);
 
       if (seedVault.authToken == null) {
         //skrLogger.i("🔁 App resumed. Re-checking authToken...");
         seedVault.initialize();
-        balance.stop();
+        wp.setAccount(null);
       }
     }
     if (state == AppLifecycleState.paused) watcher.stop();
