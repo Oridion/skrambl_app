@@ -48,7 +48,6 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
   // Burner mode
   List<BurnerWallet> _burners = [];
   String? _selectedBurnerAddress;
-  bool _loadingBurners = true;
 
   // Tabs
   late final TabController _tabCtrl;
@@ -96,24 +95,19 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
   }
 
   Future<void> _loadBurners() async {
-    setState(() => _loadingBurners = true);
-    try {
-      final items = await widget.fetchBurners();
-      setState(() {
-        _burners = items;
-        // If form already had a burner destination, preselect it
-        if (widget.formModel.destinationWallet != null) {
-          final addr = widget.formModel.destinationWallet!;
-          if (_burners.any((b) => b.publicKey == addr)) {
-            _selectedBurnerAddress = addr;
-            _mode = DestinationMode.burner;
-            _tabCtrl.index = 1;
-          }
+    final items = await widget.fetchBurners();
+    setState(() {
+      _burners = items;
+      // If form already had a burner destination, preselect it
+      if (widget.formModel.destinationWallet != null) {
+        final addr = widget.formModel.destinationWallet!;
+        if (_burners.any((b) => b.publicKey == addr)) {
+          _selectedBurnerAddress = addr;
+          _mode = DestinationMode.burner;
+          _tabCtrl.index = 1;
         }
-      });
-    } finally {
-      if (mounted) setState(() => _loadingBurners = false);
-    }
+      }
+    });
   }
 
   void _handleNext() {
@@ -261,7 +255,6 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
                   final b = burners[i];
                   final selected = b.pubkey == _selectedBurnerAddress;
                   return BurnerTile(
-                    // adapt your BurnerTile to accept either type; if it's the DB row:
                     burner: BurnerWallet(
                       index: b.derivationIndex,
                       publicKey: b.pubkey,

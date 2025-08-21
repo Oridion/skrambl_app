@@ -14,9 +14,9 @@ String formatSol(double value, {int maxDecimals = 4}) {
   return formatted;
 }
 
-String shortenPubkey(String pubkey) {
+String shortenPubkey(String pubkey, {int length = 4}) {
   if (pubkey.length <= 10) return pubkey;
-  return '${pubkey.substring(0, 4).toUpperCase()}..${pubkey.substring(pubkey.length - 4).toUpperCase()}';
+  return '${pubkey.substring(0, length).toUpperCase()}..${pubkey.substring(pubkey.length - length).toUpperCase()}';
 }
 
 String formatTimeAgo(int unixSeconds) {

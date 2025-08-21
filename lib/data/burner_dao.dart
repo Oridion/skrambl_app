@@ -44,19 +44,20 @@ class BurnerDao extends DatabaseAccessor<LocalDatabase> with _$BurnerDaoMixin {
     return (select(burners)..where((b) => b.pubkey.equals(pubkey))).watchSingleOrNull();
   }
 
-  //Is the address a burner address
-  Future<bool> isBurner(String pubkey) async {
+  // Is pubkey in the burner db
+  Future<bool> isInLocalDb(String pubkey) async {
     final row = await (select(burners)..where((b) => b.pubkey.equals(pubkey))).getSingleOrNull();
     return row != null;
   }
 
-  // burner_dao.dart
+  // Find burners in a set of address strings
   Future<Set<String>> findBurnersIn(Set<String> addrs) async {
     if (addrs.isEmpty) return {};
     final rows = await (select(burners)..where((b) => b.pubkey.isIn(addrs.toList()))).get();
     return rows.map((r) => r.pubkey).toSet();
   }
 
+  // Get burner by pubkey
   Future<Burner?> getByPubkey(String pubkey) {
     return (select(burners)..where((b) => b.pubkey.equals(pubkey))).getSingleOrNull();
   }

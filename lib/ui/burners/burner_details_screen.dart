@@ -8,8 +8,7 @@ import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/providers/burner_balances_provider.dart';
 import 'package:skrambl_app/providers/price_provider.dart';
-import 'package:skrambl_app/providers/seed_vault_session_manager.dart';
-import 'package:skrambl_app/ui/send/send_controller.dart';
+import 'package:skrambl_app/ui/burners/widgets/burner_send_button.dart';
 import 'package:skrambl_app/ui/shared/pod_status_colors.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
@@ -21,8 +20,8 @@ class BurnerDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final burnerDao = context.read<BurnerDao>();
-    final session = context.watch<SeedVaultSessionManager>();
     final podDao = context.read<PodDao>();
+
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
@@ -63,36 +62,7 @@ class BurnerDetailsScreen extends StatelessWidget {
               const SizedBox(height: 12),
 
               // SEND BUTTON
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SendController(
-                            authToken: session.authToken!,
-                            fromWalletOverride: burner?.pubkey,
-                            fromBurnerIndexOverride: burner?.derivationIndex,
-                          ),
-                        ),
-                      );
-                    },
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    icon: const Icon(Icons.send, size: 18, color: Colors.white),
-                    label: const Text(
-                      "Send",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
-                    ),
-                  ),
-                ),
-              ),
+              BurnerSendButton(burnerPubkey: pubkey),
               const SizedBox(height: 16),
 
               // Deliveries
@@ -163,12 +133,12 @@ class _HeaderCard extends StatelessWidget {
                   children: [
                     // Address
                     Text(
-                      pubkey,
+                      shortenPubkey(pubkey, length: 10),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 3),
 
                     // Optional note
                     if ((note ?? '').isNotEmpty)
@@ -191,7 +161,7 @@ class _HeaderCard extends StatelessWidget {
                           used ? Colors.red.shade50 : const Color(0xFFF2F2F2),
                           used ? Colors.red.shade700 : Colors.black87,
                         ),
-                        if (idx != null) _chip('Index $idx', const Color(0xFFF2F2F2), Colors.black87),
+                        if (idx != null) _chip('IDX: $idx', const Color(0xFFF2F2F2), Colors.black87),
                       ],
                     ),
                   ],
@@ -224,10 +194,10 @@ class _HeaderCard extends StatelessWidget {
 
   Widget _chip(String label, Color bg, Color fg) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: Colors.black12),
       ),
       child: Text(

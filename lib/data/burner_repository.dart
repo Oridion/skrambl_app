@@ -1,6 +1,9 @@
+import 'package:skrambl_app/data/buner_allocator.dart';
 import 'package:skrambl_app/services/burner_wallet_management.dart';
 import 'package:skrambl_app/data/burner_dao.dart';
 import 'package:skrambl_app/data/local_database.dart';
+import 'package:skrambl_app/services/seed_vault_service.dart';
+import 'package:skrambl_app/utils/solana.dart';
 import 'package:solana_seed_vault/solana_seed_vault.dart';
 
 /// Repository = orchestration layer between Seed Vault (manager) and Drift (dao).
@@ -13,12 +16,26 @@ class BurnerRepository {
   /// Create a new burner key (derives from Seed Vault), then persist it in DB.
   /// Returns the in-memory BurnerWallet (index + publicKey + optional note).
   Future<BurnerWallet?> createBurner({required AuthToken token, String? note}) async {
-    final index = await dao.nextBurnerIndex();
-    final pubkey = await manager.derivePublicKey(token: token, accountIndex: index);
-    await dao.upsertBurner(pubkey: pubkey, derivationIndex: index, note: note);
-    final burner = BurnerWallet(index: index, publicKey: pubkey, note: note);
-    manager.memoize(burner);
-    return burner;
+    final allocator = BurnerAllocator();
+    try {
+      final index = await allocator.allocate(
+        token: token,
+        exposeAndGetPubkeyAtIndex: SeedVaultService.exposeAndGetPubkeyAtIndex,
+        isInLocalDb: dao.isInLocalDb,
+        hasOnChainHistory: hasOnChainHistory,
+        preferStartAbove: 100,
+      );
+
+      final pubkey = await manager.derivePublicKey(token: token, accountIndex: index);
+      await dao.upsertBurner(pubkey: pubkey, derivationIndex: index, note: note);
+
+      final burner = BurnerWallet(index: index, publicKey: pubkey, note: note);
+      manager.memoize(burner);
+      return burner;
+    } catch (e) {
+      // Bubble error up to UI
+      throw Exception("Burner allocation failed: $e");
+    }
   }
 
   /// Restore manager’s in-memory cache from DB (useful on cold start).

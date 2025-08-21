@@ -1314,6 +1314,10 @@ class $BurnersTable extends Burners with TableInfo<$BurnersTable, Burner> {
     'note',
     aliasedName,
     true,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 0,
+      maxTextLength: 64,
+    ),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );

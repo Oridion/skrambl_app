@@ -7,6 +7,7 @@ import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/services/seed_vault_service.dart';
 import 'package:skrambl_app/services/burner_wallet_management.dart';
 import 'package:skrambl_app/ui/burners/create_burner_sheet.dart';
+import 'package:skrambl_app/ui/shared/snack_bar.dart';
 import 'package:skrambl_app/utils/colors.dart';
 
 String _short(String s, {int head = 6, int tail = 6}) =>
@@ -58,7 +59,10 @@ Future<void> openCreateBurnerSheet(BuildContext context) async {
                             if (token == null) throw Exception('Seed Vault authorization denied');
 
                             final burner = await repo.createBurner(token: token, note: label);
-                            if (burner == null) throw Exception('Burner creation failed');
+                            if (burner == null) {
+                              showSnackBar(context, "Could not find a burner wallet. Please try again.");
+                              throw Exception('Burner wallet creation failed');
+                            }
                             return burner;
                           },
                         ),
