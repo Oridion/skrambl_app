@@ -2,7 +2,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:skrambl_app/constants/app.dart';
+import 'package:skrambl_app/providers/selected_wallet_provider.dart';
 import 'package:skrambl_app/ui/burners/list_burners_screen.dart';
 import 'package:skrambl_app/ui/dashboard/dashboard_screen.dart';
 import 'package:skrambl_app/ui/pods/all_pods_screen.dart';
@@ -18,6 +20,57 @@ class RootShell extends StatefulWidget {
 
 class _RootShellState extends State<RootShell> {
   late int _index = widget.initialIndex;
+  bool _didInit = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Ensure primary is selected whenever RootShell shows up
+    if (_index == 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<SelectedWalletProvider>().selectPrimary();
+      });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didInit) return;
+    _didInit = true;
+
+    // If we land on Dashboard initially, ensure primary is selected.
+    if (_index == 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<SelectedWalletProvider>().selectPrimary();
+      });
+    }
+  }
+
+  void _goTab(int i) {
+    if (_index == i) {
+      // still ensure primary when re-tapping Dashboard
+      if (i == 0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          context.read<SelectedWalletProvider>().selectPrimary();
+        });
+      }
+      return;
+    }
+
+    setState(() => _index = i);
+
+    // After tab switch, set primary if Dashboard is selected
+    if (i == 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<SelectedWalletProvider>().selectPrimary();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,10 +113,9 @@ class _RootShellState extends State<RootShell> {
                       selected: _index == 0,
                       onTap: () {
                         HapticFeedback.selectionClick();
-                        setState(() => _index = 0);
+                        _goTab(0);
                       },
                     ),
-
                     SizedBox(
                       width: 80,
                       child: _NavIconButton(
@@ -73,7 +125,7 @@ class _RootShellState extends State<RootShell> {
                         selected: _index == 1,
                         onTap: () {
                           HapticFeedback.selectionClick();
-                          setState(() => _index = 1);
+                          _goTab(1);
                         },
                       ),
                     ),
@@ -84,7 +136,7 @@ class _RootShellState extends State<RootShell> {
                       selected: _index == 2,
                       onTap: () {
                         HapticFeedback.selectionClick();
-                        setState(() => _index = 2);
+                        _goTab(2);
                       },
                     ),
                   ],

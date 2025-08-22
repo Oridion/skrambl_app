@@ -45,7 +45,7 @@ class HeaderCard extends StatelessWidget {
                   children: [
                     // Address
                     Text(
-                      shortenPubkey(pubkey, length: 10),
+                      shortenPubkey(pubkey, length: 8),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
@@ -70,8 +70,8 @@ class HeaderCard extends StatelessWidget {
                       children: [
                         _chip(
                           used ? 'USED' : 'UNUSED',
-                          used ? Colors.red.shade50 : const Color(0xFFF2F2F2),
-                          used ? Colors.red.shade700 : Colors.black87,
+                          used ? const Color.fromARGB(255, 253, 236, 238) : const Color(0xFFF2F2F2),
+                          used ? const Color.fromARGB(255, 168, 32, 32) : Colors.black87,
                         ),
                         if (idx != null) _chip('IDX: $idx', const Color(0xFFF2F2F2), Colors.black87),
                       ],
@@ -106,11 +106,11 @@ class HeaderCard extends StatelessWidget {
 
   Widget _chip(String text, Color bg, Color fg) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
       child: Text(
         text,
-        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: fg),
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: fg),
       ),
     );
   }

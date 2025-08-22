@@ -85,7 +85,6 @@ class _DashboardState extends State<Dashboard> with RouteAware {
             ),
           );
         }
-
         // Initialization succeeded: show dashboard
         return const _DashboardContent();
       },
