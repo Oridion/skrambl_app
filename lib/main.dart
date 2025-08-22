@@ -24,6 +24,8 @@ import 'package:skrambl_app/ui/errors/seed_vault_required.dart';
 import 'package:skrambl_app/data/burner_repository.dart';
 import 'package:skrambl_app/services/burner_wallet_management.dart';
 
+final RouteObserver<PageRoute<dynamic>> routeObserver = RouteObserver<PageRoute<dynamic>>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -243,6 +245,7 @@ class SkramblApp extends StatelessWidget {
           ),
         ),
       ),
+      navigatorObservers: [routeObserver],
       home: seedVaultAvailable ? const RootShell() : const SeedVaultRequiredScreen(),
     );
   }

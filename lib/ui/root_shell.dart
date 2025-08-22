@@ -8,7 +8,9 @@ import 'package:skrambl_app/providers/selected_wallet_provider.dart';
 import 'package:skrambl_app/ui/burners/list_burners_screen.dart';
 import 'package:skrambl_app/ui/dashboard/dashboard_screen.dart';
 import 'package:skrambl_app/ui/pods/all_pods_screen.dart';
-import 'package:skrambl_app/utils/colors.dart';
+import 'package:skrambl_app/ui/shared/nav_icon_button.dart';
+
+import 'package:skrambl_app/main.dart' show routeObserver;
 
 class RootShell extends StatefulWidget {
   final int initialIndex;
@@ -18,9 +20,8 @@ class RootShell extends StatefulWidget {
   State<RootShell> createState() => _RootShellState();
 }
 
-class _RootShellState extends State<RootShell> {
+class _RootShellState extends State<RootShell> with RouteAware {
   late int _index = widget.initialIndex;
-  bool _didInit = false;
 
   @override
   void initState() {
@@ -37,10 +38,30 @@ class _RootShellState extends State<RootShell> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_didInit) return;
-    _didInit = true;
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
+    }
 
-    // If we land on Dashboard initially, ensure primary is selected.
+    // If we land on Dashboard initially, ensure primary is selected once.
+    if (_index == 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<SelectedWalletProvider>().selectPrimary();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  // Fired when a route above RootShell is popped (returning here)
+  @override
+  void didPopNext() {
+    if (!mounted) return;
     if (_index == 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -50,8 +71,8 @@ class _RootShellState extends State<RootShell> {
   }
 
   void _goTab(int i) {
+    // If tapping the already-selected Dashboard tab, still enforce primary.
     if (_index == i) {
-      // still ensure primary when re-tapping Dashboard
       if (i == 0) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
@@ -63,7 +84,7 @@ class _RootShellState extends State<RootShell> {
 
     setState(() => _index = i);
 
-    // After tab switch, set primary if Dashboard is selected
+    // After switching to Dashboard, enforce primary.
     if (i == 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -106,7 +127,7 @@ class _RootShellState extends State<RootShell> {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _NavIconButton(
+                    NavIconButton(
                       tooltip: 'Dashboard',
                       icon: Icons.home_outlined,
                       activeIcon: Icons.home,
@@ -118,7 +139,7 @@ class _RootShellState extends State<RootShell> {
                     ),
                     SizedBox(
                       width: 80,
-                      child: _NavIconButton(
+                      child: NavIconButton(
                         tooltip: 'Pods',
                         icon: AppConstants.skramblIconOutlined,
                         activeIcon: AppConstants.skramblIcon,
@@ -129,7 +150,7 @@ class _RootShellState extends State<RootShell> {
                         },
                       ),
                     ),
-                    _NavIconButton(
+                    NavIconButton(
                       tooltip: 'Burners',
                       icon: Icons.local_fire_department_outlined,
                       activeIcon: Icons.local_fire_department,
@@ -141,58 +162,6 @@ class _RootShellState extends State<RootShell> {
                     ),
                   ],
                 ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavIconButton extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
-  final bool selected;
-  final VoidCallback onTap;
-  final String tooltip;
-
-  const _NavIconButton({
-    required this.icon,
-    required this.activeIcon,
-    required this.selected,
-    required this.onTap,
-    required this.tooltip,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Center(
-      child: Tooltip(
-        message: tooltip, // hidden label for a11y/long-press
-        waitDuration: const Duration(milliseconds: 400),
-        child: Material(
-          color: Colors.transparent,
-          shape: const StadiumBorder(),
-          child: InkWell(
-            customBorder: const StadiumBorder(),
-            onTap: onTap,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              curve: Curves.easeOut,
-              width: 56, // perfect pill width
-              height: 44, // perfect pill height
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: selected ? Colors.black : Colors.transparent,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Icon(
-                selected ? activeIcon : icon,
-                size: 22,
-                color: selected ? Colors.white : cs.onSurface.withOpacityCompat(0.75),
               ),
             ),
           ),
