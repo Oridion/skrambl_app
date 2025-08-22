@@ -8,11 +8,11 @@ import 'package:skrambl_app/providers/selected_wallet_provider.dart';
 import 'package:skrambl_app/ui/burners/empty_deliveries_screen.dart';
 import 'package:skrambl_app/ui/burners/widgets/burner_header_card.dart';
 import 'package:skrambl_app/ui/burners/widgets/burner_send_button.dart';
-import 'package:skrambl_app/ui/burners/widgets/debug.dart';
 import 'package:skrambl_app/ui/burners/widgets/pod_row.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/utils/solana.dart';
 import 'package:skrambl_app/utils/util.dart';
+//import 'package:skrambl_app/ui/burners/widgets/debug.dart';
 
 class BurnerDetailsScreen extends StatefulWidget {
   final String pubkey; // burner address
@@ -29,7 +29,7 @@ class _BurnerDetailsScreenState extends State<BurnerDetailsScreen> {
   String? _prevPubkey;
   int? _prevBurnerIndex;
   bool _appliedSelection = false; // avoid double apply
-  bool _restored = false;
+  //bool _restored = false;
 
   @override
   void initState() {

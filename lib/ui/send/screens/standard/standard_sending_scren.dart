@@ -207,7 +207,6 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
     } catch (e, st) {
       skrLogger.e('Submit failed: $e\n$st');
       if (!mounted) return;
-      final dao = context.read<PodDao>();
       // Not submitted yet → nothing to mark failed by sig
       setState(() {
         _error = 'Failed to submit transaction.';
