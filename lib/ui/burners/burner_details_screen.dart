@@ -8,9 +8,11 @@ import 'package:skrambl_app/providers/selected_wallet_provider.dart';
 import 'package:skrambl_app/ui/burners/empty_deliveries_screen.dart';
 import 'package:skrambl_app/ui/burners/widgets/burner_header_card.dart';
 import 'package:skrambl_app/ui/burners/widgets/burner_send_button.dart';
+import 'package:skrambl_app/ui/burners/widgets/debug.dart';
 import 'package:skrambl_app/ui/burners/widgets/pod_row.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/utils/solana.dart';
+import 'package:skrambl_app/utils/util.dart';
 
 class BurnerDetailsScreen extends StatefulWidget {
   final String pubkey; // burner address
@@ -46,20 +48,20 @@ class _BurnerDetailsScreenState extends State<BurnerDetailsScreen> {
   }
 
   // Restore selected wallet to previous
-  void _restorePreviousSelection() {
-    if (_restored) return;
-    _restored = true;
+  // void _restorePreviousSelection() {
+  //   if (_restored) return;
+  //   _restored = true;
 
-    if (_prevPubkey != null && _prevBurnerIndex != null) {
-      _selected.selectBurner(_prevPubkey!, _prevBurnerIndex!);
-    } else {
-      _selected.selectPrimary();
-    }
-  }
+  //   if (_prevPubkey != null && _prevBurnerIndex != null) {
+  //     _selected.selectBurner(_prevPubkey!, _prevBurnerIndex!);
+  //   } else {
+  //     _selected.selectPrimary();
+  //   }
+  // }
 
   @override
   void dispose() {
-    _restorePreviousSelection();
+    //_restorePreviousSelection();
     super.dispose();
   }
 
@@ -74,7 +76,14 @@ class _BurnerDetailsScreenState extends State<BurnerDetailsScreen> {
       onPopInvokedWithResult: (bool didPop, bool? keepSelected) {
         if (!didPop) return; // pop was vetoed
         if (keepSelected == true) return; // a child explicitly asked to keep selection
-        _restorePreviousSelection(); // otherwise, restore
+        // Defer provider notification until after the pop finishes
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_prevPubkey != null && _prevBurnerIndex != null) {
+            _selected.selectBurner(_prevPubkey!, _prevBurnerIndex!);
+          } else {
+            _selected.selectPrimary();
+          }
+        });
       },
       child: Scaffold(
         appBar: AppBar(
@@ -95,7 +104,7 @@ class _BurnerDetailsScreenState extends State<BurnerDetailsScreen> {
               tooltip: 'Copy address',
               icon: const Icon(Icons.copy_rounded),
               onPressed: () {
-                // TODO: copyToClipboardWithToast(context, widget.pubkey)
+                copyToClipboardWithToast(context, widget.pubkey);
               },
             ),
             IconButton(
@@ -128,8 +137,11 @@ class _BurnerDetailsScreenState extends State<BurnerDetailsScreen> {
                 HeaderCard(pubkey: widget.pubkey, burner: burner),
                 const SizedBox(height: 12),
 
+                // Debug panel:
+                //DebugBurnerPanel(pubkey: widget.pubkey),
+
                 // SEND BUTTON (auto-disables on no funds inside)
-                BurnerSendButton(burnerPubkey: widget.pubkey),
+                BurnerSendButton(burnerPubkey: widget.pubkey, burnerIndex: widget.burnerIndex),
                 const SizedBox(height: 16),
 
                 // Deliveries

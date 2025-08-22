@@ -98,9 +98,10 @@ class _SendControllerState extends State<SendController> {
 
   Future<void> _initUserWallet() async {
     try {
+      //If from burner, override
       if (widget.fromWalletOverride != null) {
         _formModel.userWallet = widget.fromWalletOverride;
-        _formModel.userBurnerIndex = widget.fromBurnerIndexOverride; // may be null
+        _formModel.userBurnerIndex = widget.fromBurnerIndexOverride;
         setState(() {}); // if UI depends on it
         return;
       }
@@ -227,7 +228,7 @@ class _SendControllerState extends State<SendController> {
     final payload = LaunchPodRequest(
       id: podId,
       destination: _formModel.destinationWallet!,
-      lamports: (_formModel.amount! * lamportsPerSol).round(),
+      lamports: (_formModel.amount! * lamportsPerSol).floor(),
       userWallet: userWallet.toString(),
       delay: _formModel.delaySeconds,
       passcode: passcode,
@@ -248,7 +249,7 @@ class _SendControllerState extends State<SendController> {
       creator: userWallet.toString(), // the Seed Vault pubkey
       podId: podId,
       podPda: podPDA.toBase58(),
-      lamports: (_formModel.amount! * lamportsPerSol).round(),
+      lamports: (_formModel.amount! * lamportsPerSol).floor(),
       mode: _formModel.delaySeconds == 0 ? 0 : 1, // 0=instant, 1=delay
       delaySeconds: _formModel.delaySeconds,
       showMemo: false,

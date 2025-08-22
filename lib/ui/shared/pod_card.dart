@@ -40,16 +40,29 @@ class PodCard extends StatelessWidget {
               time: DateTime.fromMillisecondsSinceEpoch(pod.draftedAt * 1000),
               style: Theme.of(context).textTheme.titleSmall,
             ),
-            const SizedBox(height: 2), // <-- margin between title and subtitle
-            Text(
-              '${pod.lamports / 1000000000} to ${shortenPubkey(pod.destination)}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                Text(
+                  '${pod.lamports / 1000000000} to ',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+
+                //If burner add icon here.
+
+                //If burner address turn color to burner red color
+                Text(
+                  '${shortenPubkey(pod.destination)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ), // <-- margin between title and subtitle
           ],
         ),
-        // subtitle: Text(
         //   '${pod.lamports / 1000000000} to ${shortenPubkey(pod.destination)}',
         //   maxLines: 1,
         //   overflow: TextOverflow.ellipsis,

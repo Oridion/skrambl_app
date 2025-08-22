@@ -1,15 +1,13 @@
-import 'package:skrambl_app/constants/app.dart';
-
 double computeMaxSendableSol({
   required double walletBalanceSol,
-  required double privacyFeeSol, // your delay-based fee
-  required int networkFeeLamports, // from NetworkFeeProvider.fee
-  int safetyLamports = 20000, // small buffer for rounding/drift
+  required double privacyFeeSol, // 0 for standard; your calc for skrambled
+  required int networkFeeLamports,
+  int cushionLamports = 2000, // tiny safety buffer
 }) {
-  final walletLamports = (walletBalanceSol * AppConstants.lamportsPerSol).floor();
-  final privacyLamports = (privacyFeeSol * AppConstants.lamportsPerSol).ceil();
+  const double lamportsPerSol = 1e9;
+  final double networkFeeSol = (networkFeeLamports + cushionLamports) / lamportsPerSol;
 
-  final maxLamports = walletLamports - privacyLamports - networkFeeLamports - safetyLamports;
-  if (maxLamports <= 0) return 0.0;
-  return maxLamports / AppConstants.lamportsPerSol;
+  final double max = walletBalanceSol - privacyFeeSol - networkFeeSol;
+  // Clamp to >= 0 and trim minor FP noise
+  return max > 0 ? double.parse(max.toStringAsFixed(9)) : 0.0;
 }

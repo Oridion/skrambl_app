@@ -21,8 +21,6 @@ class StandardSummaryScreen extends StatefulWidget {
 class _StandardSummaryScreenState extends State<StandardSummaryScreen> {
   bool _pushing = false;
 
-  String _short(String s) => s.length <= 14 ? s : '${s.substring(0, 6)}…${s.substring(s.length - 6)}';
-
   String? _usd(double sol, double? price) {
     if (price == null) return null;
     final v = sol * price;
@@ -34,9 +32,10 @@ class _StandardSummaryScreenState extends State<StandardSummaryScreen> {
   void _goNext() {
     if (_pushing) return;
     setState(() => _pushing = true);
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => StandardSendingScreen(form: widget.formModel)))
-        .whenComplete(() => mounted ? setState(() => _pushing = false) : null);
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => StandardSendingScreen(form: widget.formModel)),
+      (route) => route.isFirst, 
+    );
   }
 
   @override
@@ -90,30 +89,37 @@ class _StandardSummaryScreenState extends State<StandardSummaryScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('TRANSFER AMOUNT', style: t.labelMedium?.copyWith(color: Colors.black38)),
+                          SizedBox(height: 3),
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Padding(
-                                padding: EdgeInsetsGeometry.fromLTRB(0, 8, 0, 0),
-                                child: const SolanaLogo(size: 16, color: Colors.black),
+                                padding: EdgeInsetsGeometry.fromLTRB(0, 12, 0, 0),
+                                child: const SolanaLogo(size: 14, color: Colors.black),
                               ),
-                              const SizedBox(width: 6),
-                              Text(
-                                formatSol(amount),
-                                style: GoogleFonts.archivoBlack(fontSize: 44, color: Colors.black),
+                              const SizedBox(width: 5),
+                              SizedBox(
+                                height: 33,
+                                child: Text(
+                                  formatSol(amount, maxDecimals: 6),
+                                  style: GoogleFonts.archivoBlack(fontSize: 30, color: Colors.black),
+                                ),
                               ),
-                              const SizedBox(width: 8),
+
                               if (usdStr != null) ...[
                                 const SizedBox(width: 8),
-                                Padding(
-                                  padding: EdgeInsetsGeometry.fromLTRB(0, 6, 0, 0),
+
+                                Transform.translate(
+                                  offset: const Offset(0, 7),
                                   child: Text(
                                     usdStr,
-                                    style: t.bodyMedium?.copyWith(color: Colors.black54, fontSize: 24),
+                                    style: t.bodyMedium?.copyWith(color: Colors.black54, fontSize: 18),
                                   ),
                                 ),
                               ],
                             ],
                           ),
+                          SizedBox(height: 8),
                         ],
                       ),
                     ),
@@ -128,9 +134,9 @@ class _StandardSummaryScreenState extends State<StandardSummaryScreen> {
                   padding: const EdgeInsets.only(top: 6, bottom: 12),
                   child: TransferDiagram(
                     fromLabel: 'Your wallet',
-                    fromAddress: _short(widget.formModel.userWallet ?? '—'),
+                    fromAddress: shortenPubkey(widget.formModel.userWallet!, length: 8),
                     toLabel: 'Destination',
-                    toAddress: dest.isEmpty ? '—' : _short(dest),
+                    toAddress: dest.isEmpty ? '—' : shortenPubkey(dest, length: 8),
                     amountSol: amount,
                     amountUsd: usdStr,
                     onCopyFrom: (widget.formModel.userWallet ?? '').isEmpty

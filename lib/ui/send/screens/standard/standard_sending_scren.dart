@@ -8,7 +8,6 @@ import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/models/send_form_model.dart';
 import 'package:skrambl_app/services/seed_vault_service.dart';
 import 'package:skrambl_app/solana/solana_client_service.dart';
-import 'package:skrambl_app/ui/dashboard/dashboard_screen.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/logger.dart';
 import 'package:skrambl_app/utils/solana.dart';
@@ -38,75 +37,159 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
   }
 
   Future<void> _start() async {
+    // ---------- Phase 0: Seed Vault availability + token ----------
+    setState(() => _phase = 'Requesting Seed Vault permission…');
+
+    final bool svAvailable;
     try {
-      setState(() => _phase = 'Requesting Seed Vault permission…');
-      final available = await SeedVault.instance.isAvailable(allowSimulated: true);
-      if (!available) throw Exception('Seed Vault not available');
+      svAvailable = await SeedVault.instance.isAvailable(allowSimulated: true);
+    } catch (e, st) {
+      skrLogger.e('Seed Vault availability check failed: $e\n$st');
+      setState(() {
+        _error = 'Seed Vault check failed.';
+        _done = true;
+      });
+      return;
+    }
+    if (!svAvailable) {
+      setState(() {
+        _error = 'Seed Vault not available';
+        _done = true;
+      });
+      return;
+    }
 
-      final token = await SeedVaultService.getValidToken(context);
-      if (token == null) throw Exception('Seed Vault permission denied');
+    final authToken = await SeedVaultService.getValidToken(context);
+    if (authToken == null) {
+      setState(() {
+        _error = 'Seed Vault permission denied';
+        _done = true;
+      });
+      return;
+    }
 
-      // Burner index or null for primary
-      final int? burnerIdx = widget.form.userBurnerIndex;
+    // ---------- Phase 1: Resolve sender (primary vs burner) ----------
+    setState(() => _phase = 'Resolving wallet…');
 
-      // ----- 1) Resolve sender pubkey (primary vs burner) -----
-      setState(() => _phase = 'Resolving wallet…');
+    final int? burnerIdx = widget.form.userBurnerIndex;
+    late final Ed25519HDPublicKey sender;
+    Uri? resolvedBurnerPath;
 
-      final Ed25519HDPublicKey sender;
-      Uri? resolvedBurnerPath; // only for burner sign
-
+    try {
       if (burnerIdx == null) {
-        // PRIMARY (unchanged)
-        final pk = await SeedVaultService.getPublicKey(authToken: token);
+        final pk = await SeedVaultService.getPublicKey(authToken: authToken);
         if (pk == null) throw Exception('Failed to get public key');
         sender = pk;
       } else {
-        // BURNER
         resolvedBurnerPath = await SeedVaultService.resolvePathForIndex(
           index: burnerIdx,
           purpose: Purpose.signSolanaTransaction,
         );
-        // expose the burner account so the wallet knows it
-        final exposed = await SeedVaultService.exposeAndGetPubkeyAtIndex(authToken: token, index: burnerIdx);
+        final exposed = await SeedVaultService.exposeAndGetPubkeyAtIndex(
+          authToken: authToken,
+          index: burnerIdx,
+        );
         sender = Ed25519HDPublicKey.fromBase58(exposed);
       }
+    } catch (e, st) {
+      skrLogger.e('Resolve wallet failed: $e\n$st');
+      setState(() {
+        _error = 'Could not resolve wallet.';
+        _done = true;
+      });
+      return;
+    }
 
-      // ----- 2) Build the message (unchanged) -----
-      setState(() => _phase = 'Building transaction…');
-      final dest = Ed25519HDPublicKey.fromBase58(widget.form.destinationWallet!);
-      final lamports = (widget.form.amount! * lamportsPerSol).round();
-      final rpc = SolanaClientService().rpcClient;
-      final blockhash = (await rpc.getLatestBlockhash()).value.blockhash;
+    skrLogger.i(sender.toBase58());
+    skrLogger.i(widget.form.toString());
 
-      final messageBytes = await _buildSystemTransferSignable(
+    // ---------- Phase 2: Build message ----------
+    setState(() => _phase = 'Building transaction…');
+
+    final RpcClient rpc = SolanaClientService().rpcClient;
+    final Ed25519HDPublicKey dest = Ed25519HDPublicKey.fromBase58(widget.form.destinationWallet!);
+    final int lamports = (widget.form.amount! * lamportsPerSol).floor();
+    final blockhash = (await rpc.getLatestBlockhash()).value.blockhash;
+
+    skrLogger.i("LAMPORTS: $lamports");
+
+    //TESTING
+    final feeLamports = await estimateFeeForTransfer(
+      from: sender,
+      to: dest,
+      lamports: lamports,
+      recentBlockhash: blockhash,
+    );
+    skrLogger.i("fee: $feeLamports");
+
+    late Uint8List messageBytes;
+    try {
+      messageBytes = await _buildSystemTransferSignable(
         recentBlockhash: blockhash,
-        from: sender, // fee payer = chosen wallet
+        from: sender,
         to: dest,
         lamports: lamports,
       );
+    } catch (e, st) {
+      skrLogger.e('Build message failed: $e\n$st');
+      setState(() {
+        _error = 'Failed to build transaction.';
+        _done = true;
+      });
+      return;
+    }
 
-      // ----- 3) Sign (primary unchanged; burner uses path) -----
-      setState(() => _phase = 'Awaiting signature…');
+    // ---------- Phase 3: Sign ----------
+    setState(() => _phase = 'Awaiting signature…');
 
-      final Uint8List signature;
+    late Uint8List signature;
+    try {
       if (resolvedBurnerPath == null) {
-        // primary as before
-        signature = await SeedVaultService.signMessage(messageBytes: messageBytes, authToken: token);
+        // Primary
+        signature = await SeedVaultService.signMessage(messageBytes: messageBytes, authToken: authToken);
       } else {
-        // burner with explicit path
+        // Burner with explicit path
         signature = await SeedVaultService.signMessageWithResolvedPath(
-          authToken: token,
+          authToken: authToken,
           messageBytes: messageBytes,
           resolvedPath: resolvedBurnerPath,
         );
       }
       if (signature.length != 64) throw Exception('Invalid signature length');
+    } on PlatformException catch (e, st) {
+      // Handle user-cancel or platform error distinctly
+      final canceled = e.code == 'ActionFailedException' && (e.message?.contains('result=0') ?? false);
+      if (canceled) {
+        skrLogger.i('User canceled signature.');
+        setState(() {
+          _error = 'Signature request canceled.';
+          _done = true;
+        });
+        return;
+      }
+      skrLogger.e('Signing PlatformException: $e\n$st');
+      setState(() {
+        _error = 'Signing failed.';
+        _done = true;
+      });
+      return;
+    } catch (e, st) {
+      skrLogger.e('Signing failed: $e\n$st');
+      setState(() {
+        _error = 'Signing failed.';
+        _done = true;
+      });
+      return;
+    }
 
-      // ----- 4) Submit (unchanged) -----
-      setState(() => _phase = 'Submitting…');
-      final txSig = await _sendSignedTransaction(rpc: rpc, messageBytes: messageBytes, signature: signature);
+    // ---------- Phase 4: Submit ----------
+    setState(() => _phase = 'Submitting…');
 
-      // persist pending standard entry (unchanged)
+    late String txSig;
+    try {
+      txSig = await _sendSignedTransaction(rpc: rpc, messageBytes: messageBytes, signature: signature);
+
+      // Persist "pending" record
       try {
         final dao = context.read<PodDao>();
         await dao.upsertStandardPendingBySig(
@@ -118,40 +201,54 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
       } catch (e) {
         skrLogger.w('DB upsert (standard pending) failed: $e');
       }
-
       setState(() {
         _signature = txSig;
-        _phase = 'Confirming…';
-      });
-      await _confirmSignature(rpc, txSig);
-
-      if (!mounted) return;
-      try {
-        final dao = context.read<PodDao>();
-        final burnerDao = context.read<BurnerDao>();
-        await dao.markStandardFinalizedBySig(txSig);
-        await burnerDao.markUsed(pubkey: sender.toBase58());
-      } catch (e) {
-        skrLogger.w('DB finalize (standard) failed: $e');
-      }
-
-      setState(() {
-        _phase = 'Confirmed';
-        _done = true;
       });
     } catch (e, st) {
-      skrLogger.e('Standard send failed: $e\n$st');
+      skrLogger.e('Submit failed: $e\n$st');
       if (!mounted) return;
       final dao = context.read<PodDao>();
-      // _signature can be null if we failed before submit; guard it.
-      if (_signature != null) {
-        await dao.markStandardFailedBySig(_signature!, message: _error ?? 'Unknown error');
-      }
+      // Not submitted yet → nothing to mark failed by sig
       setState(() {
-        _error = e.toString();
+        _error = 'Failed to submit transaction.';
         _done = true;
       });
+      return;
     }
+
+    // ---------- Phase 5: Confirm ----------
+    setState(() => _phase = 'Confirming…');
+
+    try {
+      await _confirmSignature(rpc, txSig);
+    } catch (e, st) {
+      // Not fatal; we still show submitted with sig
+      skrLogger.w('Confirmation timed out or failed: $e\n$st');
+    }
+
+    // ---------- Phase 6: DB finalize (+ mark burner used if applicable) ----------
+    if (!mounted) return;
+    try {
+      final dao = context.read<PodDao>();
+      await dao.markStandardFinalizedBySig(txSig);
+    } catch (e) {
+      skrLogger.w('DB finalize (standard) failed: $e');
+    }
+
+    if (burnerIdx != null && mounted) {
+      try {
+        final burnerDao = context.read<BurnerDao>();
+        await burnerDao.markUsed(pubkey: sender.toBase58());
+      } catch (e) {
+        skrLogger.w('Failed to mark burner used: $e');
+      }
+    }
+
+    // ---------- Done ----------
+    setState(() {
+      _phase = 'Confirmed';
+      _done = true;
+    });
   }
 
   Future<Uint8List> _buildSystemTransferSignable({
@@ -206,7 +303,7 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
       final recent = await rpc.getLatestBlockhash();
       final sender = await SeedVaultService.getPublicKey(authToken: authToken);
       final dest = Ed25519HDPublicKey.fromBase58(widget.form.destinationWallet!);
-      final lamports = (widget.form.amount! * lamportsPerSol).round();
+      final lamports = (widget.form.amount! * lamportsPerSol).floor();
 
       final freshMsg = await _buildSystemTransferSignable(
         recentBlockhash: recent.value.blockhash,
@@ -465,9 +562,7 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
             const SizedBox(width: 12),
             ElevatedButton.icon(
               onPressed: () {
-                Navigator.of(
-                  context,
-                ).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const Dashboard()), (route) => false);
+                Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
@@ -485,29 +580,43 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
   }
 
   Widget _buildErrorView() {
-    return Column(
-      key: const ValueKey('error'),
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.error_outline, size: 56, color: Color(0xFFB3261E)),
-        const SizedBox(height: 14),
-        const Text('Failed to send', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 8),
-        Text(_error ?? 'Unknown error', textAlign: TextAlign.center),
-        const SizedBox(height: 16),
-        if (_signature != null)
-          TextButton.icon(
-            onPressed: () => openOnSolanaFM(context, _signature!),
-            icon: const Icon(Icons.open_in_new, size: 16),
-            label: const Text('View on Solscan'),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ConstrainedBox(
+          key: const ValueKey('error'),
+          constraints: BoxConstraints(maxHeight: constraints.maxHeight, maxWidth: 560),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 56, color: Color(0xFFB3261E)),
+              const SizedBox(height: 14),
+              const Text('Failed to send', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+
+              // Make the long text scrollable
+              Flexible(
+                child: SingleChildScrollView(
+                  child: SelectableText(_error ?? 'Unknown error', style: const TextStyle(fontSize: 13)),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+              if (_signature != null)
+                TextButton.icon(
+                  onPressed: () => openOnSolanaFM(context, _signature!),
+                  icon: const Icon(Icons.open_in_new, size: 16),
+                  label: const Text('View on SolanaFM'),
+                ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
+                child: const Text('Back'),
+              ),
+            ],
           ),
-        const SizedBox(height: 8),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context),
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
-          child: const Text('Back'),
-        ),
-      ],
+        );
+      },
     );
   }
 }

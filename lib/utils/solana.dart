@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:skrambl_app/solana/solana_client_service.dart';
 import 'package:skrambl_app/utils/logger.dart';
+import 'package:solana/encoder.dart';
 import 'package:solana/solana.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -90,5 +91,46 @@ Future<int> getNetworkFee() async {
   } catch (e) {
     skrLogger.e("Failed to get fee");
     return 5000; // fallback
+  }
+}
+
+//Wrapper to get actual network fee.
+Future<int> estimateFeeForTransfer({
+  required Ed25519HDPublicKey from,
+  required Ed25519HDPublicKey to,
+  required int lamports,
+  String? recentBlockhash,
+  int fallbackLamports = 5000,
+}) {
+  final ix = SystemInstruction.transfer(fundingAccount: from, recipientAccount: to, lamports: lamports);
+  return estimateFeeForInstructions(
+    feePayer: from,
+    instructions: [ix],
+    recentBlockhash: recentBlockhash,
+    fallbackLamports: fallbackLamports,
+  );
+}
+
+/// Returns the exact network fee (in lamports) for the *actual* message you plan to send.
+/// Pass the same `instructions`, `feePayer` and `recentBlockhash` you’ll use to sign.
+/// If `recentBlockhash` is null, it fetches one.
+Future<int> estimateFeeForInstructions({
+  required Ed25519HDPublicKey feePayer,
+  required List<Instruction> instructions,
+  String? recentBlockhash,
+  int fallbackLamports = 5000,
+}) async {
+  final rpc = SolanaClientService().rpcClient;
+  try {
+    final blockhash = recentBlockhash ?? (await rpc.getLatestBlockhash()).value.blockhash;
+
+    final compiled = Message(
+      instructions: instructions,
+    ).compile(recentBlockhash: blockhash, feePayer: feePayer);
+
+    final b64 = base64Encode(Uint8List.fromList(compiled.toByteArray().toList()));
+    return await rpc.getFeeForMessage(b64) ?? 0;
+  } catch (_) {
+    return fallbackLamports;
   }
 }

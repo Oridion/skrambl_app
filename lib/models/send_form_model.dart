@@ -17,9 +17,11 @@ class SendFormModel {
   bool isSkrambled = false;
 
   void reset() {
+    userBurnerIndex = null;
     userWallet = null;
     destinationWallet = null;
     amount = null;
+    usdAmount = '0';
     delaySeconds = 0;
     fee = 0;
     isSkrambled = false;
@@ -29,6 +31,7 @@ class SendFormModel {
   String toString() {
     return '''
     SendFormModel(
+      userBurnerIndex: $userBurnerIndex,
       userWallet: $userWallet,
       destinationWallet: $destinationWallet,
       amount: $amount,

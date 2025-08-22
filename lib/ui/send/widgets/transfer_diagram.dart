@@ -90,7 +90,7 @@ class _AddressCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 242, 242, 242),
         border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [

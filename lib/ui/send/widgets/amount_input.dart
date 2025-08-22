@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart';
+import 'package:skrambl_app/utils/formatters.dart';
 
 class AmountInput extends StatelessWidget {
   final TextEditingController controller;
@@ -109,7 +110,7 @@ class AmountInput extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 4, 6, 8),
             child: Text(
-              'Balance: ${walletBalance.toStringAsFixed(6)} SOL',
+              'Balance: ${formatSol(walletBalance, maxDecimals: 6)} SOL',
               style: const TextStyle(fontSize: 12.5, color: Colors.black54),
             ),
           ),

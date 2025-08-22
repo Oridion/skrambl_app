@@ -107,19 +107,26 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final balanceProvider = context.watch<WalletProvider>();
-    final isBalanceLoading = balanceProvider.isLoading;
+    final isBalanceLoading = context.select<WalletProvider, bool>((p) => p.isLoading);
+    final walletBalanceSol = context.select<WalletProvider, double>((p) => p.solBalance);
+    final networkFeeLamports = context.select<NetworkFeeProvider, int>((p) => p.fee);
     final hasAmount = _amount != null && _amount! > 0;
     final isValid = hasAmount && _amount! >= _minAmount && _errorText == null && !isBalanceLoading;
-    final networkFeeLamports = context.select<NetworkFeeProvider, int>((p) => p.fee);
-    final walletBalanceSol = context.watch<WalletProvider>().solBalance;
+    final displayAmount = (_amount ?? 0).toDouble();
     void fillMax() {
+      if (isBalanceLoading) return; // optionally guard
+
       final maxSol = computeMaxSendableSol(
         walletBalanceSol: walletBalanceSol,
         privacyFeeSol: 0,
         networkFeeLamports: networkFeeLamports,
       );
-      _amountCtrl.text = maxSol.toStringAsFixed(6);
+
+      final s = maxSol.toStringAsFixed(6);
+      _amountCtrl.value = TextEditingValue(
+        text: s,
+        selection: TextSelection.collapsed(offset: s.length),
+      );
     }
 
     return Scaffold(
@@ -150,8 +157,8 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
                     duration: const Duration(milliseconds: 180),
                     transitionBuilder: (c, a) => FadeTransition(opacity: a, child: c),
                     child: Text(
-                      hasAmount ? '${formatSol(_amount!)} SOL' : '0 SOL',
-                      key: ValueKey('${_amount ?? 0}'),
+                      hasAmount ? '${formatSol(displayAmount, maxDecimals: 6)} SOL' : '0 SOL',
+                      key: ValueKey<String>('amt_${displayAmount.toStringAsFixed(6)}'),
                       style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: Colors.white),
                     ),
                   ),
