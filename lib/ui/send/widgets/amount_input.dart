@@ -8,12 +8,12 @@ class AmountInput extends StatelessWidget {
   final TextEditingController controller;
   final double? solUsdPrice;
   final double? amount;
-  final double walletBalance;
+  final double walletBalance; // still shown as helper text
   final bool isBalanceLoading;
-  final double Function(int delaySeconds) calculateFee;
-  final int delaySeconds;
   final String? errorText;
   final BorderRadius radius;
+
+  /// Parent computes MAX (in lamports-safe way) and sets controller.text
   final VoidCallback? onMaxPressed;
 
   const AmountInput({
@@ -23,8 +23,6 @@ class AmountInput extends StatelessWidget {
     required this.amount,
     required this.walletBalance,
     required this.isBalanceLoading,
-    required this.calculateFee,
-    required this.delaySeconds,
     required this.radius,
     this.errorText,
     this.onMaxPressed,
@@ -50,10 +48,10 @@ class AmountInput extends StatelessWidget {
             contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
             prefix: Row(
               mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(width: 2),
+              children: const [
+                SizedBox(width: 2),
                 SolanaLogo(size: 14, color: Colors.black),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
               ],
             ),
             helperText: (solUsdPrice != null && (amount ?? 0) > 0)
@@ -77,7 +75,9 @@ class AmountInput extends StatelessWidget {
               borderSide: const BorderSide(color: Color(0xFFB3261E), width: 1.6),
             ),
             errorStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB3261E), height: 1.1),
-            suffixIcon: (!isBalanceLoading && walletBalance > 0)
+
+            // MAX is delegated to parent
+            suffixIcon: (!isBalanceLoading && walletBalance > 0 && onMaxPressed != null)
                 ? Padding(
                     padding: const EdgeInsets.only(right: 14),
                     child: TextButton(
@@ -87,13 +87,7 @@ class AmountInput extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
                       ),
-                      onPressed:
-                          onMaxPressed ??
-                          () {
-                            final feeNow = calculateFee(delaySeconds);
-                            final max = walletBalance - feeNow;
-                            if (max > 0) controller.text = max.toStringAsFixed(6);
-                          },
+                      onPressed: onMaxPressed,
                       child: const Text(
                         'MAX',
                         style: TextStyle(
@@ -111,9 +105,9 @@ class AmountInput extends StatelessWidget {
         ),
 
         if (!isBalanceLoading && walletBalance > 0) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Padding(
-            padding: const EdgeInsets.fromLTRB(6, 4, 6, 8),
+            padding: const EdgeInsets.fromLTRB(8, 4, 6, 8),
             child: Text(
               'Balance: ${walletBalance.toStringAsFixed(6)} SOL',
               style: const TextStyle(fontSize: 12.5, color: Colors.black54),

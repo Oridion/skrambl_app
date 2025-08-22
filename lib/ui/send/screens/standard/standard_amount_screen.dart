@@ -1,10 +1,11 @@
 // lib/ui/send/standard/standard_amount_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'package:skrambl_app/models/send_form_model.dart';
+import 'package:skrambl_app/providers/network_fee_provider.dart';
 import 'package:skrambl_app/providers/wallet_provider.dart';
 import 'package:skrambl_app/services/price_service.dart';
+import 'package:skrambl_app/ui/send/helpers/fee_estimator.dart';
 import 'package:skrambl_app/ui/send/widgets/amount_input.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
@@ -107,11 +108,19 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
   @override
   Widget build(BuildContext context) {
     final balanceProvider = context.watch<WalletProvider>();
-    final walletBalance = balanceProvider.solBalance;
     final isBalanceLoading = balanceProvider.isLoading;
-
     final hasAmount = _amount != null && _amount! > 0;
     final isValid = hasAmount && _amount! >= _minAmount && _errorText == null && !isBalanceLoading;
+    final networkFeeLamports = context.select<NetworkFeeProvider, int>((p) => p.fee);
+    final walletBalanceSol = context.watch<WalletProvider>().solBalance;
+    void fillMax() {
+      final maxSol = computeMaxSendableSol(
+        walletBalanceSol: walletBalanceSol,
+        privacyFeeSol: 0,
+        networkFeeLamports: networkFeeLamports,
+      );
+      _amountCtrl.text = maxSol.toStringAsFixed(6);
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -168,12 +177,11 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
                       controller: _amountCtrl,
                       solUsdPrice: widget.formModel.solUsdPrice,
                       amount: _amount,
-                      walletBalance: walletBalance,
+                      walletBalance: walletBalanceSol,
                       isBalanceLoading: isBalanceLoading,
-                      calculateFee: calculateFee,
-                      delaySeconds: 0,
                       radius: BorderRadius.circular(6),
                       errorText: _errorText,
+                      onMaxPressed: fillMax, // <-- single source of truth
                     ),
                   ],
                 ),

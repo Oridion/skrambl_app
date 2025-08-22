@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/constants/app.dart';
+import 'package:skrambl_app/providers/network_fee_provider.dart';
 import 'package:skrambl_app/providers/wallet_provider.dart';
 import 'package:skrambl_app/services/price_service.dart';
 import 'package:skrambl_app/solana/solana_client_service.dart';
 import 'package:skrambl_app/solana/universe/universe_service.dart';
+import 'package:skrambl_app/ui/send/helpers/fee_estimator.dart';
+import 'package:skrambl_app/ui/send/widgets/amount_header.dart';
 import 'package:skrambl_app/ui/send/widgets/amount_input.dart';
-import 'package:skrambl_app/ui/send/widgets/glitch_header.dart';
 import 'package:skrambl_app/ui/send/widgets/slider_shape.dart';
 import 'package:skrambl_app/ui/shared/chips.dart';
-import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/utils/logger.dart';
@@ -55,7 +56,8 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
     _amountController = TextEditingController(text: _amount?.toString() ?? '');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<WalletProvider>();
+      final wallet = context.read<WalletProvider>();
+      final netFeeSol = context.read<NetworkFeeProvider>().fee / AppConstants.lamportsPerSol;
 
       _amountController.addListener(() {
         final text = _amountController.text.trim();
@@ -69,18 +71,17 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
         }
 
         final parsed = double.tryParse(text);
-        final fee = calculateFee(_delaySeconds);
-        final total = (parsed ?? 0) + fee;
+        final privacyFee = calculateFee(_delaySeconds);
+        final total = (parsed ?? 0) + privacyFee + netFeeSol;
 
         String? error;
         if (parsed == null || parsed <= 0) {
           error = 'Please enter a valid amount';
         } else {
-          final walletBalance = provider.solBalance;
-          final isLoading = provider.isLoading;
-
+          final walletBalance = wallet.solBalance;
+          final isLoading = wallet.isLoading;
           if (!isLoading && total > walletBalance) {
-            error = 'Total exceeds wallet balance';
+            error = 'Total (amount + fees) exceeds balance';
           }
         }
 
@@ -138,93 +139,37 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
     return feeSol.toDouble();
   }
 
-  Widget _buildHeader() {
-    final double amount = _amount ?? 0;
-    final double fee = calculateFee(_delaySeconds);
-    final bool hasAmount = _amount != null && _amount! > 0;
-    final double total = hasAmount ? amount + fee : 0;
-
-    String usd(double sol) {
-      final p = widget.formModel.solUsdPrice;
-      if (p == null) return '';
-      final v = sol * p;
-      final s = v >= 100
-          ? v.toStringAsFixed(0)
-          : v >= 1
-          ? v.toStringAsFixed(2)
-          : v.toStringAsFixed(4);
-      return '\$$s';
-    }
-
-    return GlitchHeader(
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'ESTIMATED TOTAL',
-              style: TextStyle(fontSize: 11, color: Colors.white.withOpacityCompat(0.7), letterSpacing: 0.8),
-            ),
-            const SizedBox(height: 4),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              transitionBuilder: (c, a) => FadeTransition(opacity: a, child: c),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Transform.translate(
-                    offset: const Offset(0, 4), // x, y — move up 2px
-                    child: SolanaLogo(size: 16, useDark: false, color: Colors.white),
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    formatSol(total),
-                    key: ValueKey('${total.toStringAsFixed(9)}$_delaySeconds'),
-                    style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w800, color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-            if (hasAmount && !_loadingFees) ...[
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  Text(
-                    '(${formatSol(amount)} + ${formatSol(fee)} fee)',
-                    style: const TextStyle(fontSize: 13, color: Colors.white70),
-                  ),
-                  const SizedBox(width: 8),
-                  if (widget.formModel.solUsdPrice != null)
-                    Text(
-                      '• ${usd(total)}',
-                      style: TextStyle(fontSize: 12, color: Colors.white.withOpacityCompat(0.75)),
-                    ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final fee = calculateFee(_delaySeconds);
-
     final balanceProvider = context.watch<WalletProvider>();
-    final walletBalance = balanceProvider.solBalance;
     final isBalanceLoading = balanceProvider.isLoading;
+    final networkFeeLamports = context.select<NetworkFeeProvider, int>((p) => p.fee);
+    final privacyFeeSol = calculateFee(_delaySeconds);
+    final walletBalanceSol = context.watch<WalletProvider>().solBalance;
+
+    void fillMax() {
+      final maxSol = computeMaxSendableSol(
+        walletBalanceSol: walletBalanceSol,
+        privacyFeeSol: privacyFeeSol,
+        networkFeeLamports: networkFeeLamports,
+      );
+      _amountController.text = maxSol.toStringAsFixed(6);
+    }
 
     final isValid = _amount != null && _amount! >= _minAmount && _errorText == null && !isBalanceLoading;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return Column(
           children: [
-            _buildHeader(),
+            AmountHeader(
+              amount: _amount,
+              delaySeconds: _delaySeconds,
+              calcFee: calculateFee,
+              solUsdPrice: widget.formModel.solUsdPrice,
+              loadingFees: _loadingFees,
+            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(30, 26, 30, 26),
@@ -238,12 +183,11 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                           controller: _amountController,
                           solUsdPrice: widget.formModel.solUsdPrice,
                           amount: _amount,
-                          walletBalance: walletBalance,
+                          walletBalance: walletBalanceSol,
                           isBalanceLoading: isBalanceLoading,
-                          calculateFee: calculateFee,
-                          delaySeconds: _delaySeconds,
                           radius: BorderRadius.circular(6),
                           errorText: _errorText,
+                          onMaxPressed: fillMax, // <-- single source of truth
                         ),
                         const SizedBox(height: 16),
                         Container(

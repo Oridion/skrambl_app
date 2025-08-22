@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:skrambl_app/providers/network_fee_provider.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_money_row.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_sec_title.dart';
 import 'package:skrambl_app/ui/shared/solana_logo.dart';
@@ -60,7 +62,7 @@ class SkrambledSummaryScreen extends StatelessWidget {
     final onBgMuted = darkBg ? Colors.white70 : Colors.black54;
     final divider = darkBg ? Colors.white10 : const Color.fromARGB(43, 16, 16, 16);
     final chipBg = darkBg ? Colors.white10 : const Color.fromARGB(255, 62, 62, 62);
-
+    final networkFeeLamports = context.select<NetworkFeeProvider, int>((p) => p.fee);
     return Container(
       color: bg,
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
@@ -181,7 +183,7 @@ class SkrambledSummaryScreen extends StatelessWidget {
                     SectionTitle('Total (sending + fee)', color: onBgMuted),
                     const SizedBox(height: 12),
                     MoneyRow(
-                      leftPrimary: totalSol == null ? '0' : formatSol(totalSol),
+                      leftPrimary: totalSol == null ? '0' : formatSol(totalSol, maxDecimals: 6),
                       rightSubtle: (price == null || totalSol == null) ? null : usd(totalSol),
                       primaryColor: const Color.fromARGB(255, 0, 0, 0),
                       subtleColor: onBgMuted,
@@ -194,11 +196,11 @@ class SkrambledSummaryScreen extends StatelessWidget {
                       _PriceSkeleton(color: onBgMuted.withOpacityCompat(0.35)),
                     ],
 
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Not including network fees',
+                        '+ $networkFeeLamports lamports network fee',
                         style: theme.textTheme.bodySmall?.copyWith(color: onBgMuted),
                       ),
                     ),
