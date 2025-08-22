@@ -99,6 +99,11 @@ class _BurnerDetailsScreenState extends State<BurnerDetailsScreen> {
               ],
             ),
           ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new),
+            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
           actions: [
             IconButton(
               tooltip: 'Copy address',

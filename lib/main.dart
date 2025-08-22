@@ -162,7 +162,6 @@ class _AppLifecycleHandlerState extends State<AppLifecycleHandler> with WidgetsB
       final wp = Provider.of<WalletProvider>(context, listen: false);
 
       if (seedVault.authToken == null) {
-        //skrLogger.i("🔁 App resumed. Re-checking authToken...");
         seedVault.initialize();
         wp.setAccount(null);
       }
@@ -204,7 +203,7 @@ class SkramblApp extends StatelessWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           foregroundColor: Colors.black,
-          systemOverlayStyle: SystemUiOverlayStyle.dark, // 👈 Ensure this is here
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
           titleTextStyle: GoogleFonts.spaceGrotesk(
             fontSize: 22,
             fontWeight: FontWeight.w600,

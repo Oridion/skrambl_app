@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/ui/pods/widgets/from_to_bar.dart';
-import 'package:skrambl_app/ui/shared/relative_time.dart'; // for withOpacityCompat if you use it elsewhere
+import 'package:skrambl_app/ui/shared/relative_time.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart';
 
-/// Professional header for the Pod details page.
-/// - Left: Big SOL amount with subtle "SOL" unit
-/// - Right: Status pill + live relative time
 class PodHeaderCard extends StatelessWidget {
   final PodStatus status;
   final Color chipColor;
   final DateTime? draftedAt;
-  final int lamports; // raw lamports
+  final int lamports;
   final Pod pod;
   final bool isSenderBurner;
   final bool isDestinationBurner;
@@ -38,7 +35,7 @@ class PodHeaderCard extends StatelessWidget {
       children: [
         // Card
         Container(
-          margin: const EdgeInsets.only(top: 4), // room for the overlapping pill
+          margin: const EdgeInsets.only(top: 4),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(8),
@@ -47,7 +44,7 @@ class PodHeaderCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(22, 12, 22, 16),
           child: Column(
             children: [
-              const SizedBox(height: 6), // small spacer under the pill
+              const SizedBox(height: 6),
               FromToBar(
                 from: pod.creator,
                 to: pod.destination,
@@ -138,12 +135,10 @@ class _AmountBlock extends StatelessWidget {
             letterSpacing: 0,
             height: 1,
             color: Colors.black,
-            // Use monospace digits to avoid jitter if your font supports it
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
         SizedBox(width: 3),
-
         Text(unit, style: textTheme.labelLarge?.copyWith(color: Colors.black, letterSpacing: 0.3)),
       ],
     );
@@ -159,7 +154,7 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 3),
       decoration: BoxDecoration(
         color: color.withOpacityCompat(0.12),
         borderRadius: BorderRadius.circular(6),

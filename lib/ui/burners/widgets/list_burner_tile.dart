@@ -124,11 +124,4 @@ class ListBurnerTile extends StatelessWidget {
     return parts.join(' · ');
   }
 
-  // static String _relative(int unix) {
-  //   final d = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(unix * 1000));
-  //   if (d.inMinutes < 1) return 'just now';
-  //   if (d.inMinutes < 60) return '${d.inMinutes}m ago';
-  //   if (d.inHours < 24) return '${d.inHours}h ago';
-  //   return '${d.inDays}d ago';
-  // }
 }

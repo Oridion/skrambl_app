@@ -23,7 +23,15 @@ class PodDetailsScreen extends StatelessWidget {
     final dao = context.read<PodDao>();
     final burnerDao = context.read<BurnerDao>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Delivery Details'), titleSpacing: 24),
+      appBar: AppBar(
+        title: const Text('Delivery Details'),
+        titleSpacing: 24,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ),
       body: StreamBuilder<Pod?>(
         stream: dao.watchById(localId),
         builder: (context, snap) {
@@ -77,10 +85,6 @@ class PodDetailsScreen extends StatelessWidget {
 
                   // ===== TIMELINE =====
                   VerticalTimeline(items: timeline, pod: pod),
-                  // SectionWrapper(
-                  //   label: 'TIMELINE',
-                  //   child: VerticalTimeline(items: timeline, pod: pod),
-                  // ),
 
                   // ===== DETAILS =====
                   SectionWrapper(
@@ -107,29 +111,3 @@ class PodDetailsScreen extends StatelessWidget {
     );
   }
 }
-
-
-// 🔴 Meta warning row when sent to burner
-// if (isBurner) ...[
-//   const SizedBox(height: 12),
-//   Container(
-//     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-//     decoration: BoxDecoration(
-//       color: const Color(0xFFFFE9E9),
-//       borderRadius: BorderRadius.circular(8),
-//       border: Border.all(color: const Color(0xFFE53935), width: 1.5),
-//     ),
-//     child: Row(
-//       children: const [
-//         Icon(Icons.local_fire_department, color: Color(0xFFE53935), size: 18),
-//         SizedBox(width: 8),
-//         Expanded(
-//           child: Text(
-//             'Sent to burner',
-//             style: TextStyle(color: Color(0xFFE53935), fontWeight: FontWeight.w800),
-//           ),
-//         ),
-//       ],
-//     ),
-//   ),
-// ],
