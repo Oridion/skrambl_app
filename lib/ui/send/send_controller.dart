@@ -465,7 +465,8 @@ class _SendControllerState extends State<SendController> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_appBarTitle),
-        leading: BackButton(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () async {
             final didPop = await _navKey.currentState?.maybePop() ?? false;
             if (!didPop && mounted) Navigator.of(context).maybePop();

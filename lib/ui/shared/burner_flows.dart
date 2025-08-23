@@ -55,8 +55,10 @@ Future<void> openCreateBurnerSheet(BuildContext context) async {
                         constraints: BoxConstraints(minHeight: constraints.maxHeight),
                         child: CreateBurnerSheet(
                           onCreate: (label) async {
+
                             final token = await SeedVaultService.getValidToken(ctx);
                             if (token == null) throw Exception('Seed Vault authorization denied');
+
 
                             final burner = await repo.createBurner(token: token, note: label);
                             if (burner == null) {

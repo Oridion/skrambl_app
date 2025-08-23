@@ -292,6 +292,7 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
           if (token == null) {
             throw Exception('Seed Vault permission denied');
           }
+
           final burner = await widget.createBurner(note: label, token: token);
           if (burner == null) throw Exception('Failed to create burner');
           return burner;
