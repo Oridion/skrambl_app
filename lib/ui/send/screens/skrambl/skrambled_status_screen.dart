@@ -26,6 +26,7 @@ class SendStatusScreen extends StatefulWidget {
   final Uint8List? signature;
   final double amount;
   final Ed25519HDPublicKey podPDA;
+  final bool isDelayed;
 
   // queue-only path
   final String? launchSig;
@@ -39,6 +40,7 @@ class SendStatusScreen extends StatefulWidget {
     required this.podPDA,
     required this.txBytes,
     required this.signature,
+    required this.isDelayed,
   }) : launchSig = null,
        queueOnly = false;
 
@@ -49,6 +51,7 @@ class SendStatusScreen extends StatefulWidget {
     required this.amount,
     required this.podPDA,
     required this.launchSig,
+    required this.isDelayed,
   }) : txBytes = null,
        signature = null,
        queueOnly = true;

@@ -60,7 +60,7 @@ class SkrambledSummaryScreen extends StatelessWidget {
     final bg = darkBg ? Colors.black : const Color.fromARGB(255, 230, 230, 230);
     final onBg = darkBg ? Colors.white : Colors.black;
     final onBgMuted = darkBg ? Colors.white70 : Colors.black54;
-    final divider = darkBg ? Colors.white10 : const Color.fromARGB(43, 16, 16, 16);
+    final divider = darkBg ? Colors.white10 : const Color.fromARGB(43, 0, 0, 0);
     final chipBg = darkBg ? Colors.white10 : const Color.fromARGB(255, 62, 62, 62);
     final networkFeeLamports = context.select<NetworkFeeProvider, int>((p) => p.fee);
     return Container(
@@ -101,17 +101,17 @@ class SkrambledSummaryScreen extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: darkBg ? const Color(0xFF0E0E0E) : Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: divider, width: 1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: divider, width: 1.8),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacityCompat(darkBg ? 0.35 : 0.12),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
+                      blurRadius: 4,
+                      offset: const Offset(0, 5),
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.fromLTRB(32, 26, 32, 26),
+                padding: const EdgeInsets.fromLTRB(28, 26, 28, 26),
                 child: Column(
                   children: [
                     SectionTitle('Destination', color: onBgMuted),
@@ -168,8 +168,8 @@ class SkrambledSummaryScreen extends StatelessWidget {
                     ),
 
                     _KVRow(
-                      icon: Icons.info_outline_rounded,
-                      label: 'Estimated fee',
+                      icon: Icons.shield_outlined,
+                      label: 'Delivery fee',
                       value: formatSol(feeSol),
                       hintRight: price == null ? null : usd(feeSol),
                       color: onBg,
@@ -180,7 +180,7 @@ class SkrambledSummaryScreen extends StatelessWidget {
                     const SizedBox(height: 20),
 
                     // TOTAL
-                    SectionTitle('Total (sending + fee)', color: onBgMuted),
+                    SectionTitle('Total', color: onBgMuted),
                     const SizedBox(height: 12),
                     MoneyRow(
                       leftPrimary: totalSol == null ? '0' : formatSol(totalSol, maxDecimals: 6),
@@ -198,9 +198,9 @@ class SkrambledSummaryScreen extends StatelessWidget {
 
                     const SizedBox(height: 3),
                     Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: Alignment.centerRight,
                       child: Text(
-                        '+ $networkFeeLamports lamports network fee',
+                        '+ Network fee (~$networkFeeLamports lamports)',
                         style: theme.textTheme.bodySmall?.copyWith(color: onBgMuted),
                       ),
                     ),

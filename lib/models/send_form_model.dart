@@ -14,6 +14,8 @@ class SendFormModel {
   int delaySeconds = 0;
   double fee = 0;
 
+  bool get isDelayed => delaySeconds > 0;
+
   bool isSkrambled = false;
 
   void reset() {

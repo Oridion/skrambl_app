@@ -23,7 +23,7 @@ class ScrambledText extends StatefulWidget {
     super.key,
     required this.text,
     this.style,
-    this.maxDuration = const Duration(milliseconds: 380),
+    this.maxDuration = const Duration(milliseconds: 800),
     this.loop = true,
     this.loopIdleDelay = const Duration(seconds: 2),
     this.fastOnChange = true,
@@ -74,7 +74,8 @@ class _ScrambledTextState extends State<ScrambledText> {
     }
 
     final len = target.length;
-    _stepsTotal = (len <= 6) ? len : (len ~/ 2); // quick finish
+    //_stepsTotal = (len <= 6) ? len : (len ~/ 2); // quick finish
+    _stepsTotal = len;
     final ticks = _stepsTotal.clamp(3, 10);
     final total = fast ? widget.maxDuration : widget.maxDuration + const Duration(milliseconds: 80);
     _tickInterval = Duration(milliseconds: (total.inMilliseconds / ticks).ceil());

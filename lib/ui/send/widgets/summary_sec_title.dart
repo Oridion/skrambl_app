@@ -20,7 +20,7 @@ class SectionTitle extends StatelessWidget {
         text.toUpperCase(),
         style: Theme.of(
           context,
-        ).textTheme.labelSmall?.copyWith(color: color, fontWeight: FontWeight.w800, letterSpacing: 0.9),
+        ).textTheme.labelSmall?.copyWith(color: color, fontWeight: FontWeight.w800, letterSpacing: 1.3),
       ),
     );
   }

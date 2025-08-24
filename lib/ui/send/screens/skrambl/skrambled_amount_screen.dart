@@ -1,13 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/providers/network_fee_provider.dart';
 import 'package:skrambl_app/providers/wallet_provider.dart';
 import 'package:skrambl_app/services/price_service.dart';
-import 'package:skrambl_app/solana/solana_client_service.dart';
 import 'package:skrambl_app/solana/universe/universe_service.dart';
-import 'package:skrambl_app/ui/send/helpers/fee_estimator.dart';
 import 'package:skrambl_app/ui/send/widgets/amount_header.dart';
 import 'package:skrambl_app/ui/send/widgets/amount_input.dart';
 import 'package:skrambl_app/ui/send/widgets/slider_shape.dart';
@@ -35,90 +35,83 @@ class SkrambledAmountScreen extends StatefulWidget {
 }
 
 class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
+  // ---- State ----
   late final TextEditingController _amountController;
-  bool _isNextLoading = false;
-  double? _amount;
-  int _delaySeconds = 30;
-  String? _errorText;
-  BigInt? _baseFee;
-  BigInt? _incrementFee;
+
+  double? _amountSol = 0;
+  int _delaySeconds = 0;
+
+  // fees from Universe (lamports)
+  int? _baseFeeLamports;
+  int? _incrementFeeLamports;
   bool _loadingFees = true;
 
-  static const double _minAmount = 0.000001;
+  // derived
+  double _privacyFeeSol = 0; // cached for UI (derived)
+  String? _errorText;
+  bool _isNextLoading = false;
 
-  final rpc = SolanaClientService().rpcClient;
+  Timer? _debounce;
 
+  // ---- Lifecycle ----
   @override
   void initState() {
     super.initState();
-    _amount = widget.formModel.amount;
-    _delaySeconds = widget.formModel.delaySeconds;
-    _amountController = TextEditingController(text: _amount?.toString() ?? '');
 
+    _amountSol = widget.formModel.amount;
+    _delaySeconds = widget.formModel.delaySeconds;
+    _amountController = TextEditingController(text: _amountSol?.toString() ?? '');
+
+    _fetchUniverse(); // async, will call _recalc when done
+
+    // Initial compute + listen to text changes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final wallet = context.read<WalletProvider>();
-      final netFeeSol = context.read<NetworkFeeProvider>().fee / AppConstants.lamportsPerSol;
+      _recalc(); // compute with initial values
 
       _amountController.addListener(() {
-        final text = _amountController.text.trim();
-
-        if (text.isEmpty) {
-          setState(() {
-            _amount = null;
-            _errorText = null;
-          });
-          return;
-        }
-
-        final parsed = double.tryParse(text);
-        final privacyFee = calculateFee(_delaySeconds);
-        final total = (parsed ?? 0) + privacyFee + netFeeSol;
-
-        String? error;
-        if (parsed == null || parsed <= 0) {
-          error = 'Please enter a valid amount';
-        } else {
-          final walletBalance = wallet.solBalance;
-          final isLoading = wallet.isLoading;
-          if (!isLoading && total > walletBalance) {
-            error = 'Total (amount + fees) exceeds balance';
-          }
-        }
-
-        setState(() {
-          _amount = parsed;
-          _errorText = error;
-        });
+        _debounce?.cancel();
+        _debounce = Timer(const Duration(milliseconds: 120), _recalc);
       });
     });
-
-    _fetchUniverse();
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _amountController.dispose();
     super.dispose();
   }
 
+  // ---- Data fetch ----
   Future<void> _fetchUniverse() async {
     try {
       skrLogger.i('Fetching Universe');
-
       final universe = await fetchUniverseAccount();
+      if (!mounted) return;
       if (universe != null) {
         setState(() {
-          _baseFee = universe.fee;
-          _incrementFee = universe.increment;
+          _baseFeeLamports = universe.fee.toInt(); // store as int
+          _incrementFeeLamports = universe.increment.toInt();
           _loadingFees = false;
         });
       } else {
         setState(() => _loadingFees = false);
       }
+      _recalc();
     } catch (e) {
       skrLogger.e('Error fetching universe: $e');
+      if (!mounted) return;
       setState(() => _loadingFees = false);
+      _recalc();
     }
+  }
+
+  // ---- Helpers ----
+  int _calculateDelayFeeLamports(int delaySeconds, int? baseFeeLamports, int? incLamports) {
+    if (baseFeeLamports == null || incLamports == null) return 0;
+    final tiers = delaySeconds ~/ 180;
+    return baseFeeLamports + (incLamports * tiers);
+    // NOTE: you decided baseFee==creation fee; if you want creation vs subsequent, handle that upstream
   }
 
   String get delayText {
@@ -127,48 +120,90 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
     return '$minutes min';
   }
 
-  double calculateFee(int delaySeconds) {
-    if (_baseFee == null || _incrementFee == null) {
-      skrLogger.w('Base fee or increment fee is null');
-      return 0;
-    }
-
-    final int tiers = (delaySeconds / 180).floor();
-    final feeLamports = _baseFee! + (_incrementFee! * BigInt.from(tiers));
-    final feeSol = feeLamports / BigInt.from(AppConstants.lamportsPerSol);
-    return feeSol.toDouble();
+  // Max send (keeps SOL for fees)
+  double _computeMaxSendableSol({
+    required double walletBalanceSol,
+    required double privacyFeeSol,
+    required int networkFeeLamports,
+  }) {
+    final netFeeSol = networkFeeLamports / AppConstants.lamportsPerSol;
+    final max = walletBalanceSol - (privacyFeeSol + netFeeSol);
+    return max > 0 ? max : 0;
   }
 
+  // ---- Core recompute ----
+  void _recalc() {
+    // reactive reads (don’t keep references)
+    final wallet = context.read<WalletProvider>();
+    final networkFeeLamports = context.read<NetworkFeeProvider>().fee;
+
+    // amount parse
+    final text = _amountController.text.trim();
+    final parsed = text.isEmpty ? null : double.tryParse(text);
+
+    // delay fee
+    final delayLamports = _calculateDelayFeeLamports(_delaySeconds, _baseFeeLamports, _incrementFeeLamports);
+    final delaySol = delayLamports / AppConstants.lamportsPerSol;
+
+    // total for validation
+    final netFeeSol = networkFeeLamports / AppConstants.lamportsPerSol;
+    final total = (parsed ?? 0) + delaySol + netFeeSol;
+
+    String? error;
+    if (parsed == null) {
+      error = null; // don’t complain if field is empty
+    } else if (parsed <= 0) {
+      error = 'Please enter a valid amount';
+    } else if (!wallet.isLoading && total > wallet.solBalance) {
+      error = 'Total (amount + fees) exceeds balance';
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _amountSol = parsed;
+      _privacyFeeSol = delaySol;
+      _errorText = error;
+    });
+  }
+
+  // ---- UI ----
   @override
   Widget build(BuildContext context) {
-    final fee = calculateFee(_delaySeconds);
-    final balanceProvider = context.watch<WalletProvider>();
-    final isBalanceLoading = balanceProvider.isLoading;
+    // watch things that, when changed, should trigger a recompute
+    final isBalanceLoading = context.select<WalletProvider, bool>((w) => w.isLoading);
+    final walletBalanceSol = context.select<WalletProvider, double>((w) => w.solBalance);
     final networkFeeLamports = context.select<NetworkFeeProvider, int>((p) => p.fee);
-    final privacyFeeSol = calculateFee(_delaySeconds);
-    final walletBalanceSol = context.watch<WalletProvider>().solBalance;
+
+    // if network fee or wallet balance changed, we want derived validation to update
+    // trigger recompute cheaply (no text change)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // only if mounted and not during loading
+      if (mounted) _recalc();
+    });
 
     void fillMax() {
-      final maxSol = computeMaxSendableSol(
+      final maxSol = _computeMaxSendableSol(
         walletBalanceSol: walletBalanceSol,
-        privacyFeeSol: privacyFeeSol,
+        privacyFeeSol: _privacyFeeSol,
         networkFeeLamports: networkFeeLamports,
       );
       _amountController.text = maxSol.toStringAsFixed(6);
     }
 
-    final isValid = _amount != null && _amount! >= _minAmount && _errorText == null && !isBalanceLoading;
+    final isValid = _amountSol != null && _amountSol! >= 0.000001 && _errorText == null && !isBalanceLoading;
+    final amount = _amountSol ?? 0;
+    final totalForHeader = amount + (_loadingFees ? 0 : _privacyFeeSol);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         return Column(
           children: [
             AmountHeader(
-              amount: _amount,
-              delaySeconds: _delaySeconds,
-              calcFee: calculateFee,
-              solUsdPrice: widget.formModel.solUsdPrice,
+              totalSol: totalForHeader,
+              amountSol: amount,
+              privacyFeeSol: _loadingFees ? null : _privacyFeeSol,
               loadingFees: _loadingFees,
+              solUsdPrice: widget.formModel.solUsdPrice,
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -182,18 +217,18 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                         AmountInput(
                           controller: _amountController,
                           solUsdPrice: widget.formModel.solUsdPrice,
-                          amount: _amount,
+                          amount: _amountSol,
                           walletBalance: walletBalanceSol,
                           isBalanceLoading: isBalanceLoading,
                           radius: BorderRadius.circular(6),
                           errorText: _errorText,
-                          onMaxPressed: fillMax, // <-- single source of truth
+                          onMaxPressed: fillMax,
                         ),
                         const SizedBox(height: 16),
                         Container(
                           padding: const EdgeInsets.fromLTRB(24, 26, 24, 30),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacityCompat(0.6), // or Theme.of(context).cardColor
+                            color: Colors.white.withOpacityCompat(0.6),
                             border: Border.all(color: const Color.fromARGB(255, 143, 143, 143), width: 1),
                             borderRadius: BorderRadius.circular(6),
                           ),
@@ -228,7 +263,10 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                                   divisions: 12, // 0,5,10,...,60 min steps
                                   value: _delaySeconds.toDouble(),
                                   label: delayText,
-                                  onChanged: (v) => setState(() => _delaySeconds = v.round()),
+                                  onChanged: (v) {
+                                    setState(() => _delaySeconds = v.round());
+                                    _recalc();
+                                  },
                                   onChangeEnd: (_) => HapticFeedback.selectionClick(),
                                 ),
                               ),
@@ -251,16 +289,13 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                                 children: [
                                   DelayChip(text: 'Delay: $delayText'),
                                   const SizedBox(width: 8),
-                                  MonoChip(text: '${formatSol(calculateFee(_delaySeconds))} Fee'),
+                                  MonoChip(text: '${formatSol(_privacyFeeSol)} Fee'),
                                 ],
                               ),
                             ],
                           ),
                         ),
-
                         const SizedBox(height: 20),
-
-                        // tiny ticks
                       ],
                     ),
                   ),
@@ -268,7 +303,7 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
               ),
             ),
             Container(
-              padding: EdgeInsets.fromLTRB(24, 20, 24, 20),
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -276,38 +311,31 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                   ElevatedButton(
                     onPressed: (isValid && !_isNextLoading)
                         ? () async {
-                            // 1) Dismiss keyboard immediately
                             FocusScope.of(context).unfocus();
-
                             setState(() => _isNextLoading = true);
 
-                            final amt = _amount ?? 0;
+                            final amt = _amountSol ?? 0;
                             final delay = _delaySeconds;
-                            final feeSol = fee; // already computed above
+                            final feeSol = _privacyFeeSol;
 
-                            // 2) Do work in parallel with a small UX delay (~2s)
                             double? priceUsdPerSol;
                             await Future.wait([
-                              Future.delayed(const Duration(seconds: 1)),
+                              Future.delayed(const Duration(milliseconds: 600)),
                               (() async {
                                 try {
                                   priceUsdPerSol = await fetchSolPriceUsd();
-                                } catch (_) {
-                                  // leave as null on failure
-                                }
+                                } catch (_) {}
                               })(),
                             ]);
 
                             if (!mounted) return;
 
-                            // 3) Persist form values
                             widget.formModel
                               ..amount = amt
                               ..delaySeconds = delay
                               ..fee = feeSol
                               ..solUsdPrice = priceUsdPerSol;
 
-                            // 4) Stop spinner and move on
                             setState(() => _isNextLoading = false);
                             widget.onNext();
                           }

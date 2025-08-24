@@ -150,6 +150,7 @@ class _SendControllerState extends State<SendController> {
     required String destination,
     required double amount,
     required String localId,
+    required bool isDelayed,
   }) {
     return Navigator.of(context).push<SendStatusResult>(
       MaterialPageRoute(
@@ -160,6 +161,7 @@ class _SendControllerState extends State<SendController> {
           podPDA: Ed25519HDPublicKey.fromBase58(podPdaBase58),
           destination: destination,
           amount: amount,
+          isDelayed: isDelayed,
         ),
       ),
     );
@@ -317,6 +319,7 @@ class _SendControllerState extends State<SendController> {
         destination: _formModel.destinationWallet!,
         amount: _formModel.amount!,
         localId: _currentDraftId!,
+        isDelayed: _formModel.isDelayed,
       );
 
       await _handleStatusResult(result);
@@ -362,6 +365,7 @@ class _SendControllerState extends State<SendController> {
               destination: _formModel.destinationWallet!,
               amount: _formModel.amount!,
               launchSig: pod.launchSig!,
+              isDelayed: _formModel.isDelayed,
             ),
           ),
         );
@@ -381,6 +385,7 @@ class _SendControllerState extends State<SendController> {
               destination: _formModel.destinationWallet!,
               amount: _formModel.amount!,
               launchSig: pod.launchSig ?? '', // not used in watch-only path
+              isDelayed: _formModel.isDelayed,
             ),
           ),
         );
@@ -420,6 +425,7 @@ class _SendControllerState extends State<SendController> {
         destination: _formModel.destinationWallet!,
         amount: _formModel.amount!,
         localId: _currentDraftId!,
+        isDelayed: _formModel.isDelayed,
       );
 
       await _handleStatusResult(result);
