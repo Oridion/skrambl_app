@@ -2,9 +2,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/providers/network_fee_provider.dart';
+import 'package:skrambl_app/ui/send/widgets/key_value_row.dart';
+import 'package:skrambl_app/ui/send/widgets/price_skeleton.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_money_row.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_sec_title.dart';
-import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import '../../../../models/send_form_model.dart';
@@ -167,7 +168,7 @@ class SkrambledSummaryScreen extends StatelessWidget {
                       subtleColor: onBgMuted,
                     ),
 
-                    _KVRow(
+                    KVRow(
                       icon: Icons.shield_outlined,
                       label: 'Delivery fee',
                       value: formatSol(feeSol),
@@ -193,7 +194,7 @@ class SkrambledSummaryScreen extends StatelessWidget {
                     // PRICE PLACEHOLDER
                     if (price == null) ...[
                       const SizedBox(height: 10),
-                      _PriceSkeleton(color: onBgMuted.withOpacityCompat(0.35)),
+                      PriceSkeleton(color: onBgMuted.withOpacityCompat(0.35)),
                     ],
 
                     const SizedBox(height: 3),
@@ -272,107 +273,6 @@ class SkrambledSummaryScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ——— small building blocks ———
-
-class _KVRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final String? hintRight;
-  final Color color;
-  final Color iconColor;
-  final Color hintColor;
-  const _KVRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.iconColor,
-    required this.hintColor,
-    this.hintRight,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: iconColor),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            label,
-            style: t.bodySmall?.copyWith(color: color, fontWeight: FontWeight.w300),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: SolanaLogo(size: 8, color: color),
-                ),
-                const SizedBox(width: 3),
-                Text(
-                  value,
-                  style: t.bodyMedium?.copyWith(color: color, fontWeight: FontWeight.w900),
-                ),
-              ],
-            ),
-
-            if (hintRight != null) Text(hintRight!, style: t.bodySmall?.copyWith(color: hintColor)),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _PriceSkeleton extends StatefulWidget {
-  final Color color;
-  const _PriceSkeleton({required this.color});
-  @override
-  State<_PriceSkeleton> createState() => _PriceSkeletonState();
-}
-
-class _PriceSkeletonState extends State<_PriceSkeleton> with SingleTickerProviderStateMixin {
-  late final AnimationController _ac = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  )..repeat(reverse: true);
-  late final Animation<double> _fade = Tween(
-    begin: 0.35,
-    end: 0.85,
-  ).animate(CurvedAnimation(parent: _ac, curve: Curves.easeInOut));
-
-  @override
-  void dispose() {
-    _ac.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fade,
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Container(
-          height: 10,
-          width: 80,
-          decoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(999)),
-        ),
       ),
     );
   }

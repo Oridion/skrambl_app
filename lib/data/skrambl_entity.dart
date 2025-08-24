@@ -42,6 +42,10 @@ class Pods extends Table {
   // Skrambled duration in seconds to delivery finalization
   IntColumn get durationSeconds => integer().withDefault(const Constant(0))();
 
+  // Determine if sender or destination is burner.
+  BoolColumn get isCreatorBurner => boolean().withDefault(const Constant(false))();
+  BoolColumn get isDestinationBurner => boolean().withDefault(const Constant(false))();
+
   // Debug / resume
   TextColumn get unsignedMessageB64 => text().nullable()();
   TextColumn get lastError => text().nullable()();

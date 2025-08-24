@@ -235,6 +235,35 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _isCreatorBurnerMeta = const VerificationMeta(
+    'isCreatorBurner',
+  );
+  @override
+  late final GeneratedColumn<bool> isCreatorBurner = GeneratedColumn<bool>(
+    'is_creator_burner',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_creator_burner" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isDestinationBurnerMeta =
+      const VerificationMeta('isDestinationBurner');
+  @override
+  late final GeneratedColumn<bool> isDestinationBurner = GeneratedColumn<bool>(
+    'is_destination_burner',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_destination_burner" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _unsignedMessageB64Meta =
       const VerificationMeta('unsignedMessageB64');
   @override
@@ -280,6 +309,8 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
     skrambledAt,
     finalizedAt,
     durationSeconds,
+    isCreatorBurner,
+    isDestinationBurner,
     unsignedMessageB64,
     lastError,
   ];
@@ -453,6 +484,24 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
         ),
       );
     }
+    if (data.containsKey('is_creator_burner')) {
+      context.handle(
+        _isCreatorBurnerMeta,
+        isCreatorBurner.isAcceptableOrUnknown(
+          data['is_creator_burner']!,
+          _isCreatorBurnerMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_destination_burner')) {
+      context.handle(
+        _isDestinationBurnerMeta,
+        isDestinationBurner.isAcceptableOrUnknown(
+          data['is_destination_burner']!,
+          _isDestinationBurnerMeta,
+        ),
+      );
+    }
     if (data.containsKey('unsigned_message_b64')) {
       context.handle(
         _unsignedMessageB64Meta,
@@ -561,6 +610,14 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
         DriftSqlType.int,
         data['${effectivePrefix}duration_seconds'],
       )!,
+      isCreatorBurner: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_creator_burner'],
+      )!,
+      isDestinationBurner: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_destination_burner'],
+      )!,
       unsignedMessageB64: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}unsigned_message_b64'],
@@ -600,6 +657,8 @@ class Pod extends DataClass implements Insertable<Pod> {
   final int? skrambledAt;
   final int? finalizedAt;
   final int durationSeconds;
+  final bool isCreatorBurner;
+  final bool isDestinationBurner;
   final String? unsignedMessageB64;
   final String? lastError;
   const Pod({
@@ -624,6 +683,8 @@ class Pod extends DataClass implements Insertable<Pod> {
     this.skrambledAt,
     this.finalizedAt,
     required this.durationSeconds,
+    required this.isCreatorBurner,
+    required this.isDestinationBurner,
     this.unsignedMessageB64,
     this.lastError,
   });
@@ -673,6 +734,8 @@ class Pod extends DataClass implements Insertable<Pod> {
       map['finalized_at'] = Variable<int>(finalizedAt);
     }
     map['duration_seconds'] = Variable<int>(durationSeconds);
+    map['is_creator_burner'] = Variable<bool>(isCreatorBurner);
+    map['is_destination_burner'] = Variable<bool>(isDestinationBurner);
     if (!nullToAbsent || unsignedMessageB64 != null) {
       map['unsigned_message_b64'] = Variable<String>(unsignedMessageB64);
     }
@@ -727,6 +790,8 @@ class Pod extends DataClass implements Insertable<Pod> {
           ? const Value.absent()
           : Value(finalizedAt),
       durationSeconds: Value(durationSeconds),
+      isCreatorBurner: Value(isCreatorBurner),
+      isDestinationBurner: Value(isDestinationBurner),
       unsignedMessageB64: unsignedMessageB64 == null && nullToAbsent
           ? const Value.absent()
           : Value(unsignedMessageB64),
@@ -763,6 +828,10 @@ class Pod extends DataClass implements Insertable<Pod> {
       skrambledAt: serializer.fromJson<int?>(json['skrambledAt']),
       finalizedAt: serializer.fromJson<int?>(json['finalizedAt']),
       durationSeconds: serializer.fromJson<int>(json['durationSeconds']),
+      isCreatorBurner: serializer.fromJson<bool>(json['isCreatorBurner']),
+      isDestinationBurner: serializer.fromJson<bool>(
+        json['isDestinationBurner'],
+      ),
       unsignedMessageB64: serializer.fromJson<String?>(
         json['unsignedMessageB64'],
       ),
@@ -794,6 +863,8 @@ class Pod extends DataClass implements Insertable<Pod> {
       'skrambledAt': serializer.toJson<int?>(skrambledAt),
       'finalizedAt': serializer.toJson<int?>(finalizedAt),
       'durationSeconds': serializer.toJson<int>(durationSeconds),
+      'isCreatorBurner': serializer.toJson<bool>(isCreatorBurner),
+      'isDestinationBurner': serializer.toJson<bool>(isDestinationBurner),
       'unsignedMessageB64': serializer.toJson<String?>(unsignedMessageB64),
       'lastError': serializer.toJson<String?>(lastError),
     };
@@ -821,6 +892,8 @@ class Pod extends DataClass implements Insertable<Pod> {
     Value<int?> skrambledAt = const Value.absent(),
     Value<int?> finalizedAt = const Value.absent(),
     int? durationSeconds,
+    bool? isCreatorBurner,
+    bool? isDestinationBurner,
     Value<String?> unsignedMessageB64 = const Value.absent(),
     Value<String?> lastError = const Value.absent(),
   }) => Pod(
@@ -845,6 +918,8 @@ class Pod extends DataClass implements Insertable<Pod> {
     skrambledAt: skrambledAt.present ? skrambledAt.value : this.skrambledAt,
     finalizedAt: finalizedAt.present ? finalizedAt.value : this.finalizedAt,
     durationSeconds: durationSeconds ?? this.durationSeconds,
+    isCreatorBurner: isCreatorBurner ?? this.isCreatorBurner,
+    isDestinationBurner: isDestinationBurner ?? this.isDestinationBurner,
     unsignedMessageB64: unsignedMessageB64.present
         ? unsignedMessageB64.value
         : this.unsignedMessageB64,
@@ -889,6 +964,12 @@ class Pod extends DataClass implements Insertable<Pod> {
       durationSeconds: data.durationSeconds.present
           ? data.durationSeconds.value
           : this.durationSeconds,
+      isCreatorBurner: data.isCreatorBurner.present
+          ? data.isCreatorBurner.value
+          : this.isCreatorBurner,
+      isDestinationBurner: data.isDestinationBurner.present
+          ? data.isDestinationBurner.value
+          : this.isDestinationBurner,
       unsignedMessageB64: data.unsignedMessageB64.present
           ? data.unsignedMessageB64.value
           : this.unsignedMessageB64,
@@ -920,6 +1001,8 @@ class Pod extends DataClass implements Insertable<Pod> {
           ..write('skrambledAt: $skrambledAt, ')
           ..write('finalizedAt: $finalizedAt, ')
           ..write('durationSeconds: $durationSeconds, ')
+          ..write('isCreatorBurner: $isCreatorBurner, ')
+          ..write('isDestinationBurner: $isDestinationBurner, ')
           ..write('unsignedMessageB64: $unsignedMessageB64, ')
           ..write('lastError: $lastError')
           ..write(')'))
@@ -949,6 +1032,8 @@ class Pod extends DataClass implements Insertable<Pod> {
     skrambledAt,
     finalizedAt,
     durationSeconds,
+    isCreatorBurner,
+    isDestinationBurner,
     unsignedMessageB64,
     lastError,
   ]);
@@ -977,6 +1062,8 @@ class Pod extends DataClass implements Insertable<Pod> {
           other.skrambledAt == this.skrambledAt &&
           other.finalizedAt == this.finalizedAt &&
           other.durationSeconds == this.durationSeconds &&
+          other.isCreatorBurner == this.isCreatorBurner &&
+          other.isDestinationBurner == this.isDestinationBurner &&
           other.unsignedMessageB64 == this.unsignedMessageB64 &&
           other.lastError == this.lastError);
 }
@@ -1003,6 +1090,8 @@ class PodsCompanion extends UpdateCompanion<Pod> {
   final Value<int?> skrambledAt;
   final Value<int?> finalizedAt;
   final Value<int> durationSeconds;
+  final Value<bool> isCreatorBurner;
+  final Value<bool> isDestinationBurner;
   final Value<String?> unsignedMessageB64;
   final Value<String?> lastError;
   final Value<int> rowid;
@@ -1028,6 +1117,8 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     this.skrambledAt = const Value.absent(),
     this.finalizedAt = const Value.absent(),
     this.durationSeconds = const Value.absent(),
+    this.isCreatorBurner = const Value.absent(),
+    this.isDestinationBurner = const Value.absent(),
     this.unsignedMessageB64 = const Value.absent(),
     this.lastError = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1054,6 +1145,8 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     this.skrambledAt = const Value.absent(),
     this.finalizedAt = const Value.absent(),
     this.durationSeconds = const Value.absent(),
+    this.isCreatorBurner = const Value.absent(),
+    this.isDestinationBurner = const Value.absent(),
     this.unsignedMessageB64 = const Value.absent(),
     this.lastError = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1086,6 +1179,8 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     Expression<int>? skrambledAt,
     Expression<int>? finalizedAt,
     Expression<int>? durationSeconds,
+    Expression<bool>? isCreatorBurner,
+    Expression<bool>? isDestinationBurner,
     Expression<String>? unsignedMessageB64,
     Expression<String>? lastError,
     Expression<int>? rowid,
@@ -1112,6 +1207,9 @@ class PodsCompanion extends UpdateCompanion<Pod> {
       if (skrambledAt != null) 'skrambled_at': skrambledAt,
       if (finalizedAt != null) 'finalized_at': finalizedAt,
       if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      if (isCreatorBurner != null) 'is_creator_burner': isCreatorBurner,
+      if (isDestinationBurner != null)
+        'is_destination_burner': isDestinationBurner,
       if (unsignedMessageB64 != null)
         'unsigned_message_b64': unsignedMessageB64,
       if (lastError != null) 'last_error': lastError,
@@ -1141,6 +1239,8 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     Value<int?>? skrambledAt,
     Value<int?>? finalizedAt,
     Value<int>? durationSeconds,
+    Value<bool>? isCreatorBurner,
+    Value<bool>? isDestinationBurner,
     Value<String?>? unsignedMessageB64,
     Value<String?>? lastError,
     Value<int>? rowid,
@@ -1167,6 +1267,8 @@ class PodsCompanion extends UpdateCompanion<Pod> {
       skrambledAt: skrambledAt ?? this.skrambledAt,
       finalizedAt: finalizedAt ?? this.finalizedAt,
       durationSeconds: durationSeconds ?? this.durationSeconds,
+      isCreatorBurner: isCreatorBurner ?? this.isCreatorBurner,
+      isDestinationBurner: isDestinationBurner ?? this.isDestinationBurner,
       unsignedMessageB64: unsignedMessageB64 ?? this.unsignedMessageB64,
       lastError: lastError ?? this.lastError,
       rowid: rowid ?? this.rowid,
@@ -1239,6 +1341,12 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     if (durationSeconds.present) {
       map['duration_seconds'] = Variable<int>(durationSeconds.value);
     }
+    if (isCreatorBurner.present) {
+      map['is_creator_burner'] = Variable<bool>(isCreatorBurner.value);
+    }
+    if (isDestinationBurner.present) {
+      map['is_destination_burner'] = Variable<bool>(isDestinationBurner.value);
+    }
     if (unsignedMessageB64.present) {
       map['unsigned_message_b64'] = Variable<String>(unsignedMessageB64.value);
     }
@@ -1275,6 +1383,8 @@ class PodsCompanion extends UpdateCompanion<Pod> {
           ..write('skrambledAt: $skrambledAt, ')
           ..write('finalizedAt: $finalizedAt, ')
           ..write('durationSeconds: $durationSeconds, ')
+          ..write('isCreatorBurner: $isCreatorBurner, ')
+          ..write('isDestinationBurner: $isDestinationBurner, ')
           ..write('unsignedMessageB64: $unsignedMessageB64, ')
           ..write('lastError: $lastError, ')
           ..write('rowid: $rowid')
@@ -1894,6 +2004,8 @@ typedef $$PodsTableCreateCompanionBuilder =
       Value<int?> skrambledAt,
       Value<int?> finalizedAt,
       Value<int> durationSeconds,
+      Value<bool> isCreatorBurner,
+      Value<bool> isDestinationBurner,
       Value<String?> unsignedMessageB64,
       Value<String?> lastError,
       Value<int> rowid,
@@ -1921,6 +2033,8 @@ typedef $$PodsTableUpdateCompanionBuilder =
       Value<int?> skrambledAt,
       Value<int?> finalizedAt,
       Value<int> durationSeconds,
+      Value<bool> isCreatorBurner,
+      Value<bool> isDestinationBurner,
       Value<String?> unsignedMessageB64,
       Value<String?> lastError,
       Value<int> rowid,
@@ -2036,6 +2150,16 @@ class $$PodsTableFilterComposer extends Composer<_$LocalDatabase, $PodsTable> {
 
   ColumnFilters<int> get durationSeconds => $composableBuilder(
     column: $table.durationSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isCreatorBurner => $composableBuilder(
+    column: $table.isCreatorBurner,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDestinationBurner => $composableBuilder(
+    column: $table.isDestinationBurner,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2164,6 +2288,16 @@ class $$PodsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isCreatorBurner => $composableBuilder(
+    column: $table.isCreatorBurner,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDestinationBurner => $composableBuilder(
+    column: $table.isDestinationBurner,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get unsignedMessageB64 => $composableBuilder(
     column: $table.unsignedMessageB64,
     builder: (column) => ColumnOrderings(column),
@@ -2263,6 +2397,16 @@ class $$PodsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get isCreatorBurner => $composableBuilder(
+    column: $table.isCreatorBurner,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isDestinationBurner => $composableBuilder(
+    column: $table.isDestinationBurner,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get unsignedMessageB64 => $composableBuilder(
     column: $table.unsignedMessageB64,
     builder: (column) => column,
@@ -2321,6 +2465,8 @@ class $$PodsTableTableManager
                 Value<int?> skrambledAt = const Value.absent(),
                 Value<int?> finalizedAt = const Value.absent(),
                 Value<int> durationSeconds = const Value.absent(),
+                Value<bool> isCreatorBurner = const Value.absent(),
+                Value<bool> isDestinationBurner = const Value.absent(),
                 Value<String?> unsignedMessageB64 = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -2346,6 +2492,8 @@ class $$PodsTableTableManager
                 skrambledAt: skrambledAt,
                 finalizedAt: finalizedAt,
                 durationSeconds: durationSeconds,
+                isCreatorBurner: isCreatorBurner,
+                isDestinationBurner: isDestinationBurner,
                 unsignedMessageB64: unsignedMessageB64,
                 lastError: lastError,
                 rowid: rowid,
@@ -2373,6 +2521,8 @@ class $$PodsTableTableManager
                 Value<int?> skrambledAt = const Value.absent(),
                 Value<int?> finalizedAt = const Value.absent(),
                 Value<int> durationSeconds = const Value.absent(),
+                Value<bool> isCreatorBurner = const Value.absent(),
+                Value<bool> isDestinationBurner = const Value.absent(),
                 Value<String?> unsignedMessageB64 = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -2398,6 +2548,8 @@ class $$PodsTableTableManager
                 skrambledAt: skrambledAt,
                 finalizedAt: finalizedAt,
                 durationSeconds: durationSeconds,
+                isCreatorBurner: isCreatorBurner,
+                isDestinationBurner: isDestinationBurner,
                 unsignedMessageB64: unsignedMessageB64,
                 lastError: lastError,
                 rowid: rowid,

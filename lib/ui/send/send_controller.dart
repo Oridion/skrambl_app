@@ -32,12 +32,12 @@ import 'package:skrambl_app/solana/send_skrambled_transaction.dart';
 
 // App: UI
 import 'package:skrambl_app/ui/send/helpers/status_result.dart';
-import 'package:skrambl_app/ui/send/screens/skrambl/skrambled_status_screen.dart';
+import 'package:skrambl_app/ui/send/screens/skrambl/skr_status_screen.dart';
 import 'package:skrambl_app/ui/send/screens/standard/standard_amount_screen.dart';
 import 'package:skrambl_app/ui/send/screens/send_type_selection_screen.dart';
-import 'package:skrambl_app/ui/send/screens/skrambl/skrambled_amount_screen.dart';
+import 'package:skrambl_app/ui/send/screens/skrambl/skr_amount_screen.dart';
 import 'package:skrambl_app/ui/send/screens/send_destination_screen.dart';
-import 'package:skrambl_app/ui/send/screens/skrambl/skrambled_summary_screen.dart';
+import 'package:skrambl_app/ui/send/screens/skrambl/skr_summary_screen.dart';
 
 // App: utils
 import 'package:skrambl_app/utils/launcher.dart';
@@ -147,10 +147,8 @@ class _SendControllerState extends State<SendController> {
     required Uint8List txBytes,
     required Uint8List signature,
     required String podPdaBase58,
-    required String destination,
-    required double amount,
     required String localId,
-    required bool isDelayed,
+    required SendFormModel formModel,
   }) {
     return Navigator.of(context).push<SendStatusResult>(
       MaterialPageRoute(
@@ -159,9 +157,9 @@ class _SendControllerState extends State<SendController> {
           txBytes: txBytes,
           signature: signature,
           podPDA: Ed25519HDPublicKey.fromBase58(podPdaBase58),
-          destination: destination,
-          amount: amount,
-          isDelayed: isDelayed,
+          destination: formModel.destinationWallet!,
+          amount: formModel.amount!,
+          isDelayed: formModel.isDelayed,
         ),
       ),
     );
@@ -227,6 +225,9 @@ class _SendControllerState extends State<SendController> {
     var podId = generatePodId(); //POD ID
     var passcode = generatePasscode(); //Emergency Passcode
 
+    //Set passcode to form object
+    _formModel.passcode = passcode;
+
     final payload = LaunchPodRequest(
       id: podId,
       destination: _formModel.destinationWallet!,
@@ -257,6 +258,8 @@ class _SendControllerState extends State<SendController> {
       showMemo: false,
       escapeCode: passcode, // optional, for local recovery
       destination: _formModel.destinationWallet!,
+      isCreatorBurner: widget.fromBurnerIndexOverride != null,
+      isDestinationBurner: _formModel.isDestinationBurner,
     );
 
     setState(() {
@@ -264,26 +267,13 @@ class _SendControllerState extends State<SendController> {
       _canResend = false;
     });
 
-    // Fetch the unsigned tx
-    // final unsignedBase64Tx = await fetchUnsignedLaunchTx(payload);
-    // await dao.attachUnsignedMessage(
-    //   id: _currentDraftId!,
-    //   podPda: podPDA.toBase58(),
-    //   unsignedMessageB64: unsignedBase64Tx,
-    // );
+    // Fetch unsigned tx and attach to db.
     late final String unsignedBase64Tx;
     try {
       unsignedBase64Tx = await fetchUnsignedLaunchTx(payload);
       await dao.attachUnsignedMessage(id: _currentDraftId!, unsignedMessageB64: unsignedBase64Tx);
-      // decode, patch, sign, push status...
     } catch (e) {
-      setState(() => _canResend = true);
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Send failed. You can retry without rebuilding.')));
-      skrLogger.e('Send failed: $e');
-      setState(() => _isSubmitting = false);
+      failedSend('Send failed. You can retry without rebuilding.', e);
       return;
     }
 
@@ -297,14 +287,7 @@ class _SendControllerState extends State<SendController> {
         authToken: token, // Passing authToken from getValidToken
       );
       if (signature.length != 64) {
-        setState(() {
-          _canResend = true;
-          _isSubmitting = false;
-        });
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Invalid signature. Try again.')));
+        failedSend('Invalid signature. Try again.', '');
         return;
       }
 
@@ -313,28 +296,32 @@ class _SendControllerState extends State<SendController> {
       if (!context.mounted) return;
 
       final result = await _pushStatus(
+        localId: _currentDraftId!,
         txBytes: txBytes,
         signature: signature,
         podPdaBase58: podPDA.toBase58(),
-        destination: _formModel.destinationWallet!,
-        amount: _formModel.amount!,
-        localId: _currentDraftId!,
-        isDelayed: _formModel.isDelayed,
+        formModel: _formModel,
       );
 
       await _handleStatusResult(result);
     } catch (e) {
-      // Don’t discard the draft; we want to RESEND
-      setState(() => _canResend = true);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Send failed. You can retry without rebuilding the transaction.')),
-      );
-      skrLogger.e('Send failed: $e');
-      setState(() => _isSubmitting = false);
+      failedSend('Send failed. You can retry without rebuilding the transaction.', e);
       return;
     }
+  }
+
+  // Failed to send
+  // Don’t discard the draft; we want to RESEND
+  void failedSend(String message, e) {
+    if (e != '') {
+      skrLogger.e('Send failed: $e');
+    }
+    if (!mounted) return;
+    setState(() {
+      _canResend = true;
+      _isSubmitting = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   // Resend the transaction if it failed
@@ -348,8 +335,7 @@ class _SendControllerState extends State<SendController> {
     try {
       final pod = await dao.watchById(_currentDraftId!).first;
       if (pod == null) {
-        setState(() => _canResend = false);
-        setState(() => _isSubmitting = false);
+        failedSend('Error: Delivery not found. Cannot send', '');
         return;
       }
 
@@ -396,8 +382,7 @@ class _SendControllerState extends State<SendController> {
       // Case B: not submitted yet → rebuild unsigned, sign, send
       if (pod.unsignedMessageB64 == null) {
         // Nothing to resend locally; you could re-fetch from Lambda here if desired.
-        setState(() => _canResend = true);
-        setState(() => _isSubmitting = false);
+        failedSend('Error: unsigned message was not found.', '');
         return;
       }
 
@@ -407,14 +392,12 @@ class _SendControllerState extends State<SendController> {
       if (!mounted) return;
       final token = await SeedVaultService.getValidToken(context);
       if (token == null) {
-        setState(() => _canResend = true);
-        setState(() => _isSubmitting = false);
+        failedSend('Error: Seed vault token was not found!', '');
         return;
       }
       final signature = await SeedVaultService.signMessage(messageBytes: txBytes, authToken: token);
       if (signature.length != 64) {
-        setState(() => _canResend = true);
-        setState(() => _isSubmitting = false);
+        failedSend('Error: Proper signature was not detected', signature);
         return;
       }
 
@@ -422,17 +405,13 @@ class _SendControllerState extends State<SendController> {
         txBytes: txBytes,
         signature: signature,
         podPdaBase58: pod.podPda!,
-        destination: _formModel.destinationWallet!,
-        amount: _formModel.amount!,
         localId: _currentDraftId!,
-        isDelayed: _formModel.isDelayed,
+        formModel: _formModel,
       );
 
       await _handleStatusResult(result);
     } catch (e) {
-      skrLogger.e('Resend prep failed: $e');
-      setState(() => _canResend = true);
-      setState(() => _isSubmitting = false);
+      failedSend('Resend failed to build. Please try again.', e);
     }
   }
 

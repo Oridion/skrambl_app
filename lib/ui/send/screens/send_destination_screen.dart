@@ -103,6 +103,7 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
         final addr = widget.formModel.destinationWallet!;
         if (_burners.any((b) => b.publicKey == addr)) {
           _selectedBurnerAddress = addr;
+          widget.formModel.isDestinationBurner = true;
           _mode = DestinationMode.burner;
           _tabCtrl.index = 1;
         }
@@ -118,6 +119,7 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
       }
       final addr = _addressCtrl.text.trim();
       widget.formModel.destinationWallet = addr;
+      widget.formModel.isDestinationBurner = false;
 
       // belt & suspenders
       if (_lastPersisted != addr) {
@@ -127,6 +129,7 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
       if (_selectedBurnerAddress == null) return;
       final addr = _selectedBurnerAddress!;
       widget.formModel.destinationWallet = addr;
+      widget.formModel.isDestinationBurner = true;
 
       if (_lastPersisted != addr) {
         _lastPersisted = addr;

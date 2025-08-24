@@ -68,6 +68,8 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
     required int delaySeconds,
     required String destination,
     required String escapeCode,
+    required bool isCreatorBurner,
+    required bool isDestinationBurner,
     bool showMemo = false,
     PodStatus initialStatus = PodStatus.drafting,
   }) async {
@@ -88,6 +90,8 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
         destination: destination,
         status: initialStatus.index,
         draftedAt: now,
+        isCreatorBurner: Value(isCreatorBurner),
+        isDestinationBurner: Value(isDestinationBurner),
       ),
     );
     return localId;
