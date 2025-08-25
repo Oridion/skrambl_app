@@ -9,18 +9,19 @@ class EmptyBurnerState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(50, 0, 50, 0),
+      padding: EdgeInsets.fromLTRB(36, 0, 36, 0),
       alignment: Alignment.center,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.local_fire_department, size: 120, color: Colors.black54),
           const SizedBox(height: 12),
-          const Text('No burner wallets yet', style: TextStyle(fontWeight: FontWeight.w700)),
+          const Text('No burner wallets found', style: TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 12),
           Text(
-            'Set up burner addresses ready with funds passed through Oridion to have private funds ready for later use.',
+            'Set up your first burner wallet and load it with private SOL using Oridion, ready whenever you need it.',
             style: TextStyle(color: Colors.black.withOpacityCompat(0.7)),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
 

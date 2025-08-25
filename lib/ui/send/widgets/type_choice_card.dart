@@ -166,7 +166,7 @@ class _ChoiceCardState extends State<ChoiceCard> {
                                       ),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 5),
                                 // Lead sentence
                                 Text(
                                   widget.leadText,
@@ -178,7 +178,7 @@ class _ChoiceCardState extends State<ChoiceCard> {
                                   ),
                                 ),
 
-                                SizedBox(height: 10),
+                                SizedBox(height: 12),
 
                                 // Bullets
                                 BulletList(
@@ -194,7 +194,7 @@ class _ChoiceCardState extends State<ChoiceCard> {
                                   bulletSize: 5,
                                   bulletColor: Colors.black.withOpacityCompat(0.45),
                                 ),
-                                const SizedBox(height: 7),
+                                const SizedBox(height: 9),
                                 Row(
                                   children: [
                                     _EtaChip(text: widget.etaText),

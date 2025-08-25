@@ -35,7 +35,7 @@ class SendTypeSelectionScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Standard is near-instant. SKRAMBLED adds distance between you and the recipient.',
+                'Standard send is near-instant you are familar with zero fees collected. SKRAMBLED adds distance between you and the recipient.',
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: Colors.black.withOpacityCompat(0.72), height: 1.25),
@@ -44,10 +44,14 @@ class SendTypeSelectionScreen extends StatelessWidget {
 
               // SKRAMBLED (recommended)
               ChoiceCard(
-                title: 'Send SKRAMBLED',
+                title: 'SKRAMBLED',
                 icon: Icons.auto_awesome,
-                leadText: 'Route through Oridion for a privacy-preserving path.',
-                bulletPoints: const ['Adds separation layer', 'Harder to trace', 'Optional delay window'],
+                leadText: 'Route through Oridion to obscure origins.',
+                bulletPoints: const [
+                  'Adds separation layer',
+                  'Harder to trace backward',
+                  'Optional delay window for added padding',
+                ],
                 etaText: '< 1 Min + Delay',
                 accent: brandTan,
                 background: card,
@@ -63,10 +67,10 @@ class SendTypeSelectionScreen extends StatelessWidget {
 
               // STANDARD
               ChoiceCard(
-                title: 'Send Standard',
+                title: 'Standard',
                 icon: Icons.flash_on,
-                leadText: 'Direct transfer without routing.',
-                bulletPoints: const ['Fastest route', 'Lowest overhead', 'No obfuscation'],
+                leadText: 'Instant send with zero fees',
+                bulletPoints: const ['Zero fees collected', 'Standard fast delivery', 'No obfuscation'],
                 etaText: 'Near-instant',
                 accent: Colors.white24,
                 background: card,

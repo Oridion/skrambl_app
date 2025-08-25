@@ -44,6 +44,7 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
   bool _isValid = false;
   Timer? _debounce;
   String? _lastPersisted;
+  bool _isNextLoading = false;
 
   // Burner mode
   List<BurnerWallet> _burners = [];
@@ -157,10 +158,6 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header
-          //Text('Choose destination', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 20),
-
           // Tab header
           SegmentedTabs(
             controller: _tabCtrl,
@@ -196,14 +193,39 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
             children: [
               TextButton(onPressed: widget.onBack, child: const Text('Back')),
               ElevatedButton(
-                onPressed: canProceed ? _handleNext : null,
+                onPressed: (canProceed && !_isNextLoading)
+                    ? () async {
+                        FocusScope.of(context).unfocus();
+                        setState(() => _isNextLoading = true);
+
+                        await Future.delayed(const Duration(milliseconds: 500));
+                        if (!mounted) return;
+
+                        setState(() => _isNextLoading = false);
+                        _handleNext();
+                      }
+                    : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 ),
-                child: const Text('Next'),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  transitionBuilder: (c, a) => FadeTransition(opacity: a, child: c),
+                  child: _isNextLoading
+                      ? const SizedBox(
+                          key: ValueKey('loading'),
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Next', key: ValueKey('label')),
+                ),
               ),
             ],
           ),
@@ -333,7 +355,7 @@ class _AddressTab extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Send to a custom wallet address.',
+          'Enter a custom destination address.',
           style: TextStyle(color: Colors.black.withOpacityCompat(0.8)),
         ),
         const SizedBox(height: 12),
