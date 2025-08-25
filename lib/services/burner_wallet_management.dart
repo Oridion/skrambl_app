@@ -78,10 +78,10 @@ class BurnerWalletManager {
 
     final pk = responses.firstOrNull?.publicKeyEncoded;
     if (pk == null) {
-      skrLogger.i("ERROR");
+      //skrLogger.i("ERROR");
       throw Exception('Wallet did not return a public key for $resolved');
     }
-    skrLogger.i(pk);
+    //skrLogger.i(pk);
     return pk;
   }
 

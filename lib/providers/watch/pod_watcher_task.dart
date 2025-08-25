@@ -49,6 +49,7 @@ class PodWatcherTask {
         try {
           final info = await rpc.getAccountInfo(pod.podPda!);
           if (info.value == null) {
+            skrLogger.i("[WS] Force finalized pod over 2 minutes.");
             // It actually finalized; we just missed the WS
             await dao.markFinalized(id: pod.id);
             _finish(onDone);
@@ -84,6 +85,7 @@ class PodWatcherTask {
             onPhase?.call(pod.id, TransactionPhase.delivering);
             await Future.delayed(const Duration(milliseconds: 250));
           }
+          skrLogger.i("[WS] Pod closed. Marking finalized");
           await dao.markFinalized(id: pod.id); // persist to DB
           onPhase?.call(pod.id, TransactionPhase.completed); // immediate UI update
           _finish(onDone);
@@ -147,6 +149,7 @@ class PodWatcherTask {
     try {
       final info = await rpc.getAccountInfo(pod.podPda!);
       if (info.value == null) {
+        skrLogger.i("[Pod Watcher] Pod not found. Marking finalized");
         await dao.markFinalized(id: pod.id);
         _finish(onDone);
         return;

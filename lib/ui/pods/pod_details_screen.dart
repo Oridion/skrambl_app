@@ -13,6 +13,7 @@ import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/utils/launcher.dart';
+import 'package:skrambl_app/utils/logger.dart';
 
 class PodDetailsScreen extends StatelessWidget {
   final String localId; // pods.id from Drift table (string UUID or similar)
@@ -49,6 +50,8 @@ class PodDetailsScreen extends StatelessWidget {
           final draftedAt = dateTimeOrNull(pod.draftedAt);
           final submittedAt = dateTimeOrNull(pod.submittedAt);
           final finalizedAt = dateTimeOrNull(pod.finalizedAt);
+
+          skrLogger.i(pod);
 
           final addrs = {pod.creator, pod.destination};
           return FutureBuilder<Set<String>>(

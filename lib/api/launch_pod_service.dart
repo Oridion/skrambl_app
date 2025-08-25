@@ -8,11 +8,7 @@ class LaunchPodResponse {
   final String message;
   final String destinationPlanet;
 
-  LaunchPodResponse({
-    required this.base64Tx,
-    required this.message,
-    required this.destinationPlanet,
-  });
+  LaunchPodResponse({required this.base64Tx, required this.message, required this.destinationPlanet});
 
   factory LaunchPodResponse.fromJson(Map<String, dynamic> json) {
     return LaunchPodResponse(
@@ -35,11 +31,9 @@ Future<String> fetchUnsignedLaunchTx(LaunchPodRequest payload) async {
 
   if (response.statusCode == 200) {
     final json = jsonDecode(response.body);
-    skrLogger.i(json);
+    //skrLogger.i(json);
     return json['base64'] as String;
   } else {
-    throw Exception(
-      'LaunchPod failed: ${response.statusCode}\n${response.body}',
-    );
+    throw Exception('LaunchPod failed: ${response.statusCode}\n${response.body}');
   }
 }

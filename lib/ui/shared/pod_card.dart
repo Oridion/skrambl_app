@@ -5,7 +5,6 @@ import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/ui/shared/relative_time.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
-import 'package:skrambl_app/utils/logger.dart';
 
 class PodCard extends StatelessWidget {
   final Pod pod;
@@ -15,8 +14,6 @@ class PodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    skrLogger.i(pod);
-
     final status = PodStatus.values[pod.status];
     final chip = switch (status) {
       PodStatus.drafting => Colors.grey,

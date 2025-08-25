@@ -8,6 +8,7 @@ import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/providers/wallet_provider.dart';
+import 'package:skrambl_app/utils/logger.dart';
 
 class CompleteDelayedView extends StatefulWidget {
   final Pod pod;
@@ -51,163 +52,167 @@ class _CompleteDelayedViewState extends State<CompleteDelayedView> {
     final etaText = _formatDateTime(_eta);
     final countdown = _formatCountdown(_remaining);
 
+    skrLogger.i('Submited at: ${widget.pod.submittedAt}');
+
     final deliveryText = widget.pod.isDestinationBurner
-        ? 'Your delivery of ${formatSol(amountSol)} SOL to your burner wallet ${shortenPubkey(destination, length: 6)} '
+        ? 'Your delivery of ${formatSol(amountSol)} SOL to your burner wallet ${shortenPubkey(destination, length: 4)} '
               'has been successfully scheduled to be delivered around $etaText.'
-        : 'Your delivery of ${formatSol(amountSol)} SOL to ${shortenPubkey(destination, length: 6)} '
+        : 'Your delivery of ${formatSol(amountSol)} SOL to ${shortenPubkey(destination, length: 4)} '
               'has been successfully scheduled to be delivered around $etaText.';
 
-    return Stack(
-      children: [
-        // Soft background gradient
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color.fromARGB(255, 231, 234, 241), Color.fromARGB(255, 246, 247, 250)],
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Soft background gradient
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color.fromARGB(255, 231, 234, 241), Color.fromARGB(255, 246, 247, 250)],
+              ),
             ),
           ),
-        ),
 
-        SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Badge
-                    Container(
-                      height: 92,
-                      width: 92,
-                      decoration: BoxDecoration(
-                        color: Colors.blueGrey.withOpacityCompat(0.10),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.blueGrey.withOpacityCompat(0.24), width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.blueGrey.withOpacityCompat(0.14),
-                            blurRadius: 22,
-                            spreadRadius: 1,
-                          ),
-                        ],
+          SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Badge
+                      Container(
+                        height: 92,
+                        width: 92,
+                        decoration: BoxDecoration(
+                          color: Colors.blueGrey.withOpacityCompat(0.10),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.blueGrey.withOpacityCompat(0.24), width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blueGrey.withOpacityCompat(0.14),
+                              blurRadius: 22,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.schedule_rounded, size: 48, color: Colors.blueGrey),
                       ),
-                      child: const Icon(Icons.schedule_rounded, size: 48, color: Colors.blueGrey),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    const Text(
-                      'Delivery Scheduled',
-                      style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: 0.2),
-                    ),
-                    const SizedBox(height: 10),
-
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Text(
-                        deliveryText,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 14.5, color: Colors.black87, height: 1.35),
+                      const Text(
+                        'Delivery Scheduled',
+                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: 0.2),
                       ),
-                    ),
+                      const SizedBox(height: 10),
 
-                    const SizedBox(height: 18),
-
-                    // Countdown chip
-                    _CountdownPill(countdown: countdown, isLate: _remaining.isNegative),
-
-                    const SizedBox(height: 24),
-
-                    // Card
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(28, 24, 28, 22),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacityCompat(0.55),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.black54, width: 1.2),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(
+                          deliveryText,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 14.5, color: Colors.black87, height: 1.35),
+                        ),
                       ),
-                      child: Column(
+
+                      const SizedBox(height: 18),
+
+                      // Countdown chip
+                      _CountdownPill(countdown: countdown, isLate: _remaining.isNegative),
+
+                      const SizedBox(height: 24),
+
+                      // Card
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(28, 24, 28, 22),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacityCompat(0.55),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.black54, width: 1.2),
+                        ),
+                        child: Column(
+                          children: [
+                            _InfoRow(
+                              icon: Icons.payments_rounded,
+                              label: 'Amount',
+                              value: '${formatSol(amountSol)} SOL',
+                              leading: const SolanaLogo(size: 12, useDark: true),
+                            ),
+                            const SizedBox(height: 14),
+                            _InfoRow(
+                              icon: Icons.account_balance_wallet_rounded,
+                              label: 'Destination',
+                              value: shortenPubkey(destination, length: 6),
+                            ),
+                            const SizedBox(height: 14),
+                            _InfoRow(
+                              icon: Icons.event_available_rounded,
+                              label: 'Estimated delivery',
+                              value: etaText,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      // Help text
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          'You can close this screen and view updates anytime from the Pods → Delivery Details page.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12.5, color: Colors.black54),
+                        ),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      // Actions
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _InfoRow(
-                            icon: Icons.payments_rounded,
-                            label: 'Amount',
-                            value: '${formatSol(amountSol)} SOL',
-                            leading: const SolanaLogo(size: 12, useDark: true),
-                          ),
-                          const SizedBox(height: 14),
-                          _InfoRow(
-                            icon: Icons.account_balance_wallet_rounded,
-                            label: 'Destination',
-                            value: shortenPubkey(destination, length: 6),
-                          ),
-                          const SizedBox(height: 14),
-                          _InfoRow(
-                            icon: Icons.event_available_rounded,
-                            label: 'Estimated delivery',
-                            value: etaText,
+                          // OutlinedButton(
+                          //   onPressed: () => Navigator.of(context).maybePop(),
+                          //   style: OutlinedButton.styleFrom(
+                          //     foregroundColor: Colors.black,
+                          //     side: const BorderSide(color: Colors.black54, width: 1.2),
+                          //     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 22),
+                          //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          //   ),
+                          //   child: const Text('Close'),
+                          // ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              context.read<WalletProvider>().refresh();
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(builder: (_) => const RootShell(initialIndex: 0)),
+                                (route) => false,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 26),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: const Text('Go to Dashboard'),
                           ),
                         ],
                       ),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    // Help text
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        'You can close this screen and view updates anytime from the Pods → Delivery Details page.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12.5, color: Colors.black54),
-                      ),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    // Actions
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        OutlinedButton(
-                          onPressed: () => Navigator.of(context).maybePop(),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.black,
-                            side: const BorderSide(color: Colors.black54, width: 1.2),
-                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 22),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          child: const Text('Close'),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton(
-                          onPressed: () {
-                            context.read<WalletProvider>().refresh();
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(builder: (_) => const RootShell(initialIndex: 0)),
-                              (route) => false,
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 26),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          child: const Text('Go to Dashboard'),
-                        ),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -216,9 +221,9 @@ class _CompleteDelayedViewState extends State<CompleteDelayedView> {
   static DateTime _resolveCreatedAt(Pod pod) {
     // Try explicit timestamps first; fall back to "now" if absent
     // Adjust the field names to your schema.
-    final ms = pod.submittedAt;
-    if (ms != null && ms > 0) {
-      return DateTime.fromMillisecondsSinceEpoch(ms);
+    final seconds = pod.submittedAt;
+    if (seconds != null && seconds > 0) {
+      return DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true).toLocal();
     }
     return DateTime.now();
   }
@@ -229,8 +234,8 @@ class _CompleteDelayedViewState extends State<CompleteDelayedView> {
 
   static String _formatDateTime(DateTime dt) {
     // Simple, locale-friendly default; replace with intl if you want
-    final h = _two(dt.hour % 12 == 0 ? 12 : dt.hour % 12);
-    final m = _two(dt.minute);
+    final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final m = dt.minute;
     final ampm = dt.hour >= 12 ? 'PM' : 'AM';
     final month = _month(dt.month);
     return '$month ${dt.day}, ${dt.year} • $h:$m $ampm';
@@ -241,11 +246,9 @@ class _CompleteDelayedViewState extends State<CompleteDelayedView> {
     final h = d.inHours;
     final m = d.inMinutes.remainder(60);
     final s = d.inSeconds.remainder(60);
-    if (h > 0) return '${_two(h)}:${_two(m)}:${_two(s)}';
-    return '${_two(m)}:${_two(s)}';
+    if (h > 0) return '$h:$m:$s';
+    return '$m:$s';
   }
-
-  static String _two(int n) => n.toString().padLeft(2, '0');
 
   static String _month(int m) {
     const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
