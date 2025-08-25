@@ -84,6 +84,12 @@ class TimelineTile extends StatelessWidget {
                         style: t.bodyMedium?.copyWith(color: Colors.black54, fontSize: 14),
                       ),
                     ),
+
+                  if (item.countdownWidget != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: item.countdownWidget!, // <-- it's a Widget
+                    ),
                 ],
               ),
             ),

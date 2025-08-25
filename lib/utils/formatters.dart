@@ -57,6 +57,9 @@ String formatTime(int unixSeconds) {
 DateTime? dateTimeOrNull(int? secondsEpoch) =>
     secondsEpoch == null ? null : DateTime.fromMillisecondsSinceEpoch(secondsEpoch);
 
+DateTime? dateTimeOrNullSeconds(int? secondsEpoch) =>
+    secondsEpoch == null ? null : DateTime.fromMillisecondsSinceEpoch(secondsEpoch * 1000);
+
 //Convert signature for view
 String signatureToBase58(Uint8List sigBytes) {
   return base58encode(sigBytes);

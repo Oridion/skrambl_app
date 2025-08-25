@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/models/timeline_item.dart';
+import 'package:skrambl_app/ui/pods/widgets/count_down.dart';
 
 import 'package:skrambl_app/utils/formatters.dart';
+import 'package:skrambl_app/utils/logger.dart';
 
 List<TimelineItem> buildTimeline({required Pod pod}) {
   final items = <TimelineItem>[];
+
+  skrLogger.i("pod.submittedAt ${pod.submittedAt}");
+
   final status = PodStatus.values[pod.status];
   final draftedAt = dateTimeOrNull(pod.draftedAt);
-  final submittedAt = dateTimeOrNull(pod.submittedAt);
-  final skrambledAt = dateTimeOrNull(pod.skrambledAt);
-  final finalizedAt = dateTimeOrNull(pod.finalizedAt);
+  final submittedAt = dateTimeOrNullSeconds(pod.submittedAt);
+  final skrambledAt = dateTimeOrNullSeconds(pod.skrambledAt);
+  final finalizedAt = dateTimeOrNullSeconds(pod.finalizedAt);
   final d = pod.submitDuration;
   final submittedSubtitle = d == null
       ? 'Submitted to network'
@@ -64,7 +69,15 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
     items.add(
       TimelineItem(
         title: 'Skrambling',
-        subtitle: 'Hopping through planets',
+        subtitle: 'Hopping through Oridion',
+        countdownWidget: skrambledAt != null
+            ? null
+            : TimelineCountdownToEta(
+                key: ValueKey('eta:${pod.id}:${pod.submittedAt}:${pod.delaySeconds}'),
+                submittedAt: submittedAt!,
+                delaySeconds: pod.delaySeconds,
+                style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w400),
+              ),
         color: Colors.purple,
         isActive: submittedAt == null,
         at: submittedAt,
