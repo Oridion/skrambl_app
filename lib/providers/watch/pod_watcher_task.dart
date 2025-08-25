@@ -75,11 +75,23 @@ class PodWatcherTask {
         acct,
       ) async {
         if (_finished) return;
+        //Debug log.
+        skrLogger.i('[WS] raw: ${const JsonEncoder.withIndent('  ').convert(acct)}');
 
-        final isClosed = acct == null || (acct['value'] == null || acct['data'] == null);
+        if (acct == null) return;
+
+        // ---- Closed / zeroed? (Helius pattern) ----
+        final lamports = (acct['lamports'] as num?)?.toInt() ?? -1;
+        final owner = acct['owner'] as String? ?? '';
+        final space = (acct['space'] as num?)?.toInt() ?? -1;
+        final data = acct['data'];
+
+        final emptyData = data is List && data.isNotEmpty && (data.first as String?)?.isEmpty == true;
+        final isSystemOwner = owner == '11111111111111111111111111111111';
+        final isZeroed = lamports == 0 && space == 0 && isSystemOwner && emptyData;
 
         // Account closed => finalized
-        if (isClosed) {
+        if (isZeroed) {
           // If we never showed delivering, briefly surface it for UX continuity
           if (!_seenDelivering) {
             onPhase?.call(pod.id, TransactionPhase.delivering);
@@ -93,25 +105,31 @@ class PodWatcherTask {
         }
 
         // Detect delivering stage depending on mode
-        final dataField = acct['data'];
-        if (dataField is List && dataField.isNotEmpty && dataField.first is String) {
+        // ---- Live account: decode to detect "delivering" ----
+        if (data is List && data.isNotEmpty && data.first is String) {
           try {
-            final b64 = dataField.first as String;
+            final b64 = data.first as String;
             final bytes = base64.decode(b64);
             final model.Pod? live = await parsePod(bytes);
             if (live == null) return;
 
-            final delivering =
-                (live.mode == 0 && live.lastProcess == 1) || (live.mode != 0 && live.nextProcess == 1);
+            skrLogger.i(jsonEncode(live.toJson()));
 
+            // If it is delivering.
+            final delivering =
+                (live.mode == 0 && live.lastProcess == 1) || // instant: lastProcess==1
+                (live.mode != 0 && live.nextProcess == 1); // delayed: nextProcess==1
             if (delivering && !_seenDelivering) {
               _seenDelivering = true;
-              onPhase?.call(pod.id, TransactionPhase.delivering); // UI first…
-              await dao.markDelivering(id: pod.id); // …then DB
+              onPhase?.call(pod.id, TransactionPhase.delivering);
+              await dao.markDelivering(id: pod.id);
+              return;
             }
-          } catch (_) {}
+          } catch (e) {
+            skrLogger.w('WS decode/parse error: $e');
+          }
         }
-      });
+      }, cancelOnError: false);
     } catch (e) {
       skrLogger.w('WS subscribe failed for ${pod.id}: $e');
     }

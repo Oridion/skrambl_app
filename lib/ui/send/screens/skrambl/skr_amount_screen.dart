@@ -346,7 +346,7 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
+                      duration: const Duration(milliseconds: 220),
                       transitionBuilder: (c, a) => FadeTransition(opacity: a, child: c),
                       child: _isNextLoading
                           ? const SizedBox(

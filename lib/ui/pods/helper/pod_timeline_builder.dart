@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
-import 'package:skrambl_app/ui/pods/widgets/vertical_timeline.dart';
+import 'package:skrambl_app/models/timeline_item.dart';
+
 import 'package:skrambl_app/utils/formatters.dart';
 
-List<TimelineItem> buildTimeline({
-  required DateTime? draftedAt,
-  required DateTime? submittedAt,
-  required DateTime? finalizedAt,
-  required PodStatus status,
-  required Pod pod,
-  required bool isSenderBurner,
-  required bool isDestinationBurner,
-}) {
+List<TimelineItem> buildTimeline({required Pod pod}) {
   final items = <TimelineItem>[];
+  final status = PodStatus.values[pod.status];
+  final draftedAt = dateTimeOrNull(pod.draftedAt);
+  final submittedAt = dateTimeOrNull(pod.submittedAt);
+  final skrambledAt = dateTimeOrNull(pod.skrambledAt);
+  final finalizedAt = dateTimeOrNull(pod.finalizedAt);
+  final d = pod.submitDuration;
+  final submittedSubtitle = d == null
+      ? 'Submitted to network'
+      : 'Submitted to network (${formatDurationShort(d)})';
+
   String draftedDetails;
   if (pod.mode == 5) {
     draftedDetails = "Standard delivery drafted ";
@@ -24,13 +27,13 @@ List<TimelineItem> buildTimeline({
     draftedDetails = "Skrambled delayed delivery drafted ";
   }
 
-  if (isSenderBurner) {
+  if (pod.isCreatorBurner) {
     draftedDetails += 'from burner wallet';
   } else {
     draftedDetails += 'from primary wallet';
   }
 
-  if (isDestinationBurner) {
+  if (pod.isDestinationBurner) {
     draftedDetails += ' to burner wallet';
   } else {
     draftedDetails += ' to ${shortenPubkey(pod.destination)}';
@@ -41,28 +44,46 @@ List<TimelineItem> buildTimeline({
       title: 'Drafted',
       subtitle: draftedDetails,
       color: Colors.grey,
-      completed: draftedAt != null,
-      time: draftedAt,
+      isActive: draftedAt == null,
+      at: draftedAt,
     ),
   );
-
-  final d = pod.submitDuration;
-  final submittedSubtitle = d == null
-      ? 'Submitted to network'
-      : 'Submitted to network (${formatDurationShort(d)})';
 
   items.add(
     TimelineItem(
       title: 'Submitted',
       subtitle: submittedSubtitle,
       color: Colors.blue,
-      completed: submittedAt != null,
-      time: submittedAt,
+      isActive: submittedAt == null,
+      at: submittedAt,
     ),
   );
 
-  //Show this section for skrambled pods only
-  if (pod.mode != 5) {}
+  //Show this section for delayed skrambled pods only
+  if (pod.mode == 1) {
+    items.add(
+      TimelineItem(
+        title: 'Skrambling',
+        subtitle: 'Hopping through planets',
+        color: Colors.purple,
+        isActive: submittedAt == null,
+        at: submittedAt,
+      ),
+    );
+  }
+
+  //Show delivering timeline tile
+  if (skrambledAt != null) {
+    items.add(
+      TimelineItem(
+        title: 'Delivering',
+        subtitle: 'Delivering to destination',
+        color: Colors.blue,
+        isActive: false,
+        at: skrambledAt,
+      ),
+    );
+  }
 
   // If failed
   if (status == PodStatus.failed) {
@@ -71,8 +92,8 @@ List<TimelineItem> buildTimeline({
         title: 'Failed',
         subtitle: 'See logs for details',
         color: Colors.red,
-        completed: true,
-        time: null,
+        isActive: true,
+        at: null,
       ),
     );
   }
@@ -84,8 +105,8 @@ List<TimelineItem> buildTimeline({
         title: 'Finalized',
         subtitle: 'Delivery to ${shortenPubkey(pod.destination)} completed successfully and finalized',
         color: Colors.green,
-        completed: finalizedAt != null || status == PodStatus.finalized,
-        time: finalizedAt,
+        isActive: finalizedAt != null || status == PodStatus.finalized,
+        at: finalizedAt,
       ),
     );
   }

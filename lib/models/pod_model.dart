@@ -180,14 +180,14 @@ class Pod extends BorshObject {
     'landAt': landAt,
     'createdAt': createdAt,
     'lastProcessAt': lastProcessAt,
-    'lamports': lamports,
+    'lamports': _encBig(lamports),
     'location': location,
     'destination': destination,
     'passcodeHash': passcodeHash,
     'log': log.map((entry) => entry.toJson()).toList(),
     'logIndex': logIndex,
   };
-
+  static String? _encBig(BigInt? v) => v?.toString();
   static const int _kFixedSize = 150;
   static const int _kLogEntrySize = 19; //  ← updated
   static const int _kMaxEntries = 10;

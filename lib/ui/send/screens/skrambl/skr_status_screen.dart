@@ -67,6 +67,7 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
   int? _durationSec;
   Pod? _latestPod;
   bool _isScheduled = false; //For delayed delivery only
+  bool _markedSkrambling = false; // For delayed delivery
 
   //bool _seenOnChain = false; // remember if we ever saw the account
   late final StreamSubscription _podRowSub;
@@ -113,6 +114,18 @@ class _SendStatusScreenState extends State<SendStatusScreen> with TickerProvider
         // Submitted and is a delayed delivery
         if (widget.isDelayed && pod.status == PodStatus.submitted.index) {
           _timer?.cancel();
+
+          // Mark skrambling if it hasn't yet.
+          if (!_markedSkrambling) {
+            _markedSkrambling = true;
+            _podRowSub.pause();
+            try {
+              await dao.markSkrambling(id: widget.localId);
+            } finally {
+              _podRowSub.resume();
+            }
+          }
+
           if (!_isScheduled) {
             setState(() => _isScheduled = true);
             if (!_fadeController.isAnimating && _fadeController.value == 0.0) {

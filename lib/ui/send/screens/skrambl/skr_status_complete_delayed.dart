@@ -8,7 +8,6 @@ import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/providers/wallet_provider.dart';
-import 'package:skrambl_app/utils/logger.dart';
 
 class CompleteDelayedView extends StatefulWidget {
   final Pod pod;
@@ -52,7 +51,7 @@ class _CompleteDelayedViewState extends State<CompleteDelayedView> {
     final etaText = _formatDateTime(_eta);
     final countdown = _formatCountdown(_remaining);
 
-    skrLogger.i('Submited at: ${widget.pod.submittedAt}');
+    //skrLogger.i('Submited at: ${widget.pod.submittedAt}');
 
     final deliveryText = widget.pod.isDestinationBurner
         ? 'Your delivery of ${formatSol(amountSol)} SOL to your burner wallet ${shortenPubkey(destination, length: 4)} '
@@ -140,7 +139,7 @@ class _CompleteDelayedViewState extends State<CompleteDelayedView> {
                               icon: Icons.payments_rounded,
                               label: 'Amount',
                               value: '${formatSol(amountSol)} SOL',
-                              leading: const SolanaLogo(size: 12, useDark: true),
+                              leading: const SolanaLogo(size: 9, useDark: true),
                             ),
                             const SizedBox(height: 14),
                             _InfoRow(
@@ -241,13 +240,15 @@ class _CompleteDelayedViewState extends State<CompleteDelayedView> {
     return '$month ${dt.day}, ${dt.year} • $h:$m $ampm';
   }
 
+  static String _two(int n) => n.toString().padLeft(2, '0');
+
   static String _formatCountdown(Duration d) {
     if (d.isNegative) return 'any minute';
     final h = d.inHours;
     final m = d.inMinutes.remainder(60);
     final s = d.inSeconds.remainder(60);
     if (h > 0) return '$h:$m:$s';
-    return '$m:$s';
+    return '$m:${_two(s)}';
   }
 
   static String _month(int m) {

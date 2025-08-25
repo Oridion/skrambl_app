@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/data/burner_dao.dart';
-import 'package:skrambl_app/ui/pods/helper/pod_timeline_builder.dart';
 import 'package:skrambl_app/ui/pods/widgets/actions_bar.dart';
 import 'package:skrambl_app/ui/pods/widgets/details_table.dart';
 import 'package:skrambl_app/ui/pods/widgets/pod_header_card.dart';
@@ -47,10 +46,6 @@ class PodDetailsScreen extends StatelessWidget {
           final status = PodStatus.values[pod.status];
           final chipColor = statusColor(status);
 
-          final draftedAt = dateTimeOrNull(pod.draftedAt);
-          final submittedAt = dateTimeOrNull(pod.submittedAt);
-          final finalizedAt = dateTimeOrNull(pod.finalizedAt);
-
           skrLogger.i(pod);
 
           final addrs = {pod.creator, pod.destination};
@@ -60,16 +55,6 @@ class PodDetailsScreen extends StatelessWidget {
               final burners = bSnap.data ?? const {};
               final isSenderBurner = burners.contains(pod.creator);
               final isDestinationBurner = burners.contains(pod.destination);
-
-              final timeline = buildTimeline(
-                draftedAt: draftedAt,
-                submittedAt: submittedAt,
-                finalizedAt: finalizedAt,
-                status: status,
-                pod: pod,
-                isSenderBurner: isSenderBurner,
-                isDestinationBurner: isDestinationBurner,
-              );
 
               return ListView(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
@@ -87,7 +72,7 @@ class PodDetailsScreen extends StatelessWidget {
                   const SizedBox(height: 12),
 
                   // ===== TIMELINE =====
-                  VerticalTimeline(items: timeline, pod: pod),
+                  VerticalTimeline(pod: pod),
 
                   // ===== DETAILS =====
                   SectionWrapper(

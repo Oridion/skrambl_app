@@ -24,14 +24,11 @@ class AmountHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Defensive formatting (no business logic)
-    final total = _nz(totalSol);
     final amt = _nz(amountSol);
     final fee = privacyFeeSol == null ? null : _nz(privacyFeeSol);
-
-    // Animate only when the displayed total actually changes
+    final hasAmount = amountSol != null && amt > 0;
+    final total = hasAmount ? _nz(totalSol) : 0.0;
     final totalKey = total.toStringAsFixed(9);
-
-    final hasAmount = amt > 0;
 
     return GlitchHeader(
       child: Container(
@@ -101,7 +98,11 @@ class AmountHeader extends StatelessWidget {
     );
   }
 
-  static double _nz(double? v) => (v != null && v.isFinite && v > 0) ? v : 0.0;
+  static double _nz(double? v) {
+    if (v != null && v.isFinite && v > 0) return v;
+    return 0.0;
+  }
+
   static bool _hasUsd(double? p) => p != null && p.isFinite && p > 0;
 
   static String _formatUsd(double sol, double price) {
