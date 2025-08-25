@@ -3,14 +3,12 @@ import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/models/timeline_item.dart';
 import 'package:skrambl_app/ui/pods/widgets/count_down.dart';
-
 import 'package:skrambl_app/utils/formatters.dart';
-import 'package:skrambl_app/utils/logger.dart';
 
 List<TimelineItem> buildTimeline({required Pod pod}) {
   final items = <TimelineItem>[];
 
-  skrLogger.i("pod.submittedAt ${pod.submittedAt}");
+  //skrLogger.i("pod.submittedAt ${pod.submittedAt}");
 
   final status = PodStatus.values[pod.status];
   final draftedAt = dateTimeOrNull(pod.draftedAt);

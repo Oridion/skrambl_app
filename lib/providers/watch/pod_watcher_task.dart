@@ -76,7 +76,7 @@ class PodWatcherTask {
       ) async {
         if (_finished) return;
         //Debug log.
-        skrLogger.i('[WS] raw: ${const JsonEncoder.withIndent('  ').convert(acct)}');
+        //skrLogger.i('[WS] raw: ${const JsonEncoder.withIndent('  ').convert(acct)}');
 
         if (acct == null) return;
 
@@ -113,7 +113,7 @@ class PodWatcherTask {
             final model.Pod? live = await parsePod(bytes);
             if (live == null) return;
 
-            skrLogger.i(jsonEncode(live.toJson()));
+            //skrLogger.i(jsonEncode(live.toJson()));
 
             // If it is delivering.
             final delivering =

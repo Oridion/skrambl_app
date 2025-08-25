@@ -198,7 +198,7 @@ class Pod extends BorshObject {
   /// Accepts RAW account buffer (includes 8-byte Anchor discriminator).
   static Pod? fromAccountData(List<int> raw, {String debugLabel = '', bool swallowErrors = true}) {
     try {
-      skrLogger.i('Pod.decode[$debugLabel] rawLen=${raw.length}');
+      //skrLogger.i('Pod.decode[$debugLabel] rawLen=${raw.length}');
       if (raw.length < 8 + _kMinTotal) {
         skrLogger.w(
           'Pod.decode[$debugLabel] too small for (disc+struct): have=${raw.length}, need>=${8 + _kMinTotal}',
@@ -206,7 +206,7 @@ class Pod extends BorshObject {
         return null;
       }
       final sliced = raw.sublist(8); // skip anchor discriminator once
-      skrLogger.i('Pod.decode[$debugLabel] slicedLen=${sliced.length}');
+      //skrLogger.i('Pod.decode[$debugLabel] slicedLen=${sliced.length}');
       return fromBuffer(sliced, debugLabel: debugLabel, swallowErrors: swallowErrors);
     } catch (e, st) {
       skrLogger.e('Pod.decode[$debugLabel] fromAccountData exception: $e\n$st');
@@ -223,7 +223,7 @@ class Pod extends BorshObject {
   }) {
     try {
       final int totalLen = data.length;
-      skrLogger.i('Pod.decode[$debugLabel] postDiscLen=$totalLen');
+      //skrLogger.i('Pod.decode[$debugLabel] postDiscLen=$totalLen');
 
       if (totalLen < _kMinTotal) {
         skrLogger.w('Pod.decode[$debugLabel] too small post-disc: have=$totalLen, need>=$_kMinTotal');
@@ -234,15 +234,15 @@ class Pod extends BorshObject {
       skrLogger.i('💡 Pod.decode[$debugLabel] fixed[0..$_kFixedSize) start');
       final fixedPart = data.sublist(0, _kFixedSize);
       final fixed = shortCodec.decode(fixedPart); // Map<String, dynamic>
-      skrLogger.i(
-        '💡 Pod.decode[$debugLabel] fixed ok: '
-        'version=${fixed['version']}, lastProcess=${fixed['lastProcess']}, delay=${fixed['delay']}',
-      );
+      // skrLogger.i(
+      //   '💡 Pod.decode[$debugLabel] fixed ok: '
+      //   'version=${fixed['version']}, lastProcess=${fixed['lastProcess']}, delay=${fixed['delay']}',
+      // );
 
       // 2) Decode up to 10 log entries (each 19 bytes)
       final int logsAvail = math.min(totalLen - _kFixedSize, _kLogsRegionSize);
       final int availableEntries = logsAvail ~/ _kLogEntrySize;
-      skrLogger.i('Pod.decode[$debugLabel] logsAvail=$logsAvail, entries=$availableEntries');
+      //skrLogger.i('Pod.decode[$debugLabel] logsAvail=$logsAvail, entries=$availableEntries');
 
       final logs = <ActivityEntry>[];
       for (int i = 0; i < availableEntries; i++) {
@@ -263,11 +263,11 @@ class Pod extends BorshObject {
       int logIndex = 0;
       if (totalLen > _kIndexOffset) {
         logIndex = data[_kIndexOffset];
-        skrLogger.i('💡 Pod.decode[$debugLabel] logIndex=$logIndex @$_kIndexOffset');
+        //skrLogger.i('💡 Pod.decode[$debugLabel] logIndex=$logIndex @$_kIndexOffset');
       } else {
-        skrLogger.i(
-          '💡 Pod.decode[$debugLabel] no logIndex; totalLen=$totalLen <= indexOffset=$_kIndexOffset',
-        );
+        // skrLogger.i(
+        //   '💡 Pod.decode[$debugLabel] no logIndex; totalLen=$totalLen <= indexOffset=$_kIndexOffset',
+        // );
       }
 
       // Build the Pod DIRECTLY (do NOT call Pod.fromJson here)
@@ -293,37 +293,11 @@ class Pod extends BorshObject {
         logIndex: logIndex,
       );
 
-      skrLogger.i('Pod.decode[$debugLabel] success: entries=${logs.length}, lastProcess=${pod.lastProcess}');
+      //skrLogger.i('Pod.decode[$debugLabel] success: entries=${logs.length}, lastProcess=${pod.lastProcess}');
       return pod;
     } catch (e, st) {
-      skrLogger.e('⛔ Pod.decode[$debugLabel] exception: $e\n$st');
+      skrLogger.e('Pod.decode[$debugLabel] exception: $e\n$st');
       return null;
     }
   }
 }
-  // static Pod fromBuffer(List<int> data) {
-  //   if (data.length < 277) {
-  //     throw Exception('Invalid Pod buffer length: ${data.length}');
-  //   }
-  //   final fixedPart = data.sublist(0, 146);
-  //   final decoded = borshCodec.decode(fixedPart);
-
-  //   // Manually decode log
-  //   final log = <ActivityEntry>[];
-  //   final logStart = 146;
-  //   for (int i = 0; i < 10; i++) {
-  //     final start = logStart + (i * 13);
-  //     final end = start + 13;
-  //     final entryBytes = data.sublist(start, end);
-  //     log.add(ActivityEntry.fromBuffer(entryBytes));
-  //   }
-
-  //   // log_index is the last byte
-  //   final logIndex = data[146 + 130];
-
-  //   decoded['log'] = log;
-  //   decoded['logIndex'] = logIndex;
-
-  //   return Pod.fromJson(decoded);
-  // }
-
