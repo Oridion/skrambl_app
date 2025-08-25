@@ -1,5 +1,6 @@
 // lib/ui/pods/widgets/pod_card.dart
 import 'package:flutter/material.dart';
+import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/ui/shared/relative_time.dart';
@@ -41,20 +42,29 @@ class PodCard extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  '${pod.lamports / 1000000000} to ',
+                  '${pod.lamports / AppConstants.lamportsPerSol} to ',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
 
                 //If burner add icon here.
+                if (pod.isDestinationBurner) ...[
+                  Icon(Icons.local_fire_department, color: AppConstants.burnerColor, size: 18),
+                  const SizedBox(width: 2),
+                ],
 
                 //If burner address turn color to burner red color
+                // Destination address with conditional color
                 Text(
-                  '${shortenPubkey(pod.destination)}',
+                  shortenPubkey(pod.destination),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: pod.isDestinationBurner
+                        ? AppConstants.burnerColor
+                        : Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
                 ),
               ],
             ), // <-- margin between title and subtitle
