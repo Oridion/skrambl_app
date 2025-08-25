@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:skrambl_app/models/launch_pod_request.dart';
-import 'package:skrambl_app/utils/logger.dart';
 
 class LaunchPodResponse {
   final String base64Tx;

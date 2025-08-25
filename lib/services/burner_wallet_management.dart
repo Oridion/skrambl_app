@@ -1,6 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:skrambl_app/data/burner_dao.dart';
-import 'package:skrambl_app/utils/logger.dart';
 import 'package:solana/solana.dart';
 import 'package:solana_seed_vault/solana_seed_vault.dart';
 
