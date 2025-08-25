@@ -3,6 +3,7 @@
 // ===============================
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:skrambl_app/utils/solana.dart';
 
 class PodDetailsTable extends StatelessWidget {
   final List<PodDetailRow> rows;
@@ -21,15 +22,23 @@ class PodDetailRow extends StatelessWidget {
   final String title;
   final String value;
   final bool copyable;
+  final bool linkable;
   final bool monospace;
 
-  const PodDetailRow(this.title, this.value, {super.key, this.copyable = false, this.monospace = false});
+  const PodDetailRow(
+    this.title,
+    this.value, {
+    super.key,
+    this.copyable = false,
+    this.linkable = false,
+    this.monospace = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Container(
-      height: 28,
+      height: 26,
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -60,6 +69,12 @@ class PodDetailRow extends StatelessWidget {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$title copied')));
                 }
               },
+            ),
+          if (linkable)
+            IconButton(
+              tooltip: 'View on explorer',
+              icon: const Icon(Icons.open_in_new, size: 14),
+              onPressed: () => openAccountOnSolanaFM(context, title),
             ),
         ],
       ),
