@@ -72,16 +72,26 @@ class BurnerTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      shortenPubkey(burner.publicKey),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        height: 1.1,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          shortenPubkey(burner.publicKey, length: 6),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            height: 1.1,
+                          ),
+                        ),
+                        SizedBox(width: 9),
+                        Transform.translate(
+                          offset: const Offset(0, -2),
+                          child: StatusChip(used: burner.used),
+                        ),
+                      ],
                     ),
+
                     const SizedBox(height: 2),
                     Text(
                       title,
@@ -119,8 +129,6 @@ class BurnerTile extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(width: 30),
-              StatusChip(used: burner.used),
               if (selected) ...[
                 const SizedBox(width: 8),
                 Icon(Icons.check_circle, color: t.colorScheme.onSurface, size: 20),

@@ -15,7 +15,7 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
   Stream<Pod?> watchById(String id) => (select(pods)..where((t) => t.id.equals(id))).watchSingleOrNull();
 
   // Add this alongside watchAll()
-  Stream<List<Pod>> watchRecent({int limit = 5}) =>
+  Stream<List<Pod>> watchRecent({int limit = 6}) =>
       (select(pods)
             ..orderBy([(t) => OrderingTerm.desc(t.draftedAt)])
             ..limit(limit))

@@ -21,22 +21,10 @@ class _DashboardHeaderState extends State<DashboardHeader> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 10),
-      // decoration: BoxDecoration(
-      //   color: const Color.fromARGB(95, 239, 237, 228),
-      //   borderRadius: BorderRadius.circular(10),
-      // ),
       child: widget.pubkey != null
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Text(
-                //   "SKRAMBL.",
-                //   style: GoogleFonts.archivoBlack(
-                //     fontSize: 44,
-                //     color: const Color.fromARGB(255, 205, 205, 205),
-                //   ),
-                // ),
-                // const SizedBox(height: 32), // buffer space
                 WalletAddressTile(pubkey: widget.pubkey!),
                 WalletBalanceTile(pubkey: widget.pubkey!),
               ],

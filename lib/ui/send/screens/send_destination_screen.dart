@@ -310,7 +310,7 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
       useSafeArea: true,
       backgroundColor: Colors.white,
       barrierColor: Colors.black.withOpacityCompat(0.35),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(6))),
       builder: (sheetCtx) => CreateBurnerSheet(
         onCreate: (label) async {
           final token = await SeedVaultService.getValidToken(sheetCtx);

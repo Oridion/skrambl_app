@@ -14,7 +14,7 @@ class PodsSliver extends StatelessWidget {
     final dao = context.read<PodDao>();
 
     return StreamBuilder<List<Pod>>(
-      stream: dao.watchRecent(),
+      stream: dao.watchRecent(), // ideally LIMIT + proper index in SQL
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const SliverToBoxAdapter(
@@ -24,8 +24,8 @@ class PodsSliver extends StatelessWidget {
             ),
           );
         }
-        final pods = snap.data ?? const <Pod>[];
 
+        final pods = snap.data ?? const <Pod>[];
         if (pods.isEmpty) {
           return SliverToBoxAdapter(
             child: Padding(
@@ -48,9 +48,9 @@ class PodsSliver extends StatelessWidget {
                     ),
                     const SizedBox(height: 7),
                     Text(
-                      'Send your first SKRAMBLed delivery. Your delivers will appear here.',
+                      'Send your first SKRAMBLed delivery. Your deliveries will appear here.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -62,15 +62,31 @@ class PodsSliver extends StatelessWidget {
 
         return SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, i) => PodCard(
-              pod: pods[i],
-              onTap: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => PodDetailsScreen(localId: pods[i].id)));
-              },
-            ),
+            (context, i) {
+              final pod = pods[i];
+              return PodCard(
+                key: ValueKey(pod.id), // stable identity for diffing/recycling
+                pod: pod,
+                onTap: () {
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => PodDetailsScreen(localId: pod.id)));
+                },
+              );
+            },
             childCount: pods.length,
+            addAutomaticKeepAlives: false, // reduce memory unless you rely on it
+            addRepaintBoundaries: true, // keep for perf
+            addSemanticIndexes: false, // optional
+            // helps the sliver keep items stable when list changes
+            findChildIndexCallback: (Key key) {
+              if (key is ValueKey<String>) {
+                final id = key.value;
+                final index = pods.indexWhere((p) => p.id == id);
+                return index == -1 ? null : index;
+              }
+              return null;
+            },
           ),
         );
       },
