@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:skrambl_app/utils/logger.dart';
 
 class SelectedWalletProvider extends ChangeNotifier {
   String? _primary;
@@ -14,7 +15,9 @@ class SelectedWalletProvider extends ChangeNotifier {
   }
 
   void selectPrimary() {
+    skrLogger.i("[SWP] TRYING TO SELECT PRIMARY");
     if (_current != _primary || _currentBurnerIndex != null) {
+      skrLogger.i("[SWP] Selecting primary");
       _current = _primary;
       _currentBurnerIndex = null;
       notifyListeners();

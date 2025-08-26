@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:skrambl_app/solana/solana_client_service.dart';
 import 'package:skrambl_app/utils/logger.dart';
 import 'package:solana/encoder.dart';
@@ -132,5 +133,29 @@ Future<int> estimateFeeForInstructions({
     return await rpc.getFeeForMessage(b64) ?? 0;
   } catch (_) {
     return fallbackLamports;
+  }
+}
+
+Future<int> fetchLamports(String pubkey) async {
+  try {
+    final response = await http.post(
+      Uri.parse("https://bernette-tb3sav-fast-mainnet.helius-rpc.com"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "getBalance",
+        "params": [pubkey],
+      }),
+    );
+    if (response.statusCode != 200) throw Exception('RPC ${response.statusCode}');
+    if (response.body.isEmpty) throw Exception('Empty response from RPC');
+    final json = jsonDecode(response.body);
+    final lamports = json['result']['value'];
+    skrLogger.i('Initial balance fetched: $lamports lamports');
+    return lamports;
+  } catch (e) {
+    skrLogger.e('Failed to fetch initial balance: $e');
+    return 0;
   }
 }

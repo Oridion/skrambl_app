@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:skrambl_app/utils/logger.dart';
+import 'package:skrambl_app/utils/solana.dart';
+import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:http/http.dart' as http;
 
 class WalletBalanceStream {
   final String rpcUrl;
@@ -26,31 +27,9 @@ class WalletBalanceStream {
     this.rpcUrl = 'wss://mainnet.helius-rpc.com/?api-key=e9be3c89-9113-4c5d-be19-4dfc99d8c8f4',
   });
 
-  Future<int> _fetchInitialLamports(String pubkey) async {
-    try {
-      final response = await http.post(
-        Uri.parse("https://bernette-tb3sav-fast-mainnet.helius-rpc.com"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "jsonrpc": "2.0",
-          "id": 1,
-          "method": "getBalance",
-          "params": [pubkey],
-        }),
-      );
-      if (response.statusCode != 200) throw Exception('RPC ${response.statusCode}');
-      if (response.body.isEmpty) throw Exception('Empty response from RPC');
-      final json = jsonDecode(response.body);
-      final lamports = json['result']['value'];
-      skrLogger.i('Initial balance fetched: $lamports lamports');
-      return lamports;
-    } catch (e) {
-      skrLogger.e('Failed to fetch initial balance: $e');
-      return 0;
-    }
-  }
-
+  //START STREAM
   Stream<int> start(String pubkey) {
+    skrLogger.i("STARTING [WS] STREAM");
     final reuse =
         _balanceController != null &&
         !_balanceController!.isClosed &&
@@ -91,7 +70,7 @@ class WalletBalanceStream {
 
   Future<void> _refreshOnce(String pubkey) async {
     try {
-      final lamports = await _fetchInitialLamports(pubkey);
+      final lamports = await fetchLamports(pubkey);
       // Update only if changed
       if (lamports != _lastLamports) {
         _lastLamports = lamports;
@@ -100,88 +79,6 @@ class WalletBalanceStream {
     } catch (e) {
       // log but don't crash the stream
       _stopKeepAlive();
-    }
-  }
-
-  void _ensureChannelConnected() {
-    if (_channel != null) return;
-
-    _channel = WebSocketChannel.connect(Uri.parse(rpcUrl));
-    _subscriptionId = null;
-    _startKeepAlive();
-
-    if (!_hasListener) {
-      _hasListener = true;
-      _channel!.stream.listen(
-        (message) {
-          final decoded = jsonDecode(message);
-
-          // 1) Handle responses (they have an "id")
-          final respId = decoded['id'];
-          if (respId != null) {
-            // subscribe ack
-            if (respId == _lastSubReqId || respId == _pendingSubReqId) {
-              final result = decoded['result'];
-              if (result is int) {
-                _subscriptionId = result;
-                _subscribedPubkey = _pendingPubkey;
-                skrLogger.i('[SKRAMBL WS] Subscribed with ID: $_subscriptionId to $_subscribedPubkey');
-                if (_subscribedPubkey != null) _refreshOnce(_subscribedPubkey!);
-              }
-              _lastSubReqId = null;
-              _pendingSubReqId = null; // <-- clear pending flag
-              _pendingPubkey = null;
-              _reconnectAttempts = 0;
-              return;
-            }
-
-            // unsubscribe ack
-            if (respId == _lastUnsubReqId) {
-              // result is typically true; clear current subscription
-              _subscriptionId = null;
-              _subscribedPubkey = null;
-              skrLogger.i('[SKRAMBL WS] Unsubscribe ack received.');
-              _lastUnsubReqId = null;
-            }
-
-            _reconnectAttempts = 0;
-            return; // handled a response
-          }
-
-          // 2) Handle notifications (they have a "method")
-          final method = decoded['method'] as String?;
-          if (method == 'accountNotification') {
-            // Ensure this notification is for our current subscription id
-            final subNum = decoded['params']?['subscription'];
-            if (_subscriptionId != null && subNum != _subscriptionId) {
-              // stale notification from a previous sub; ignore
-              return;
-            }
-
-            final value = decoded['params']?['result']?['value'];
-            final lamports = (value?['lamports'] as int?) ?? 0;
-            if (lamports != _lastLamports) {
-              _lastLamports = lamports;
-              _balanceController?.add(lamports);
-            }
-          }
-        },
-        onError: (e) {
-          skrLogger.e('[SKRAMBL WS] Error: $e');
-          _stopKeepAlive();
-          _scheduleReconnect();
-        },
-        onDone: () {
-          skrLogger.w('[WS] Connection closed');
-          _stopKeepAlive();
-          if (_intentionalClose) {
-            _intentionalClose = false; // don't reconnect
-            return;
-          }
-          _scheduleReconnect();
-        },
-        cancelOnError: true,
-      );
     }
   }
 
@@ -219,6 +116,88 @@ class WalletBalanceStream {
     });
     skrLogger.i('[WS] Subscribing to $pubkey (id=$reqId)');
     _channel!.sink.add(subRequest);
+  }
+
+  void _ensureChannelConnected() {
+    skrLogger.i("Ensure running");
+    if (_channel != null) return;
+
+    _channel = IOWebSocketChannel.connect(
+      Uri.parse(rpcUrl),
+      pingInterval: const Duration(seconds: 20), // real ws pings
+    );
+    _subscriptionId = null;
+
+    if (!_hasListener) {
+      _hasListener = true;
+      _channel!.stream.listen(
+        (message) {
+          //{"jsonrpc":"2.0","result":5541789,"id":1756213477984}
+          try {
+            final decoded = jsonDecode(message);
+            if (decoded is! Map) return;
+
+            // --- responses (have "id") ---
+            final respId = decoded['id'];
+            if (respId != null) {
+              if (respId == _lastSubReqId || respId == _pendingSubReqId) {
+                final result = decoded['result'];
+                if (result is int) {
+                  _subscriptionId = result;
+                  _subscribedPubkey = _pendingPubkey;
+                  skrLogger.i('[WS] Subscribed id=$_subscriptionId to $_subscribedPubkey');
+                  final k = _subscribedPubkey;
+                  _pendingPubkey = null;
+                  _pendingSubReqId = null;
+                  _lastSubReqId = null;
+                  _reconnectAttempts = 0;
+                  if (k != null) _refreshOnce(k);
+                }
+                return;
+              }
+              if (respId == _lastUnsubReqId) {
+                _subscriptionId = null;
+                _subscribedPubkey = null;
+                _lastUnsubReqId = null;
+                return;
+              }
+              return;
+            }
+
+            // --- notifications (have "method") ---
+            final method = decoded['method'] as String?;
+            if (method == 'accountNotification') {
+              final params = decoded['params'] as Map?;
+              final subNum = params?['subscription'];
+              if (_subscriptionId != null && subNum != _subscriptionId) return; // stale
+
+              final value = (params?['result'] as Map?)?['value'] as Map?;
+              final lamports = (value?['lamports'] as int?) ?? 0; // null -> 0 if account cleared
+              if (lamports != _lastLamports) {
+                _lastLamports = lamports;
+                _balanceController?.add(lamports);
+              }
+            }
+          } catch (e, st) {
+            // swallow to avoid closing stream
+            skrLogger.w('[WS] onData parse error: $e\n$st');
+          }
+        },
+        onError: (e, st) {
+          skrLogger.e('[WS] Error: $e');
+          _scheduleReconnect();
+        },
+        onDone: () {
+          skrLogger.w('[WS] Closed ');
+          if (_intentionalClose) {
+            _intentionalClose = false;
+            return;
+          }
+          _scheduleReconnect();
+        },
+        cancelOnError: false,
+      );
+    }
   }
 
   void _sendUnsubscribe(dynamic subId) {
@@ -295,23 +274,12 @@ class WalletBalanceStream {
   }
 
   Future<void> refresh(String pubkey) async {
-    final latest = await _fetchInitialLamports(pubkey);
+    final latest = await fetchLamports(pubkey);
     // Update only if changed
     if (latest != _lastLamports) {
       _lastLamports = latest;
       _balanceController?.add(latest);
     }
-  }
-
-  void _startKeepAlive() {
-    _keepAlive?.cancel();
-    _keepAlive = Timer.periodic(const Duration(seconds: 40), (_) {
-      try {
-        _channel?.sink.add(
-          jsonEncode({"jsonrpc": "2.0", "id": DateTime.now().millisecondsSinceEpoch, "method": "ping"}),
-        );
-      } catch (_) {}
-    });
   }
 
   void _stopKeepAlive() {
