@@ -454,7 +454,8 @@ class _SendControllerState extends State<SendController> {
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () async {
             final didPop = await _navKey.currentState?.maybePop() ?? false;
-            if (!didPop && mounted) Navigator.of(context).maybePop();
+            if (!context.mounted) return;
+            if (!didPop) Navigator.of(context).maybePop();
           },
         ),
       ),

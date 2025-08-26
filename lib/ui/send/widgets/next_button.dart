@@ -42,7 +42,6 @@ class _NextButtonState extends State<NextButton> {
       if (remaining > Duration.zero) {
         await Future.delayed(remaining);
       }
-      if (!mounted) return;
       setState(() => _loading = false);
     }
   }

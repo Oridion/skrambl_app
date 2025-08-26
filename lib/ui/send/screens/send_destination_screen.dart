@@ -275,7 +275,7 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
             Expanded(
               child: ListView.separated(
                 itemCount: burners.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, i) {
                   final b = burners[i];
                   final selected = b.pubkey == _selectedBurnerAddress;
@@ -325,10 +325,11 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
       ),
     );
 
-    if (!mounted || created == null) return;
-
+    if (created == null) return;
     await _loadBurners();
     setState(() => _selectedBurnerAddress = created.publicKey);
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Burner created')));
   }
 }

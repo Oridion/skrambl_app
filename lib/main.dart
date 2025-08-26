@@ -129,6 +129,7 @@ class _AppLifecycleHandlerState extends State<AppLifecycleHandler> with WidgetsB
       final repo = context.read<BurnerRepository>();
       await repo.warmCacheFromDb();
 
+      if (!mounted) return;
       final seedVault = context.read<SeedVaultSessionManager>();
       if (seedVault.authToken == null) {
         await seedVault.initialize();
@@ -143,6 +144,7 @@ class _AppLifecycleHandlerState extends State<AppLifecycleHandler> with WidgetsB
         }
       }
 
+      if (!mounted) return;
       await context.read<NetworkFeeProvider>().refresh();
     });
   }

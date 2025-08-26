@@ -59,6 +59,7 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
       return;
     }
 
+    if (!mounted) return;
     final authToken = await SeedVaultService.getValidToken(context);
     if (authToken == null) {
       setState(() {
@@ -189,8 +190,13 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
     try {
       txSig = await _sendSignedTransaction(rpc: rpc, messageBytes: messageBytes, signature: signature);
 
+      if (txSig == '') {
+        throw Exception('TX signature had error');
+      }
+
       // Persist "pending" record
       try {
+        if (!mounted) return;
         final dao = context.read<PodDao>();
         await dao.upsertStandardPendingBySig(
           signature: txSig,
@@ -310,11 +316,14 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
         to: dest,
         lamports: lamports,
       );
-      final freshSig = await SeedVaultService.signMessage(
-        messageBytes: freshMsg,
-        authToken: (await SeedVaultService.getValidToken(context))!,
-      );
-      return _sendWire(rpc, freshMsg, freshSig);
+      if (mounted) {
+        final freshSig = await SeedVaultService.signMessage(
+          messageBytes: freshMsg,
+          authToken: (await SeedVaultService.getValidToken(context))!,
+        );
+        return _sendWire(rpc, freshMsg, freshSig);
+      }
+      return '';
     }
   }
 

@@ -1,4 +1,4 @@
-import 'package:solana/solana.dart' as AppConstants;
+import 'package:skrambl_app/constants/app.dart';
 
 double computeMaxSendableSol({
   required double walletBalanceSol,

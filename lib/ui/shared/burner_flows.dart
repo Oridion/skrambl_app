@@ -55,14 +55,14 @@ Future<void> openCreateBurnerSheet(BuildContext context) async {
                         constraints: BoxConstraints(minHeight: constraints.maxHeight),
                         child: CreateBurnerSheet(
                           onCreate: (label) async {
-
                             final token = await SeedVaultService.getValidToken(ctx);
                             if (token == null) throw Exception('Seed Vault authorization denied');
 
-
                             final burner = await repo.createBurner(token: token, note: label);
                             if (burner == null) {
-                              showSnackBar(context, "Could not find a burner wallet. Please try again.");
+                              if (context.mounted) {
+                                showSnackBar(context, "Could not find a burner wallet. Please try again.");
+                              }
                               throw Exception('Burner wallet creation failed');
                             }
                             return burner;

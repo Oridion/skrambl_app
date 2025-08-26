@@ -78,6 +78,7 @@ class SeedVaultSessionManager extends ChangeNotifier {
     final permissionGranted = await SeedVaultService.requestPermission();
     if (!permissionGranted) throw Exception("Seed Vault permission denied");
 
+    if (!context.mounted) return null;
     final token = await SeedVaultService.getValidToken(context);
     if (token == null) {
       skrLogger.e("❌ Seed Vault authorization denied.");

@@ -3,10 +3,6 @@ import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:skrambl_app/constants/app.dart';
 
-/// Lightweight Solana WebSocket client (WS-only).
-/// - accountSubscribe(pubkey) -> Stream<account value Map?> (null => account closed)
-/// - signatureSubscribe(signature) -> Stream<Map<String,dynamic>> status payloads
-///
 /// Create a single instance and reuse it across watchers to share one socket.
 class SolanaWsService {
   WebSocketChannel? _chan;
