@@ -38,7 +38,7 @@ class _BurnerBalancePillState extends State<BurnerBalancePill> {
     setState(() => _loading = _lamports == null); // spinner only on first run
     try {
       final lamports = await _fetchLamports(widget.pubkey);
-      //final usd = await fetchSolPriceUsd();
+
       if (!mounted) return;
       setState(() {
         _lamports = lamports;

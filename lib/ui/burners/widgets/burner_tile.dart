@@ -32,10 +32,13 @@ class BurnerTile extends StatelessWidget {
 
     // Narrow watch: only the lamports for this pubkey + the single SOL price value
     final lamports = context.select<BurnerBalancesProvider, int>((p) => p.lamportsFor(burner.publicKey));
-    final solUsd = context.select<PriceProvider, double>((p) => p.solUsd);
-
+    final solUsd = context.select<PriceProvider, double?>((p) => p.solUsd);
     final sol = lamports / 1e9;
-    final usd = lamports == 0 ? 0.0 : sol * solUsd;
+    final usd = solUsd != null
+        ? lamports == 0
+              ? 0.0
+              : sol * solUsd
+        : 0;
 
     return Semantics(
       button: true,

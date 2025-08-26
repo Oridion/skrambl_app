@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 
 import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/providers/network_fee_provider.dart';
+import 'package:skrambl_app/providers/price_provider.dart';
 import 'package:skrambl_app/providers/wallet_provider.dart';
-import 'package:skrambl_app/services/price_service.dart';
 import 'package:skrambl_app/solana/universe/universe_service.dart';
 import 'package:skrambl_app/ui/send/widgets/amount_header.dart';
 import 'package:skrambl_app/ui/send/widgets/amount_input.dart';
@@ -173,7 +173,7 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
     final isBalanceLoading = context.select<WalletProvider, bool>((w) => w.isLoading);
     final walletBalanceSol = context.select<WalletProvider, double>((w) => w.solBalance);
     final networkFeeLamports = context.select<NetworkFeeProvider, int>((p) => p.fee);
-
+    final solUsd = context.select<PriceProvider, double?>((p) => p.solUsd);
     // if network fee or wallet balance changed, we want derived validation to update
     // trigger recompute cheaply (no text change)
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -203,7 +203,7 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
               amountSol: amount,
               privacyFeeSol: _loadingFees ? null : _privacyFeeSol,
               loadingFees: _loadingFees,
-              solUsdPrice: widget.formModel.solUsdPrice,
+              solUsdPrice: solUsd,
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -216,7 +216,7 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                       children: [
                         AmountInput(
                           controller: _amountController,
-                          solUsdPrice: widget.formModel.solUsdPrice,
+                          solUsdPrice: solUsd,
                           amount: _amountSol,
                           walletBalance: walletBalanceSol,
                           isBalanceLoading: isBalanceLoading,
@@ -318,23 +318,14 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                             final delay = _delaySeconds;
                             final feeSol = _privacyFeeSol;
 
-                            double? priceUsdPerSol;
-                            await Future.wait([
-                              Future.delayed(const Duration(milliseconds: 600)),
-                              (() async {
-                                try {
-                                  priceUsdPerSol = await fetchSolPriceUsd();
-                                } catch (_) {}
-                              })(),
-                            ]);
-
                             if (!mounted) return;
+                            await Future.wait([Future.delayed(const Duration(milliseconds: 800))]);
 
                             widget.formModel
                               ..amount = amt
                               ..delaySeconds = delay
                               ..fee = feeSol
-                              ..solUsdPrice = priceUsdPerSol;
+                              ..solUsdPrice = (solUsd != null && solUsd > 0 ? solUsd : null);
 
                             setState(() => _isNextLoading = false);
                             widget.onNext();

@@ -28,10 +28,13 @@ class ListBurnerTile extends StatelessWidget {
     final t = Theme.of(context);
     // Narrow watches: only this pubkey’s lamports + a single SOL price
     final lamports = context.select<BurnerBalancesProvider, int>((p) => p.lamportsFor(burner.pubkey));
-    final solUsd = context.select<PriceProvider, double>((p) => p.solUsd);
-
+    final solUsd = context.select<PriceProvider, double?>((p) => p.solUsd);
     final sol = lamports / 1e9;
-    final usd = lamports == 0 ? 0.0 : sol * solUsd;
+    final usd = solUsd != null
+        ? lamports == 0
+              ? 0.0
+              : sol * solUsd
+        : 0;
 
     return Material(
       color: Colors.white,
@@ -123,5 +126,4 @@ class ListBurnerTile extends StatelessWidget {
     //if (b.lastUsedAt != null) parts.add('Used ${_relative(b.lastUsedAt!)}');
     return parts.join(' · ');
   }
-
 }

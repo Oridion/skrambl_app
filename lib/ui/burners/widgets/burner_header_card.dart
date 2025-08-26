@@ -15,11 +15,11 @@ class HeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final balances = context.watch<BurnerBalancesProvider>();
-    final price = context.watch<PriceProvider>().solUsd;
+    final price = context.select<PriceProvider, double?>((p) => p.solUsd);
 
     final lamports = balances.lamportsFor(pubkey);
     final sol = lamports / 1e9;
-    final usd = sol * price;
+    final usd = price != null ? sol * price : 0;
 
     final note = burner?.note;
     final used = burner?.used == true;
@@ -90,11 +90,13 @@ class HeaderCard extends StatelessWidget {
                     '${formatSol(sol)} SOL',
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    usd <= 0 ? '\$0 USD' : '\$${usd.toStringAsFixed(2)} USD',
-                    style: TextStyle(color: Colors.black.withOpacityCompat(0.65), fontSize: 13),
-                  ),
+                  if (price != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      usd <= 0 ? '\$0 USD' : '\$${usd.toStringAsFixed(2)} USD',
+                      style: TextStyle(color: Colors.black.withOpacityCompat(0.65), fontSize: 13),
+                    ),
+                  ],
                 ],
               ),
             ],

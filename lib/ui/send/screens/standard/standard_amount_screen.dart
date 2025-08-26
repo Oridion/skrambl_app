@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/models/send_form_model.dart';
 import 'package:skrambl_app/providers/network_fee_provider.dart';
+import 'package:skrambl_app/providers/price_provider.dart';
 import 'package:skrambl_app/providers/wallet_provider.dart';
-import 'package:skrambl_app/services/price_service.dart';
 import 'package:skrambl_app/ui/send/helpers/fee_estimator.dart';
 import 'package:skrambl_app/ui/send/widgets/amount_input.dart';
 import 'package:skrambl_app/utils/colors.dart';
@@ -71,10 +71,8 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
     });
   }
 
-  String _usd(double sol) {
-    final p = widget.formModel.solUsdPrice;
-    if (p == null) return '';
-    final v = sol * p;
+  String _usdWith(double price, double sol) {
+    final v = sol * price;
     if (v >= 100) return '\$${v.toStringAsFixed(0)}';
     if (v >= 1) return '\$${v.toStringAsFixed(2)}';
     return '\$${v.toStringAsFixed(4)}';
@@ -85,18 +83,16 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
     setState(() => _isSubmitting = true);
     FocusScope.of(context).unfocus();
 
-    // refresh price once here so summary has it
-    double? priceUsdPerSol;
-    try {
-      priceUsdPerSol = await fetchSolPriceUsd();
-    } catch (_) {}
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (!mounted) return;
+    final solUsd = context.read<PriceProvider>().solUsd;
 
     widget.formModel
       ..amount = _amount
-      ..solUsdPrice = priceUsdPerSol;
+      ..solUsdPrice = solUsd;
 
     if (!mounted) return;
-    await Future.delayed(const Duration(milliseconds: 150)); // debounce
     widget.onNext();
     setState(() => _isSubmitting = false);
   }
@@ -110,6 +106,7 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
     final isBalanceLoading = context.select<WalletProvider, bool>((p) => p.isLoading);
     final walletBalanceSol = context.select<WalletProvider, double>((p) => p.solBalance);
     final networkFeeLamports = context.select<NetworkFeeProvider, int>((p) => p.fee);
+    final solUsd = context.select<PriceProvider, double?>((p) => p.solUsd);
     final hasAmount = _amount != null && _amount! > 0;
     final isValid = hasAmount && _amount! >= _minAmount && _errorText == null && !isBalanceLoading;
     final displayAmount = (_amount ?? 0).toDouble();
@@ -162,10 +159,10 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
                       style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: Colors.white),
                     ),
                   ),
-                  if (hasAmount && widget.formModel.solUsdPrice != null) ...[
+                  if (hasAmount && solUsd != null) ...[
                     const SizedBox(height: 2),
                     Text(
-                      _usd(_amount!),
+                      _usdWith(solUsd, _amount!),
                       style: TextStyle(fontSize: 13, color: Colors.white.withOpacityCompat(0.75)),
                     ),
                   ],
@@ -182,7 +179,7 @@ class _StandardAmountScreenState extends State<StandardAmountScreen> {
                   children: [
                     AmountInput(
                       controller: _amountCtrl,
-                      solUsdPrice: widget.formModel.solUsdPrice,
+                      solUsdPrice: solUsd,
                       amount: _amount,
                       walletBalance: walletBalanceSol,
                       isBalanceLoading: isBalanceLoading,
