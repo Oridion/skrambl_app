@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class SendFormModel {
   // Shared across both standard and skrambled
   String? userWallet;
@@ -33,6 +35,33 @@ class SendFormModel {
     fee = 0;
     isSkrambled = false;
     passcode = null;
+  }
+
+  // Keeping track of changes for submit or resend.
+  Map<String, dynamic> toFingerprintMap() => {
+    'mode': isSkrambled == true ? 'skrambled' : 'standard',
+    'amount': amount,
+    'delay': delaySeconds,
+    'destination': destinationWallet,
+    'from': userWallet,
+  };
+  String get fingerprintJson => jsonEncode(toFingerprintMap());
+
+  // Equality operator
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SendFormModel &&
+        other.userWallet == userWallet &&
+        other.amount == amount &&
+        other.delaySeconds == delaySeconds &&
+        other.destinationWallet == destinationWallet &&
+        other.isSkrambled == isSkrambled;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(userWallet, amount, delaySeconds, destinationWallet, isSkrambled);
   }
 
   @override

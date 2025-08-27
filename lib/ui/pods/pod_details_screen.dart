@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/data/burner_dao.dart';
 import 'package:skrambl_app/ui/pods/widgets/actions_bar.dart';
 import 'package:skrambl_app/ui/pods/widgets/details_table.dart';
@@ -22,6 +23,48 @@ class PodDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final dao = context.read<PodDao>();
     final burnerDao = context.read<BurnerDao>();
+
+    Future<void> confirmAndDeleteDraft(Pod pod) async {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: const BorderSide(color: Colors.black, width: 1),
+          ),
+          backgroundColor: Colors.white,
+          title: const Text('Delete draft?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+          content: const Text(
+            'This will permanently remove the draft delivery.',
+            style: TextStyle(fontSize: 14),
+          ),
+
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppConstants.burnerColor,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+
+      try {
+        await dao.deleteById(localId);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft deleted')));
+        Navigator.of(context).maybePop();
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Delivery Details'),
@@ -31,6 +74,26 @@ class PodDetailsScreen extends StatelessWidget {
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: () => Navigator.of(context).maybePop(),
         ),
+
+        actions: [
+          StreamBuilder<Pod?>(
+            stream: dao.watchById(localId),
+            builder: (context, snap) {
+              final pod = snap.data;
+              if (pod == null) return const SizedBox.shrink();
+
+              final status = PodStatus.values[pod.status];
+              final isDraft = status == PodStatus.drafting;
+              if (!isDraft) return const SizedBox.shrink();
+
+              return IconButton(
+                tooltip: 'Delete draft',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () => confirmAndDeleteDraft(pod),
+              );
+            },
+          ),
+        ],
       ),
       body: StreamBuilder<Pod?>(
         stream: dao.watchById(localId),

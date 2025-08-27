@@ -70,6 +70,7 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
     required String escapeCode,
     required bool isCreatorBurner,
     required bool isDestinationBurner,
+    required String unsignedBase64Tx,
     bool showMemo = false,
     PodStatus initialStatus = PodStatus.drafting,
   }) async {
@@ -92,16 +93,17 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
         draftedAt: now,
         isCreatorBurner: Value(isCreatorBurner),
         isDestinationBurner: Value(isDestinationBurner),
+        unsignedMessageB64: Value(unsignedBase64Tx),
       ),
     );
     return localId;
   }
 
-  Future<void> attachUnsignedMessage({required String id, String? unsignedMessageB64}) async {
-    await (update(pods)..where((t) => t.id.equals(id))).write(
-      PodsCompanion(unsignedMessageB64: Value(unsignedMessageB64), status: Value(PodStatus.launching.index)),
-    );
-  }
+  // Future<void> attachUnsignedMessage({required String id, String? unsignedMessageB64}) async {
+  //   await (update(pods)..where((t) => t.id.equals(id))).write(
+  //     PodsCompanion(unsignedMessageB64: Value(unsignedMessageB64), status: Value(PodStatus.launching.index)),
+  //   );
+  // }
 
   // Set submitting time to calculate duration
   Future<void> markSubmitting({required String id}) async {
@@ -295,5 +297,10 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
         lastError: Value(message),
       ),
     );
+  }
+
+  // inside your PodDao
+  Future<int> deleteById(String id) {
+    return (delete(pods)..where((tbl) => tbl.id.equals(id))).go();
   }
 }

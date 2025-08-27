@@ -52,18 +52,20 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
     ),
   );
 
-  items.add(
-    TimelineItem(
-      title: 'Submitted',
-      subtitle: submittedSubtitle,
-      color: Colors.blue,
-      isActive: submittedAt == null,
-      at: submittedAt,
-    ),
-  );
+  if (pod.submittedAt != null) {
+    items.add(
+      TimelineItem(
+        title: 'Submitted',
+        subtitle: submittedSubtitle,
+        color: Colors.blue,
+        isActive: submittedAt == null,
+        at: submittedAt,
+      ),
+    );
+  }
 
   //Show this section for delayed skrambled pods only
-  if (pod.mode == 1) {
+  if (pod.mode == 1 && pod.submittedAt != null) {
     items.add(
       TimelineItem(
         title: 'Skrambling',
@@ -84,7 +86,7 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
   }
 
   //Show delivering timeline tile
-  if (skrambledAt != null) {
+  if (pod.mode == 1 && skrambledAt != null) {
     items.add(
       TimelineItem(
         title: 'Delivering',

@@ -1,7 +1,15 @@
+import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
+import 'package:skrambl_app/solana/send_skrambled_transaction.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import 'package:solana/solana.dart';
+
+Future<Uint8List> setBlockHashOnUnsigneMessage(String unsignedBase64Tx) async {
+  var txBytes = base64Decode(unsignedBase64Tx);
+  return await updateBlockhashInMessage(txBytes);
+}
 
 String generatePasscode({int length = 6}) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

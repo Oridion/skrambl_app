@@ -33,17 +33,17 @@ class SegmentedTabs extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(0),
+      padding: EdgeInsets.all(5),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: border),
       ),
       child: TabBar(
         controller: controller,
         dividerColor: Colors.transparent,
         indicatorSize: TabBarIndicatorSize.tab,
-        indicator: ShapeDecoration(color: selectedFill, shape: const StadiumBorder()),
+        indicator: BoxDecoration(color: selectedFill, borderRadius: BorderRadius.circular(5)),
         labelColor: selectedText,
         unselectedLabelColor: text,
         labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
@@ -74,7 +74,7 @@ class _TabChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tab(
-      height: 40, // bigger hit area
+      height: 36, // bigger hit area
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

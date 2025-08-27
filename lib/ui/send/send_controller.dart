@@ -1,11 +1,10 @@
 // Dart SDK
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 
 // Flutter
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/ui/send/screens/standard/standard_summary_screen.dart';
 import 'package:skrambl_app/ui/send/widgets/with_wallet_balance.dart';
@@ -28,7 +27,6 @@ import 'package:skrambl_app/routes/send_routes.dart';
 import 'package:skrambl_app/api/launch_pod_service.dart';
 import 'package:skrambl_app/services/seed_vault_service.dart';
 import 'package:skrambl_app/solana/pod_tx_helper.dart';
-import 'package:skrambl_app/solana/send_skrambled_transaction.dart';
 
 // App: UI
 import 'package:skrambl_app/ui/send/helpers/status_result.dart';
@@ -61,9 +59,9 @@ class SendController extends StatefulWidget {
 class _SendControllerState extends State<SendController> {
   final PageController _pageController = PageController();
   final SendFormModel _formModel = SendFormModel();
+  //SendFormModel _lastAttemptedFormModel = SendFormModel();
   String? _currentDraftId; // Draft db id
-  bool _canResend = false; // Controls send button label/handler
-  int _currentPage = 0;
+  bool _isResend = false; // Controls send button handler
   bool _isSubmitting = false;
   String _appBarTitle = 'Send';
   final _navKey = GlobalKey<NavigatorState>();
@@ -76,6 +74,7 @@ class _SendControllerState extends State<SendController> {
 
   @override
   void dispose() {
+    skrLogger.i("Send controller disposed");
     _pageController.dispose();
     super.dispose();
   }
@@ -121,28 +120,7 @@ class _SendControllerState extends State<SendController> {
     }
   }
 
-  void nextPage() {
-    if (_currentPage < _pages.length - 1) {
-      setState(() => _currentPage++);
-      _pageController.animateToPage(
-        _currentPage,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
-  void prevPage() {
-    if (_currentPage > 0) {
-      setState(() => _currentPage--);
-      _pageController.animateToPage(
-        _currentPage,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
+  // Go to status screen, checking for completion
   Future<SendStatusResult?> _pushStatus({
     required Uint8List txBytes,
     required Uint8List signature,
@@ -165,20 +143,27 @@ class _SendControllerState extends State<SendController> {
     );
   }
 
+  // Handle results back from _pushStatus
   Future<void> _handleStatusResult(SendStatusResult? result) async {
     if (!mounted || result == null) return;
+    skrLogger.i("[HANDLE STATUS RESULT] ${result.type}");
     setState(() => _isSubmitting = false);
 
     switch (result.type) {
       case SendStatusResultType.failed:
-        setState(() => _canResend = true);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(result.message ?? 'Send failed. Please try again.')));
+        _failedSend(result.message ?? 'Send failed. Please try again.', true);
+        break;
+
+      //On cancled transaction, let's delete the draft.
+      //We only keep drafts of signed
+      case SendStatusResultType.canceled:
+        skrLogger.i("CANCELED");
+        skrLogger.i(result.localId);
+        skrLogger.i(result.message);
+
+        _failedSend(result.message ?? 'Transaction was cancled. Please try again.', true);
         break;
       case SendStatusResultType.submitted:
-        break;
-      case SendStatusResultType.canceled:
         break;
     }
   }
@@ -186,9 +171,13 @@ class _SendControllerState extends State<SendController> {
   //SEND SKRAMBLED TRANSACTION
   void sendSkrambled() async {
     if (_isSubmitting) return;
+    skrLogger.i("SENDING");
+    skrLogger.i(_formModel.toString());
+
+    //Store last attempt first thing on send attempt
     setState(() {
+      //_lastAttemptedFormModel = _formModel;
       _isSubmitting = true;
-      _canResend = false;
     });
 
     final dao = context.read<PodDao>();
@@ -240,11 +229,24 @@ class _SendControllerState extends State<SendController> {
     );
     //skrLogger.i("📦 Payload: $payload");
 
+    // Fetch unsigned tx and attach to db.
+    late final String unsignedBase64Tx;
+    try {
+      unsignedBase64Tx = await fetchUnsignedLaunchTx(payload);
+    } catch (e) {
+      skrLogger.e('Send failed: $e');
+      //Issue with getting signed transaction from API, Since the db draft has not been created
+      //yet, Whe show failed without setting to isResend (false)
+      _failedSend('There was an issue sending the transaction. Please try to resend.', false);
+      return;
+    }
+
     // Derive the Pod PDA
     var podPDA = await getPodPDA(id: podId, creator: userWallet);
     skrLogger.i("POD PDA: ${podPDA.toString()}");
 
-    // Insert draft pod into the database
+    // Insert draft pod into the database only if successfully received
+    // unsigned message from API.
     // Note: `podId` is used as a local identifier, not the on-chain
     // PDA. It should be unique for each pod.
     skrLogger.i("Creating draft pod with ID: $podId");
@@ -260,66 +262,45 @@ class _SendControllerState extends State<SendController> {
       destination: _formModel.destinationWallet!,
       isCreatorBurner: widget.fromBurnerIndexOverride != null,
       isDestinationBurner: _formModel.isDestinationBurner,
+      unsignedBase64Tx: unsignedBase64Tx,
     );
 
-    setState(() {
-      _currentDraftId = localId; // Store the local draft ID
-      _canResend = false;
-    });
+    // Set current draft ID
+    setState(() => _currentDraftId = localId);
 
-    // Fetch unsigned tx and attach to db.
-    late final String unsignedBase64Tx;
-    try {
-      unsignedBase64Tx = await fetchUnsignedLaunchTx(payload);
-      await dao.attachUnsignedMessage(id: _currentDraftId!, unsignedMessageB64: unsignedBase64Tx);
-    } catch (e) {
-      failedSend('Send failed. You can retry without rebuilding.', e);
-      return;
-    }
+    // Update blockhash before signing
+    final txBytes = await setBlockHashOnUnsigneMessage(unsignedBase64Tx);
 
-    // Decode and sign the transaction
-    // Note: we need to update the blockhash before signing
+    // Sign transaction
+    late final Uint8List signature;
     try {
-      var txBytes = base64Decode(unsignedBase64Tx);
-      txBytes = await updateBlockhashInMessage(txBytes);
-      final signature = await SeedVaultService.signMessage(
+      signature = await SeedVaultService.signMessage(
         messageBytes: txBytes,
         authToken: token, // Passing authToken from getValidToken
       );
-      if (signature.length != 64) {
-        failedSend('Invalid signature. Try again.', '');
-        return;
-      }
-
-      skrLogger.i("Signature: $signature");
-
-      if (!context.mounted) return;
-
-      final result = await _pushStatus(
-        localId: _currentDraftId!,
-        txBytes: txBytes,
-        signature: signature,
-        podPdaBase58: podPDA.toBase58(),
-        formModel: _formModel,
-      );
-
-      await _handleStatusResult(result);
     } catch (e) {
-      failedSend('Send failed. You can retry without rebuilding the transaction.', e);
+      _handleStatusResult(SendStatusResult.canceled(localId: localId, message: 'Transaction was canceled.'));
       return;
     }
+    skrLogger.i("Signature: $signature");
+
+    final result = await _pushStatus(
+      localId: _currentDraftId!,
+      txBytes: txBytes,
+      signature: signature,
+      podPdaBase58: podPDA.toBase58(),
+      formModel: _formModel,
+    );
+    await _handleStatusResult(result);
   }
 
   // Failed to send
   // Don’t discard the draft; we want to RESEND
-  void failedSend(String message, e) {
-    if (e != '') {
-      skrLogger.e('Send failed: $e');
-    }
+  void _failedSend(String message, bool isResend) {
     if (!mounted) return;
     setState(() {
-      _canResend = true;
       _isSubmitting = false;
+      if (isResend) _isResend = true;
     });
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
@@ -327,122 +308,120 @@ class _SendControllerState extends State<SendController> {
   // Resend the transaction if it failed
   // We need to update blockhash and re-sign
   Future<void> _resendFromDraft() async {
+    skrLogger.i("RESENDING");
+    skrLogger.i(_formModel.toString());
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
 
+    // Get POD from db. (Required)
     final dao = context.read<PodDao>();
+    final pod = await dao.watchById(_currentDraftId!).first;
+    if (pod == null) {
+      //This should never come up as pod should always be found if resending.
+      _failedSend('Delivery draft was not found. Cannot resend', false);
+      return;
+    }
 
-    try {
-      final pod = await dao.watchById(_currentDraftId!).first;
-      if (pod == null) {
-        failedSend('Error: Delivery not found. Cannot send', '');
-        return;
-      }
-
-      // Case A: already submitted → retry queue only
-      if (pod.launchSig != null && pod.status == PodStatus.submitted.index) {
-        if (!mounted) return;
-        final result = await Navigator.push<SendStatusResult>(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SendStatusScreen.queueOnly(
-              localId: _currentDraftId!,
-              podPDA: Ed25519HDPublicKey.fromBase58(pod.podPda!),
-              destination: _formModel.destinationWallet!,
-              amount: _formModel.amount!,
-              launchSig: pod.launchSig!,
-              isDelayed: _formModel.isDelayed,
-            ),
-          ),
-        );
-        await _handleStatusResult(result);
-        return;
-      }
-
-      // Case A2: already past submitted (scrambling/delivering) → just watch
-      if (pod.status == PodStatus.scrambling.index || pod.status == PodStatus.delivering.index) {
-        if (!mounted) return;
-        final result = await Navigator.push<SendStatusResult>(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SendStatusScreen.queueOnly(
-              localId: _currentDraftId!,
-              podPDA: Ed25519HDPublicKey.fromBase58(pod.podPda!),
-              destination: _formModel.destinationWallet!,
-              amount: _formModel.amount!,
-              launchSig: pod.launchSig ?? '', // not used in watch-only path
-              isDelayed: _formModel.isDelayed,
-            ),
-          ),
-        );
-        await _handleStatusResult(result);
-        return;
-      }
-
-      // Case B: not submitted yet → rebuild unsigned, sign, send
-      if (pod.unsignedMessageB64 == null) {
-        // Nothing to resend locally; you could re-fetch from Lambda here if desired.
-        failedSend('Error: unsigned message was not found.', '');
-        return;
-      }
-
-      var txBytes = base64Decode(pod.unsignedMessageB64!);
-      txBytes = await updateBlockhashInMessage(txBytes);
-
+    // Case A: already submitted → retry queue only
+    if (pod.launchSig != null && pod.status == PodStatus.submitted.index) {
       if (!mounted) return;
-      final token = await SeedVaultService.getValidToken(context);
-      if (token == null) {
-        failedSend('Error: Seed vault token was not found!', '');
-        return;
-      }
-      final signature = await SeedVaultService.signMessage(messageBytes: txBytes, authToken: token);
-      if (signature.length != 64) {
-        failedSend('Error: Proper signature was not detected', signature);
-        return;
-      }
-
-      final result = await _pushStatus(
-        txBytes: txBytes,
-        signature: signature,
-        podPdaBase58: pod.podPda!,
-        localId: _currentDraftId!,
-        formModel: _formModel,
+      final result = await Navigator.push<SendStatusResult>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SendStatusScreen.queueOnly(
+            localId: _currentDraftId!,
+            podPDA: Ed25519HDPublicKey.fromBase58(pod.podPda!),
+            destination: _formModel.destinationWallet!,
+            amount: _formModel.amount!,
+            launchSig: pod.launchSig!,
+            isDelayed: _formModel.isDelayed,
+          ),
+        ),
       );
-
       await _handleStatusResult(result);
+      return;
+    }
+
+    // Case A2: already past submitted (scrambling/delivering) → just watch
+    if (pod.status == PodStatus.scrambling.index || pod.status == PodStatus.delivering.index) {
+      if (!mounted) return;
+      final result = await Navigator.push<SendStatusResult>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SendStatusScreen.queueOnly(
+            localId: _currentDraftId!,
+            podPDA: Ed25519HDPublicKey.fromBase58(pod.podPda!),
+            destination: _formModel.destinationWallet!,
+            amount: _formModel.amount!,
+            launchSig: pod.launchSig ?? '', // not used in watch-only path
+            isDelayed: _formModel.isDelayed,
+          ),
+        ),
+      );
+      await _handleStatusResult(result);
+      return;
+    }
+
+    // Case B: (Only other case) not submitted yet → sign, send
+    // Update blockhash before signing
+    final txBytes = await setBlockHashOnUnsigneMessage(pod.unsignedMessageB64!);
+    if (!mounted) return;
+    final token = await SeedVaultService.getValidToken(context);
+    if (token == null) {
+      _failedSend('Resend failed. Could not get a valid token', true);
+      return;
+    }
+
+    late final Uint8List signature;
+    try {
+      signature = await SeedVaultService.signMessage(messageBytes: txBytes, authToken: token);
     } catch (e) {
-      failedSend('Resend failed to build. Please try again.', e);
+      if (e != '') skrLogger.e('Resend failed: $e');
+      _handleStatusResult(
+        SendStatusResult.canceled(localId: _currentDraftId, message: 'Transaction was canceled.'),
+      );
+    }
+
+    final result = await _pushStatus(
+      txBytes: txBytes,
+      signature: signature,
+      podPdaBase58: pod.podPda!,
+      localId: _currentDraftId!,
+      formModel: _formModel,
+    );
+    await _handleStatusResult(result);
+  }
+
+  Future<void> _goBack(BuildContext context) async {
+    // Dismiss the keyboard
+    FocusManager.instance.primaryFocus?.unfocus();
+    await SystemChannels.textInput.invokeMethod('TextInput.hide');
+
+    // Give the viewInsets a frame to settle
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (mounted) {
+      _navKey.currentState?.maybePop();
     }
   }
 
-  List<Widget> get _pages {
-    // Always start with type selection
-    final pages = <Widget>[SendTypeSelectionScreen(onNext: nextPage, formModel: _formModel)];
-    final repo = context.read<BurnerRepository>();
-    if (_formModel.isSkrambled == true) {
-      pages.addAll([
-        SendDestinationScreen(
-          onNext: nextPage,
-          onBack: prevPage,
-          formModel: _formModel,
-          fetchBurners: repo.fetchBurners,
-          createBurner: repo.createBurner,
-        ),
-        SkrambledAmountScreen(onNext: nextPage, onBack: prevPage, formModel: _formModel),
-        SkrambledSummaryScreen(
-          key: ValueKey('summary-$_canResend-${_currentDraftId ?? ""}'),
-          onSend: _canResend ? _resendFromDraft : sendSkrambled,
-          onBack: prevPage,
-          canResend: _canResend,
-          isSubmitting: _isSubmitting,
-          formModel: _formModel,
-        ),
-      ]);
-    } else {
-      pages.add(StandardAmountScreen(onBack: prevPage, onNext: nextPage, formModel: _formModel));
+  //When navigating to summary,
+  //If _lastAttemptedFormModel is empty, skip. (label stays send)
+  //if _lastAttemptedFormModel is set and is equal to _formModel,
+  //This should ALWAYS be a resend.
+  Future<void> _toSummaryAndCompare() async {
+    //Delete previous draft
+    //If the current draft id is set then make sure we delete the previous draft.
+    if (_currentDraftId != null) {
+      skrLogger.i("DELETING OLD DRAFT POD: ");
+      final dao = context.read<PodDao>();
+      await dao.deleteById(_currentDraftId!);
+      setState(() {
+        _currentDraftId = null;
+        _isResend = false;
+      });
     }
-
-    return pages;
+    _navKey.currentState!.pushNamed(SendRoutes.skSummary);
   }
 
   @override
@@ -453,6 +432,11 @@ class _SendControllerState extends State<SendController> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () async {
+            FocusManager.instance.primaryFocus?.unfocus();
+            await SystemChannels.textInput.invokeMethod('TextInput.hide');
+
+            // Give the viewInsets a frame to settle
+            await Future.delayed(const Duration(milliseconds: 180));
             final didPop = await _navKey.currentState?.maybePop() ?? false;
             if (!context.mounted) return;
             if (!didPop) Navigator.of(context).maybePop();
@@ -465,7 +449,7 @@ class _SendControllerState extends State<SendController> {
         initialRoute: SendRoutes.type,
         onGenerateRoute: (settings) {
           switch (settings.name) {
-            // 1) choose type
+            // 1) choose type (shared)
             case SendRoutes.type:
               return MaterialPageRoute(
                 settings: settings,
@@ -481,16 +465,15 @@ class _SendControllerState extends State<SendController> {
                 final repo = context.read<BurnerRepository>();
                 return MaterialPageRoute(
                   settings: settings,
-                  builder: (_) => SendDestinationScreen(
-                    // NOTE: we reuse your existing destination screen for both flows.
-                    // If standard needs a different destination UI, make a StandardDestinationScreen and branch here.
+                  builder: (routeCtx) => SendDestinationScreen(
                     formModel: _formModel,
-                    onBack: () => _navKey.currentState!.maybePop(),
+                    onBack: () => _goBack(routeCtx),
                     onNext: () {
                       if (_formModel.isSkrambled == true) {
+                        // Skrambled route
                         _navKey.currentState!.pushNamed(SendRoutes.skAmount);
                       } else {
-                        // jump to standard route (single page or your new 2-step)
+                        // standard route
                         _navKey.currentState!.pushNamed(SendRoutes.stAmount);
                       }
                     },
@@ -507,7 +490,7 @@ class _SendControllerState extends State<SendController> {
                 builder: (_) => SkrambledAmountScreen(
                   formModel: _formModel,
                   onBack: () => _navKey.currentState!.maybePop(),
-                  onNext: () => _navKey.currentState!.pushNamed(SendRoutes.skSummary),
+                  onNext: () => _toSummaryAndCompare(),
                 ),
               );
 
@@ -516,12 +499,12 @@ class _SendControllerState extends State<SendController> {
               return MaterialPageRoute(
                 settings: settings,
                 builder: (_) => SkrambledSummaryScreen(
-                  key: ValueKey('summary-$_canResend-${_currentDraftId ?? ""}'),
+                  key: ValueKey('summary-$_isResend-${_currentDraftId ?? ""}'),
                   formModel: _formModel,
-                  canResend: _canResend,
+                  canResend: _isResend,
                   isSubmitting: _isSubmitting,
                   onBack: () => _navKey.currentState!.maybePop(),
-                  onSend: _canResend ? _resendFromDraft : sendSkrambled,
+                  onSend: _isResend ? _resendFromDraft : sendSkrambled,
                 ),
               );
 
@@ -547,9 +530,6 @@ class _SendControllerState extends State<SendController> {
                 builder: (_) => StandardSummaryScreen(
                   formModel: _formModel,
                   onBack: () => _navKey.currentState!.maybePop(),
-
-                  // If SendStandardScreen ends by sending, you can navigate out or push a tiny status.
-                  // You can also change this to two routes (stAmount, stSummary) later without touching this controller.
                 ),
               );
 
