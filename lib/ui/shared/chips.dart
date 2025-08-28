@@ -43,7 +43,34 @@ class MonoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEDEDED),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            text,
+            style: const TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SolMonoChip extends StatelessWidget {
+  final String text;
+  const SolMonoChip({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFFEDEDED),
         borderRadius: BorderRadius.circular(8),
@@ -60,7 +87,7 @@ class MonoChip extends StatelessWidget {
           SizedBox(width: 4),
           Text(
             text,
-            style: const TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -75,11 +102,11 @@ class DelayChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8)),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
+        style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
       ),
     );
   }

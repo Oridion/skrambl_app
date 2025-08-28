@@ -310,6 +310,7 @@ class _SendControllerState extends State<SendController> {
   Future<void> _resendFromDraft() async {
     skrLogger.i("RESENDING");
     skrLogger.i(_formModel.toString());
+
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
 

@@ -3,18 +3,19 @@ import 'package:skrambl_app/ui/shared/solana_logo.dart';
 
 class MoneyRow extends StatelessWidget {
   final String leftPrimary;
+  final String solAmount;
   final String? rightSubtle;
-  final bool big;
+
   final Color primaryColor;
   final Color subtleColor;
 
   const MoneyRow({
     super.key,
     required this.leftPrimary,
+    required this.solAmount,
     required this.primaryColor,
     required this.subtleColor,
     this.rightSubtle,
-    this.big = false,
   });
 
   @override
@@ -25,25 +26,32 @@ class MoneyRow extends StatelessWidget {
       children: [
         Row(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
+          children: [Text(leftPrimary, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold))],
+        ),
+
+        Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: SolanaLogo(size: big ? 10 : 8, color: primaryColor),
-            ),
-            const SizedBox(width: 3),
-            Text(
-              leftPrimary,
-              style: (big ? t.titleLarge : t.titleMedium)?.copyWith(
-                color: primaryColor,
-                fontWeight: big ? FontWeight.w900 : FontWeight.w800,
-                letterSpacing: 0.2,
-              ),
+            Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: SolanaLogo(size: 8, color: primaryColor),
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  solAmount,
+                  style: (t.bodyMedium)?.copyWith(
+                    color: primaryColor,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        if (rightSubtle != null) Text(rightSubtle!, style: t.bodyMedium?.copyWith(color: subtleColor)),
       ],
     );
   }

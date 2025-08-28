@@ -3,19 +3,6 @@ import 'package:skrambl_app/services/seed_vault_service.dart';
 import 'package:skrambl_app/utils/logger.dart';
 import 'package:solana_seed_vault/solana_seed_vault.dart';
 
-/// General usage for all activities throughout app.
-// ignore: unintended_html_in_doc_comment
-///final session = Provider.of<SeedVaultSessionManager>(context, listen: false);
-// final token = session.authToken;
-// if (token == null) {
-//   final success = await session.requestAuthorization();
-//   if (!success) {
-//     // Show error or handle rejection
-//     return;
-//   }
-// }
-// Now safe to use session.authToken for public key/signing/etc.
-
 class SeedVaultSessionManager extends ChangeNotifier {
   bool _isInitializing = false;
   bool _isAvailable = false;

@@ -50,7 +50,11 @@ class AmountHeader extends StatelessWidget {
                 key: ValueKey(totalKey),
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SolanaLogo(size: 16, useDark: false, color: Colors.white),
+                  Transform.translate(
+                    offset: Offset(0, 4),
+                    child: const SolanaLogo(size: 16, useDark: false, color: Colors.white),
+                  ),
+
                   const SizedBox(width: 8),
                   Semantics(
                     label: 'Estimated total in SOL',
@@ -79,14 +83,14 @@ class AmountHeader extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        '(${formatSol(amt)} + ${formatSol(fee)} privacy)',
+                        '${formatSol(amt)} + ${formatSol(fee)} privacy fee',
                         style: const TextStyle(fontSize: 13, color: Colors.white70),
                       ),
                     ),
                     const SizedBox(width: 8),
                     if (_hasUsd(solUsdPrice))
                       Text(
-                        '• ${_formatUsd(total, solUsdPrice!)}',
+                        '=  ${_formatUsd(total, solUsdPrice!)} USD',
                         style: TextStyle(fontSize: 12, color: Colors.white.withOpacityCompat(0.75)),
                       ),
                   ],

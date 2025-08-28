@@ -15,8 +15,8 @@ import 'package:skrambl_app/ui/shared/solana_logo.dart';
 ///   hintColor: Colors.black45,
 /// )
 class KVRow extends StatelessWidget {
-  final IconData icon;
   final String label;
+  final String hops;
   final String value;
   final String? hintRight;
   final Color color;
@@ -25,8 +25,8 @@ class KVRow extends StatelessWidget {
 
   const KVRow({
     super.key,
-    required this.icon,
     required this.label,
+    required this.hops,
     required this.value,
     required this.color,
     required this.iconColor,
@@ -38,16 +38,31 @@ class KVRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Icon(icon, size: 16, color: iconColor),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            label,
-            style: t.bodySmall?.copyWith(color: color, fontWeight: FontWeight.w300),
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: t.bodySmall?.copyWith(color: color, fontWeight: FontWeight.w400, fontSize: 13),
+                ),
+                const SizedBox(width: 2),
+              ],
+            ),
+            SizedBox(height: 3),
+            Padding(
+              padding: EdgeInsetsGeometry.only(left: 0),
+              child: Text(
+                'Est hops: $hops',
+                style: t.bodySmall?.copyWith(color: color, fontWeight: FontWeight.w400, fontSize: 12),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [

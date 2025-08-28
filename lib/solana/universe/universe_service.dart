@@ -10,20 +10,17 @@ Future<Universe?> fetchUniverseAccount() async {
   const universePda = '5QLGUF38PzfKkvPdAaMKYEnyjNZ3xsTJDxPJ3ZyK3L4Z';
 
   try {
-    final accountInfo = await rpc.getAccountInfo(
-      universePda,
-      encoding: Encoding.base64,
-    );
+    final accountInfo = await rpc.getAccountInfo(universePda, encoding: Encoding.base64);
 
     final value = accountInfo.value;
     if (value == null) {
-      skrLogger.e('⛔ Universe account not found.');
+      skrLogger.e('Universe account not found.');
       return null;
     }
 
     final data = value.data;
     if (data is! BinaryAccountData) {
-      skrLogger.e('⛔ Unexpected data format for universe account');
+      skrLogger.e('Unexpected data format for universe account');
       return null;
     }
 
@@ -34,15 +31,11 @@ Future<Universe?> fetchUniverseAccount() async {
     //   '🧬 Raw Universe Bytes: ${sliced.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}',
     // );
 
-    final universe = borsh.deserialize(
-      Universe.staticSchema,
-      sliced,
-      Universe.fromJson,
-    );
+    final universe = borsh.deserialize(Universe.staticSchema, sliced, Universe.fromJson);
 
-    // skrLogger.i('✅ Universe account fetched successfully');
+    // skrLogger.i('Universe account fetched successfully');
     // Log all fields
-    // skrLogger.i('📦 Universe Decoded:');
+    // skrLogger.i('Universe Decoded:');
     // skrLogger.i('  accountType   : ${universe.accountType}');
     // skrLogger.i('  locked        : ${universe.locked}');
     // skrLogger.i('  bump          : ${universe.bump}');

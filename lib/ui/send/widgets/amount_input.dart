@@ -34,8 +34,25 @@ class AmountInput extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Send amount', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            const Text('Send amount', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            if (!isBalanceLoading && walletBalance > 0) ...[
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 0, 6, 0),
+                child: Text(
+                  'Balance: ${formatSol(walletBalance, maxDecimals: 6)} SOL',
+                  style: const TextStyle(fontSize: 13, color: Colors.black87),
+                ),
+              ),
+            ],
+          ],
+        ),
+
+        const SizedBox(height: 8),
 
         TextField(
           autofocus: false,
@@ -56,7 +73,7 @@ class AmountInput extends StatelessWidget {
               ],
             ),
             helperText: (solUsdPrice != null && (amount ?? 0) > 0)
-                ? '≈ ${((amount ?? 0) * (solUsdPrice ?? 0)).toStringAsFixed(2)} USD'
+                ? '≈ \$${((amount ?? 0) * (solUsdPrice ?? 0)).toStringAsFixed(2)} USD'
                 : null,
             helperStyle: const TextStyle(fontSize: 12, color: Colors.black54),
             border: OutlineInputBorder(
@@ -104,17 +121,6 @@ class AmountInput extends StatelessWidget {
             errorText: errorText,
           ),
         ),
-
-        if (!isBalanceLoading && walletBalance > 0) ...[
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 4, 6, 8),
-            child: Text(
-              'Balance: ${formatSol(walletBalance, maxDecimals: 6)} SOL',
-              style: const TextStyle(fontSize: 12.5, color: Colors.black54),
-            ),
-          ),
-        ],
       ],
     );
   }

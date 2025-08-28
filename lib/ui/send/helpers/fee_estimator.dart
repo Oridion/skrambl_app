@@ -22,3 +22,9 @@ double calculateDelayFee(int delaySeconds, BigInt? baseFee, BigInt? incrementFee
   final feeSol = feeLamports / BigInt.from(AppConstants.lamportsPerSol);
   return feeSol.toDouble();
 }
+
+int calculateDelayFeeLamports(int delaySeconds, int? baseFeeLamports, int? incLamports) {
+  if (baseFeeLamports == null || incLamports == null) return 0;
+  final tiers = delaySeconds ~/ 180;
+  return baseFeeLamports + (incLamports * tiers);
+}

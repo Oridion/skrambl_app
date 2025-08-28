@@ -2,10 +2,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/providers/network_fee_provider.dart';
+import 'package:skrambl_app/ui/send/helpers/hop_estimator.dart';
 import 'package:skrambl_app/ui/send/widgets/key_value_row.dart';
 import 'package:skrambl_app/ui/send/widgets/price_skeleton.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_money_row.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_sec_title.dart';
+import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import '../../../../models/send_form_model.dart';
@@ -64,6 +66,8 @@ class SkrambledSummaryScreen extends StatelessWidget {
     final divider = darkBg ? Colors.white10 : const Color.fromARGB(43, 0, 0, 0);
     final chipBg = darkBg ? Colors.white10 : const Color.fromARGB(255, 62, 62, 62);
     final networkFeeLamports = context.select<NetworkFeeProvider, int>((p) => p.fee);
+    final hops = estimateHops(formModel.delaySeconds);
+
     return Container(
       color: bg,
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
@@ -119,18 +123,9 @@ class SkrambledSummaryScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: SelectableText(
-                              destination,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: onBg,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ),
-                        ],
+                      child: SelectableText(
+                        shortenPubkey(destination, length: 10),
+                        style: theme.textTheme.bodyMedium?.copyWith(color: onBg, fontWeight: FontWeight.w400),
                       ),
                     ),
 
@@ -161,35 +156,65 @@ class SkrambledSummaryScreen extends StatelessWidget {
                     // AMOUNT
                     SectionTitle('Transferring', color: onBgMuted),
                     const SizedBox(height: 8),
-                    MoneyRow(
-                      leftPrimary: formatSol(amountSol),
-                      rightSubtle: price == null ? null : usd(amountSol),
-                      primaryColor: onBg,
-                      subtleColor: onBgMuted,
+                    Padding(
+                      padding: EdgeInsetsGeometry.symmetric(horizontal: 12),
+                      child: Column(
+                        children: [
+                          MoneyRow(
+                            leftPrimary: 'Delivering',
+                            solAmount: formatSol(amountSol),
+                            primaryColor: onBg,
+                            subtleColor: onBgMuted,
+                          ),
+                          SizedBox(height: 6),
+
+                          MoneyRow(
+                            leftPrimary: 'Privacy fee',
+                            solAmount: formatSol(feeSol),
+                            primaryColor: onBg,
+                            subtleColor: onBgMuted,
+                          ),
+                        ],
+                      ),
                     ),
 
-                    KVRow(
-                      icon: Icons.shield_outlined,
-                      label: 'Delivery fee',
-                      value: formatSol(feeSol),
-                      hintRight: price == null ? null : usd(feeSol),
-                      color: onBg,
-                      hintColor: onBgMuted,
-                      iconColor: onBgMuted,
-                    ),
+                    // KVRow(
+                    //   label: 'Privacy fee',
 
+                    //   value: formatSol(feeSol),
+                    //   color: onBg,
+                    //   hintColor: onBgMuted,
+                    //   iconColor: onBgMuted,
+                    // ),
                     const SizedBox(height: 20),
 
                     // TOTAL
                     SectionTitle('Total', color: onBgMuted),
-                    const SizedBox(height: 12),
-                    MoneyRow(
-                      leftPrimary: totalSol == null ? '0' : formatSol(totalSol, maxDecimals: 6),
-                      rightSubtle: (price == null || totalSol == null) ? null : usd(totalSol),
-                      primaryColor: const Color.fromARGB(255, 0, 0, 0),
-                      subtleColor: onBgMuted,
-                      big: true,
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 36,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Padding(padding: const EdgeInsets.only(top: 16), child: SolanaLogo(size: 13)),
+                          const SizedBox(width: 6),
+                          Text(
+                            formatSol(totalSol!, maxDecimals: 7),
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -1,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+
+                    SizedBox(height: 4),
+                    Text('(${usd(totalSol)})', style: TextStyle(color: Colors.black54, fontSize: 14)),
+                    SizedBox(height: 6),
 
                     // PRICE PLACEHOLDER
                     if (price == null) ...[
@@ -197,16 +222,15 @@ class SkrambledSummaryScreen extends StatelessWidget {
                       PriceSkeleton(color: onBgMuted.withOpacityCompat(0.35)),
                     ],
 
-                    const SizedBox(height: 3),
                     Align(
-                      alignment: Alignment.centerRight,
+                      alignment: Alignment.center,
                       child: Text(
                         '+ Network fee (~$networkFeeLamports lamports)',
                         style: theme.textTheme.bodySmall?.copyWith(color: onBgMuted),
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 26),
 
                     // MINI RISK NOTE
                     Container(
