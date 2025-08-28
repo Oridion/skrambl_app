@@ -2,8 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/providers/network_fee_provider.dart';
-import 'package:skrambl_app/ui/send/helpers/hop_estimator.dart';
-import 'package:skrambl_app/ui/send/widgets/key_value_row.dart';
 import 'package:skrambl_app/ui/send/widgets/price_skeleton.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_money_row.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_sec_title.dart';
@@ -66,7 +64,6 @@ class SkrambledSummaryScreen extends StatelessWidget {
     final divider = darkBg ? Colors.white10 : const Color.fromARGB(43, 0, 0, 0);
     final chipBg = darkBg ? Colors.white10 : const Color.fromARGB(255, 62, 62, 62);
     final networkFeeLamports = context.select<NetworkFeeProvider, int>((p) => p.fee);
-    final hops = estimateHops(formModel.delaySeconds);
 
     return Container(
       color: bg,
@@ -155,37 +152,28 @@ class SkrambledSummaryScreen extends StatelessWidget {
 
                     // AMOUNT
                     SectionTitle('Transferring', color: onBgMuted),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Padding(
-                      padding: EdgeInsetsGeometry.symmetric(horizontal: 12),
+                      padding: EdgeInsetsGeometry.symmetric(horizontal: 16),
                       child: Column(
                         children: [
                           MoneyRow(
-                            leftPrimary: 'Delivering',
+                            leftPrimary: 'Sending amount',
                             solAmount: formatSol(amountSol),
-                            primaryColor: onBg,
-                            subtleColor: onBgMuted,
+                            primaryColor: chipBg,
+                            subtleColor: chipBg,
                           ),
-                          SizedBox(height: 6),
-
+                          SizedBox(height: 3),
                           MoneyRow(
-                            leftPrimary: 'Privacy fee',
+                            leftPrimary: 'Privacy Fee',
                             solAmount: formatSol(feeSol),
-                            primaryColor: onBg,
-                            subtleColor: onBgMuted,
+                            primaryColor: chipBg,
+                            subtleColor: chipBg,
                           ),
                         ],
                       ),
                     ),
 
-                    // KVRow(
-                    //   label: 'Privacy fee',
-
-                    //   value: formatSol(feeSol),
-                    //   color: onBg,
-                    //   hintColor: onBgMuted,
-                    //   iconColor: onBgMuted,
-                    // ),
                     const SizedBox(height: 20),
 
                     // TOTAL

@@ -28,7 +28,7 @@ class MoneyRow extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
-          children: [Text(leftPrimary, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold))],
+          children: [Text(leftPrimary, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500))],
         ),
 
         Column(
@@ -39,13 +39,13 @@ class MoneyRow extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 3),
                   child: SolanaLogo(size: 8, color: primaryColor),
                 ),
-                const SizedBox(width: 3),
+                const SizedBox(width: 1),
                 Text(
                   solAmount,
                   style: (t.bodyMedium)?.copyWith(
                     color: primaryColor,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.2,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
                   ),
                 ),
               ],

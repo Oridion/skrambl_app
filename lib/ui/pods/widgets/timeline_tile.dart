@@ -39,11 +39,14 @@ class TimelineTile extends StatelessWidget {
           Expanded(
             child: Container(
               margin: EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(color: Colors.grey.withOpacityCompat(0.5), width: 1),
-                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color.fromARGB(255, 133, 133, 133).withOpacityCompat(0.5),
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(6),
               ),
 
               child: Column(
@@ -78,7 +81,7 @@ class TimelineTile extends StatelessWidget {
                   // ),
                   if (item.subtitle != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 2),
+                      padding: const EdgeInsets.only(top: 1),
                       child: Text(
                         item.subtitle!,
                         style: t.bodyMedium?.copyWith(color: Colors.black54, fontSize: 14),
