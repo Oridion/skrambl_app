@@ -7,9 +7,6 @@ import 'package:skrambl_app/utils/formatters.dart';
 
 List<TimelineItem> buildTimeline({required Pod pod}) {
   final items = <TimelineItem>[];
-
-  //skrLogger.i("pod.submittedAt ${pod.submittedAt}");
-
   final status = PodStatus.values[pod.status];
   final draftedAt = dateTimeOrNull(pod.draftedAt);
   final submittedAt = dateTimeOrNullSeconds(pod.submittedAt);
@@ -47,7 +44,7 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
       title: 'Drafted',
       subtitle: draftedDetails,
       color: Colors.grey,
-      isActive: draftedAt == null,
+      isLoading: draftedAt == null,
       at: draftedAt,
     ),
   );
@@ -58,7 +55,7 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
         title: 'Submitted',
         subtitle: submittedSubtitle,
         color: Colors.blue,
-        isActive: submittedAt == null,
+        isLoading: submittedAt == null,
         at: submittedAt,
       ),
     );
@@ -79,7 +76,7 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
                 style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w400),
               ),
         color: Colors.purple,
-        isActive: submittedAt == null,
+        isLoading: skrambledAt == null,
         at: submittedAt,
       ),
     );
@@ -92,7 +89,7 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
         title: 'Delivering',
         subtitle: 'Delivering to destination',
         color: Colors.blue,
-        isActive: false,
+        isLoading: finalizedAt == null,
         at: skrambledAt,
       ),
     );
@@ -105,7 +102,7 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
         title: 'Failed',
         subtitle: 'See logs for details',
         color: Colors.red,
-        isActive: true,
+        isLoading: true,
         at: null,
       ),
     );
@@ -118,7 +115,7 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
         title: 'Finalized',
         subtitle: 'Delivery to ${shortenPubkey(pod.destination)} completed successfully and finalized',
         color: Colors.green,
-        isActive: finalizedAt != null || status == PodStatus.finalized,
+        isLoading: false,
         at: finalizedAt,
       ),
     );

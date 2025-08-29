@@ -7,7 +7,7 @@ class TimelineItem {
   final Widget? countdownWidget;
   final DateTime? at;
   final Color color;
-  final bool isActive;
+  final bool isLoading;
 
   const TimelineItem({
     required this.title,
@@ -15,6 +15,6 @@ class TimelineItem {
     this.countdownWidget,
     this.at,
     required this.color,
-    required this.isActive,
+    required this.isLoading,
   });
 }

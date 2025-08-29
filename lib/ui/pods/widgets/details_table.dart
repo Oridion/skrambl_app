@@ -3,6 +3,7 @@
 // ===============================
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/utils/solana.dart';
 
 class PodDetailsTable extends StatelessWidget {
@@ -46,7 +47,10 @@ class PodDetailRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 60,
-            child: Text(title, style: t.labelMedium?.copyWith(color: Colors.black54)),
+            child: Text(
+              shortenPubkey(title, length: 8),
+              style: t.labelMedium?.copyWith(color: Colors.black54),
+            ),
           ),
           Expanded(
             child: Text(

@@ -1,7 +1,7 @@
 // Timeline tile
 import 'package:flutter/material.dart';
 import 'package:skrambl_app/models/timeline_item.dart';
-import 'package:skrambl_app/ui/pods/widgets/dot.dart';
+import 'package:skrambl_app/ui/pods/widgets/dot_loading.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 
@@ -22,7 +22,8 @@ class TimelineTile extends StatelessWidget {
           Column(
             children: [
               SizedBox(height: isFirst ? 0 : 0),
-              Dot(color: item.color, filled: false),
+
+              DotLoading(color: item.color, filled: false, loading: item.isLoading),
               Expanded(
                 child: Container(
                   width: 3,
@@ -64,21 +65,6 @@ class TimelineTile extends StatelessWidget {
 
                   Text(item.title, style: t.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
 
-                  // Row(
-                  //   children: [
-                  //     Text(item.title, style: t.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
-                  //     const SizedBox(width: 8),
-                  //     if (item.badge != null)
-                  //       Container(
-                  //         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  //         decoration: BoxDecoration(
-                  //           color: Colors.black.withOpacityCompat(.04),
-                  //           borderRadius: BorderRadius.circular(6),
-                  //         ),
-                  //         child: Text(item.badge!, style: t.labelSmall?.copyWith(letterSpacing: .3)),
-                  //       ),
-                  //   ],
-                  // ),
                   if (item.subtitle != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 1),
