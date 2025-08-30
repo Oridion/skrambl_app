@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/providers/network_fee_provider.dart';
+import 'package:skrambl_app/ui/send/helpers/hop_estimator.dart';
 import 'package:skrambl_app/ui/send/widgets/price_skeleton.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_money_row.dart';
 import 'package:skrambl_app/ui/send/widgets/summary_sec_title.dart';
@@ -143,6 +144,11 @@ class SkrambledSummaryScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           _etaHint(formModel.delaySeconds),
+                          style: theme.textTheme.bodySmall?.copyWith(color: onBgMuted),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '~${estimateHops(formModel.delaySeconds)} hops',
                           style: theme.textTheme.bodySmall?.copyWith(color: onBgMuted),
                         ),
                       ],

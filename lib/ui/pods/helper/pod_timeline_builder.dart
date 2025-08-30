@@ -73,7 +73,7 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
                 key: ValueKey('eta:${pod.id}:${pod.submittedAt}:${pod.delaySeconds}'),
                 submittedAt: DateTime.fromMillisecondsSinceEpoch(pod.submittedAt! * 1000, isUtc: true),
                 delaySeconds: pod.delaySeconds,
-                style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w400),
+                style: const TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w400),
               ),
         color: Colors.purple,
         isLoading: skrambledAt == null,

@@ -3,7 +3,6 @@
 // ===============================
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/utils/logger.dart';
 import 'package:skrambl_app/utils/solana.dart';
 
@@ -65,7 +64,7 @@ class PodDetailRow extends StatelessWidget {
           ),
           if (copyable)
             SizedBox(
-              width: 22,
+              width: 25,
               child: IconButton(
                 icon: const Icon(Icons.copy, size: 13),
                 tooltip: 'Copy $title',
@@ -82,7 +81,7 @@ class PodDetailRow extends StatelessWidget {
 
           if (linkable)
             SizedBox(
-              width: 22,
+              width: 25,
               child: IconButton(
                 tooltip: 'View on explorer',
                 icon: const Icon(Icons.open_in_new, size: 13),

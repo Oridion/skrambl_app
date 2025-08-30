@@ -39,7 +39,7 @@ class TimelineTile extends StatelessWidget {
           // Content - (2nd column row)
           Expanded(
             child: Container(
-              margin: EdgeInsets.only(bottom: 12),
+              margin: EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               decoration: BoxDecoration(
                 color: Colors.white,
