@@ -15,8 +15,8 @@ class WalletAddressTile extends StatelessWidget {
         Row(
           children: [
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 92),
-              child: SelectableText(shortenPubkey(pubkey)),
+              constraints: const BoxConstraints(maxWidth: 160),
+              child: SelectableText(shortenPubkey(pubkey, length: 5)),
             ),
             IconButton(
               visualDensity: VisualDensity.compact,

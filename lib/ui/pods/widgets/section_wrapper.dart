@@ -29,7 +29,7 @@ class SectionWrapper extends StatelessWidget {
     final theme = Theme.of(context);
     final t = theme.textTheme;
     final bg = backgroundColor ?? theme.colorScheme.surface;
-    final bdr = borderColor ?? Colors.black12;
+    final bdr = borderColor ?? Colors.black26;
 
     return Padding(
       padding: outerPadding,

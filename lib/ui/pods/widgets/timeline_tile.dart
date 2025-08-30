@@ -70,7 +70,7 @@ class TimelineTile extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 1),
                       child: Text(
                         item.subtitle!,
-                        style: t.bodyMedium?.copyWith(color: Colors.black54, fontSize: 14),
+                        style: t.bodyMedium?.copyWith(color: Colors.black87, fontSize: 13),
                       ),
                     ),
 

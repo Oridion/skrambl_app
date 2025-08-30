@@ -12,7 +12,6 @@ class PodActionsBar extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _PrimaryButton(
-          icon: Icons.open_in_new,
           label: 'Open in Explorer',
           onPressed: () async {
             // Prefer Solscan (or make this configurable)
@@ -48,16 +47,14 @@ class PodActionsBar extends StatelessWidget {
 }
 
 class _PrimaryButton extends StatelessWidget {
-  final IconData icon;
   final String label;
   final VoidCallback onPressed;
-  const _PrimaryButton({required this.icon, required this.label, required this.onPressed});
+  const _PrimaryButton({required this.label, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 18),
       label: Text(label),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.black,

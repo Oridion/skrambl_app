@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:skrambl_app/ui/root_shell.dart';
 import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/duration.dart';
+import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/utils/solana.dart';
 import 'package:skrambl_app/utils/colors.dart';
 import 'package:skrambl_app/providers/wallet_provider.dart';
@@ -139,7 +140,7 @@ class CompletedStatusView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('AMOUNT', style: TextStyle(fontSize: 13, color: Colors.black54)),
-        const SizedBox(height: 8),
+        const SizedBox(height: 7),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -162,8 +163,8 @@ class CompletedStatusView extends StatelessWidget {
             const Icon(Icons.account_balance_wallet_rounded, size: 18, color: Colors.black87),
             const SizedBox(width: 8),
             SelectableText(
-              _ellipsize(destination, head: 8, tail: 8),
-              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+              shortenPubkey(destination, length: 8),
+              style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600),
             ),
             const SizedBox(width: 8),
             IconButton(
@@ -197,8 +198,8 @@ class CompletedStatusView extends StatelessWidget {
             const Icon(Icons.account_balance_wallet_rounded, size: 18, color: Colors.black87),
             const SizedBox(width: 8),
             SelectableText(
-              _ellipsize(signatureBase58, head: 8, tail: 8),
-              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+              shortenPubkey(signatureBase58, length: 8),
+              style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600),
             ),
             const SizedBox(width: 8),
             IconButton(
@@ -223,10 +224,10 @@ class CompletedStatusView extends StatelessWidget {
           Row(
             children: [
               const Icon(Icons.schedule_rounded, size: 18, color: Colors.black87),
-              const SizedBox(width: 10),
+              const SizedBox(width: 6),
               Text(
-                formatDurationHMS(dur),
-                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
+                formatDurationReadable(dur),
+                style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -256,11 +257,5 @@ class CompletedStatusView extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  /// Safe ellipsize for long keys
-  static String _ellipsize(String s, {int head = 6, int tail = 6}) {
-    if (s.length <= head + tail + 1) return s;
-    return '${s.substring(0, head)}…${s.substring(s.length - tail)}';
   }
 }

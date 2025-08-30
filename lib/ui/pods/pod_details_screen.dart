@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/data/burner_dao.dart';
-import 'package:skrambl_app/ui/pods/widgets/actions_bar.dart';
 import 'package:skrambl_app/ui/pods/widgets/details_table.dart';
 import 'package:skrambl_app/ui/pods/widgets/pod_header_card.dart';
 import 'package:skrambl_app/ui/pods/widgets/section_wrapper.dart';
@@ -153,7 +152,7 @@ class PodDetailsScreen extends StatelessWidget {
                   ),
 
                   // ===== ACTIONS =====
-                  PodActionsBar(pda: pod.podPda, signature: pod.launchSig),
+                  //PodActionsBar(pda: pod.podPda, signature: pod.launchSig),
                 ],
               );
             },

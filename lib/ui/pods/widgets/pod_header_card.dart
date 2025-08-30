@@ -39,7 +39,7 @@ class PodHeaderCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFDFDFDF), width: 1),
+            border: Border.all(color: const Color.fromARGB(255, 183, 183, 183), width: 1.2),
           ),
           padding: const EdgeInsets.fromLTRB(22, 12, 22, 16),
           child: Column(

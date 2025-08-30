@@ -355,19 +355,20 @@ class _AddressTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Enter a custom destination address.',
-          style: TextStyle(color: Colors.black.withOpacityCompat(0.8)),
-        ),
-        const SizedBox(height: 12),
+        // Text(
+        //   'Enter a custom destination address.',
+        //   style: TextStyle(color: Colors.black.withOpacityCompat(0.8)),
+        // ),
+        const SizedBox(height: 6),
         TextField(
           controller: controller,
           decoration: InputDecoration(
-            labelText: 'Destination address',
-            // helperText: 'Base58 Solana address',
-            // helperStyle: const TextStyle(fontSize: 12, color: Colors.black45),
-            labelStyle: TextStyle(color: Colors.grey[700]),
-            border: const OutlineInputBorder(),
+            labelText: 'Enter the destination address',
+            labelStyle: TextStyle(fontSize: 16, color: const Color.fromARGB(255, 73, 73, 73)),
+            border: const OutlineInputBorder(
+              gapPadding: 5,
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+            ),
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -379,7 +380,6 @@ class _AddressTab extends StatelessWidget {
                       controller.clear();
                     },
                   ),
-
                 IconButton(icon: const Icon(Icons.paste), tooltip: 'Paste', onPressed: onPaste),
               ],
             ),
@@ -387,7 +387,7 @@ class _AddressTab extends StatelessWidget {
           keyboardType: TextInputType.multiline,
           maxLines: null,
           minLines: 2,
-          style: const TextStyle(fontSize: 17, height: 1.4),
+          style: const TextStyle(fontSize: 17, height: 1.5),
         ),
         if (controller.text.trim().isNotEmpty)
           Padding(

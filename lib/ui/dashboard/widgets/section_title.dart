@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:skrambl_app/ui/pods/all_pods_screen.dart';
+import 'package:skrambl_app/ui/root_shell.dart';
 
 class SectionTitleSliver extends StatelessWidget {
   const SectionTitleSliver({super.key});
@@ -15,7 +15,10 @@ class SectionTitleSliver extends StatelessWidget {
               child: Text('LATEST DELIVERIES', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ),
             TextButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AllPods())),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const RootShell(initialIndex: 1)),
+              ),
               child: const Text('View more', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400)),
             ),
           ],
