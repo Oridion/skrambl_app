@@ -71,7 +71,7 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
             ? null
             : TimelineCountdownToEta(
                 key: ValueKey('eta:${pod.id}:${pod.submittedAt}:${pod.delaySeconds}'),
-                submittedAt: submittedAt!,
+                submittedAt: DateTime.fromMillisecondsSinceEpoch(pod.submittedAt! * 1000, isUtc: true),
                 delaySeconds: pod.delaySeconds,
                 style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w400),
               ),

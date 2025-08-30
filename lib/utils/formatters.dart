@@ -80,3 +80,10 @@ String formatDurationShort(Duration d) => d.inSeconds < 1
     : d.inMinutes < 1
     ? '${d.inSeconds}s'
     : '${d.inMinutes}m ${d.inSeconds % 60}s';
+
+final _submittedFmt = DateFormat('M/d/y h:mm a');
+
+String formatEpochSecLocal(int sec) {
+  final dt = DateTime.fromMillisecondsSinceEpoch(sec * 1000).toLocal();
+  return _submittedFmt.format(dt);
+}

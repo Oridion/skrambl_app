@@ -72,6 +72,7 @@ class _TimelineCountdownToEtaState extends State<TimelineCountdownToEta> {
 
   static String _format(Duration d) {
     // <= 0 => show your special message
+    //skrLogger.i(d);
     if (d <= Duration.zero) {
       return 'Delivering soon. Please stand by.';
     }

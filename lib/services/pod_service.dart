@@ -23,7 +23,7 @@ import 'package:skrambl_app/utils/logger.dart';
 
 // I need to return an object ready to be
 Future<Pod?> parsePod(List<int> bytes) async {
-  skrLogger.i("Parsing Pod from bytes: ${bytes.length} bytes");
+  //skrLogger.i("Parsing Pod from bytes: ${bytes.length} bytes");
   Pod? pod = Pod.fromAccountData(bytes);
   if (pod == null) {
     skrLogger.w("Failed to parse Pod from bytes");
@@ -149,25 +149,6 @@ Future<PodSnapshot> fetchPodSnapshot(String podPda) async {
     return PodSnapshot(pod: null, exists: false, ownerMatches: false, isClosedFinalized: false);
   }
 }
-
-/// Decode helper that tolerates different RPC data shapes.
-// Uint8List? _extractBytes(dynamic data) {
-//   // BinaryAccountData (solana package)
-//   if (data is BinaryAccountData) {
-//     return Uint8List.fromList(data.data);
-//   }
-//   // Some clients return ["<base64>", "<encoding>"]
-//   if (data is List && data.isNotEmpty && data.first is String) {
-//     final s = data.first as String;
-//     if (s.isEmpty) return Uint8List(0);
-//     try {
-//       return base64.decode(s);
-//     } catch (_) {
-//       return null;
-//     }
-//   }
-//   return null;
-// }
 
 /// Parses a Pod from raw account bytes (skipping anchor disc and reading logs).
 Pod? _parsePodFromBytes(Uint8List raw) {

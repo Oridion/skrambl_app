@@ -237,11 +237,11 @@ class Pod extends BorshObject {
 
     try {
       final int totalLen = data.length; // post-disc length expected
-      skrLogger.i('┌─ Pod.decode[$debugLabel]');
-      skrLogger.i(
-        '│ totalLen(post-disc)=$totalLen  '
-        '(need ≥ $_kMinTotal = $_kFixedSize + $_kLogsRegionSize + 1)',
-      );
+      // skrLogger.i('┌─ Pod.decode[$debugLabel]');
+      // skrLogger.i(
+      //   '│ totalLen(post-disc)=$totalLen  '
+      //   '(need ≥ $_kMinTotal = $_kFixedSize + $_kLogsRegionSize + 1)',
+      // );
 
       if (totalLen < _kMinTotal) {
         skrLogger.w('│ too small post-disc: have=$totalLen, need≥$_kMinTotal → abort');
@@ -250,7 +250,7 @@ class Pod extends BorshObject {
       }
 
       // 1) Fixed header decode (0..150)
-      skrLogger.i('│ header: bytes [0..$_kFixedSize) len=$_kFixedSize');
+      //skrLogger.i('│ header: bytes [0..$_kFixedSize) len=$_kFixedSize');
       final fixedPart = safeSublist(data, 0, _kFixedSize);
       if (fixedPart.length != _kFixedSize) {
         skrLogger.w('│ header slice shorter than expected: ${fixedPart.length}');
@@ -258,10 +258,10 @@ class Pod extends BorshObject {
       Map<String, dynamic> fixed;
       try {
         fixed = shortCodec.decode(fixedPart);
-        skrLogger.i(
-          '│ header decode OK: '
-          'version=${fixed['version']} lastProcess=${fixed['lastProcess']} delay=${fixed['delay']}',
-        );
+        // skrLogger.i(
+        //   '│ header decode OK: '
+        //   'version=${fixed['version']} lastProcess=${fixed['lastProcess']} delay=${fixed['delay']}',
+        // );
       } catch (e) {
         skrLogger.e('│ header decode ERROR: $e');
         skrLogger.i('└─ Pod.decode[$debugLabel] END (header decode failed)');
@@ -309,21 +309,8 @@ class Pod extends BorshObject {
         }
 
         try {
-          if (entrySize == 19) {
-            logs.add(ActivityEntry.fromBuffer(slice));
-          } else {
-            // legacy 13 → manual decode: u8 + [u8;4] + i64
-            if (slice.length == 13) {
-              final action = slice[0];
-              final to4 = slice.sublist(1, 5);
-              final time = borsh.i64.decode(slice.sublist(5, 13));
-              final to10 = List<int>.filled(10, 0)..setRange(0, to4.length, to4);
-              logs.add(ActivityEntry(action: action, to: to10, time: time));
-            } else {
-              skrLogger.w('│   log#$i legacy decode skipped (len=${slice.length})');
-            }
-          }
-          skrLogger.i('│   log#$i decode OK');
+          logs.add(ActivityEntry.fromBuffer(slice));
+          //skrLogger.i('│   log#$i decode OK');
         } catch (e) {
           skrLogger.w('│   log#$i decode ERROR: $e');
         }
@@ -367,8 +354,8 @@ class Pod extends BorshObject {
         logIndex: logIndex,
       );
 
-      skrLogger.i('│ success: entries=${logs.length}, lastProcess=${pod.lastProcess}, mode=${pod.mode}');
-      skrLogger.i('└─ Pod.decode[$debugLabel] END');
+      //skrLogger.i('│ success: entries=${logs.length}, lastProcess=${pod.lastProcess}, mode=${pod.mode}');
+      //skrLogger.i('└─ Pod.decode[$debugLabel] END');
       return pod;
     } catch (e, st) {
       skrLogger.e('│ Pod.decode[$debugLabel] EXCEPTION: $e\n$st');

@@ -46,7 +46,7 @@ class PodDetailRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           SizedBox(
-            width: 60,
+            width: 100,
             child: Text(
               shortenPubkey(title, length: 8),
               style: t.labelMedium?.copyWith(color: Colors.black54),
@@ -62,23 +62,30 @@ class PodDetailRow extends StatelessWidget {
             ),
           ),
           if (copyable)
-            IconButton(
-              icon: const Icon(Icons.copy, size: 14),
-              tooltip: 'Copy $title',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: value));
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$title copied')));
-                }
-              },
+            SizedBox(
+              width: 30,
+              child: IconButton(
+                icon: const Icon(Icons.copy, size: 14),
+                tooltip: 'Copy $title',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: value));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$title copied')));
+                  }
+                },
+              ),
             ),
+
           if (linkable)
-            IconButton(
-              tooltip: 'View on explorer',
-              icon: const Icon(Icons.open_in_new, size: 14),
-              onPressed: () => openAccountOnSolanaFM(context, title),
+            SizedBox(
+              width: 30,
+              child: IconButton(
+                tooltip: 'View on explorer',
+                icon: const Icon(Icons.open_in_new, size: 14),
+                onPressed: () => openAccountOnSolanaFM(context, title),
+              ),
             ),
         ],
       ),

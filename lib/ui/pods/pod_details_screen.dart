@@ -117,7 +117,6 @@ class PodDetailsScreen extends StatelessWidget {
               final burners = bSnap.data ?? const {};
               final isSenderBurner = burners.contains(pod.creator);
               final isDestinationBurner = burners.contains(pod.destination);
-
               return ListView(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                 children: [
@@ -142,11 +141,20 @@ class PodDetailsScreen extends StatelessWidget {
                     child: PodDetailsTable(
                       rows: [
                         PodDetailRow('TYPE', modeLabel(pod.mode)),
+
+                        if (pod.submittedAt != null)
+                          PodDetailRow('SUBMITTED', formatEpochSecLocal(pod.submittedAt!)),
+
                         if (pod.mode != 5) PodDetailRow('DELAY', delayLabel(pod.delaySeconds)),
                         // PodDetailRow('CREATOR', shortenPubkey(pod.creator)),
                         // PodDetailRow('DESTINATION', shortenPubkey(pod.destination), copyable: true),
                         if (pod.podPda != null)
-                          PodDetailRow('PDA', pod.podPda!, copyable: true, linkable: true),
+                          PodDetailRow(
+                            'PDA',
+                            shortenPubkey(pod.podPda!, length: 8),
+                            copyable: true,
+                            linkable: true,
+                          ),
                       ],
                     ),
                   ),
