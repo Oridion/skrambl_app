@@ -1,6 +1,7 @@
 // lib/pods/watch/pod_watcher_task.dart
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
@@ -17,7 +18,9 @@ class PodWatcherTask {
   final SolanaWsService ws;
   final void Function(String podId, TransactionPhase phase)? onPhase;
   final rpc = SolanaClientService().rpcClient;
-
+  final _kInstantNoPoll = Duration(seconds: 30);
+  final _kInstantPollEvery = Duration(seconds: 3);
+  final _kInstantPollCutoff = Duration(seconds: 120); // keep in sync with your timeout
   StreamSubscription? _wsSub;
   Timer? _pollTimer;
   Timer? _timeoutTimer;
@@ -46,26 +49,21 @@ class PodWatcherTask {
       _scheduleNextPoll(onDone: onDone);
       // Hard fail if > 2 minutes and still not finalized
       _timeoutTimer = Timer(const Duration(minutes: 2), () async {
-        try {
-          final info = await rpc.getAccountInfo(pod.podPda!);
-          if (info.value == null) {
-            skrLogger.i("[WS] Force finalized pod over 2 minutes.");
-            // It actually finalized; we just missed the WS
-            await dao.markFinalized(id: pod.id);
-            _finish(onDone);
-            return;
-          }
-        } catch (_) {
-          // ignore and proceed to fail
+        final info = await rpc.getAccountInfo(pod.podPda!);
+        //If null then it completed successfully.
+        if (info.value == null) {
+          _finish(onDone);
         }
 
-        skrLogger.w('Instant pod timed out (>120s), marking failed: ${pod.id}');
+        // Failed pod!
+        skrLogger.w('[POD BACKUP TIMER] Instant pod timed out (>120s), marking failed: ${pod.id}');
         await dao.markFailed(id: pod.id, message: 'Timeout while waiting for confirmation');
         _finish(onDone);
       });
     } else {
       // Delayed: rely solely on WS (no polling / no timeout)
       skrLogger.i('Delayed pod watcher: WS only for ${pod.id}');
+      _scheduleDelayedPoll();
     }
   }
 
@@ -78,7 +76,10 @@ class PodWatcherTask {
         //Debug log.
         //skrLogger.i('[WS] raw: ${const JsonEncoder.withIndent('  ').convert(acct)}');
 
-        if (acct == null) return;
+        if (acct == null) {
+          skrLogger.i("[WS] ACCOUNT NULL.");
+          return;
+        }
 
         // ---- Closed / zeroed? (Helius pattern) ----
         final lamports = (acct['lamports'] as num?)?.toInt() ?? -1;
@@ -92,10 +93,13 @@ class PodWatcherTask {
 
         // Account closed => finalized
         if (isZeroed) {
+          skrLogger.i("[WS] account is zeroed out");
           // If we never showed delivering, briefly surface it for UX continuity
           if (!_seenDelivering) {
+            skrLogger.i("[WS] Pod delivering was never seen. Marking delivering");
             onPhase?.call(pod.id, TransactionPhase.delivering);
             await Future.delayed(const Duration(milliseconds: 250));
+            _seenDelivering = true;
           }
           skrLogger.i("[WS] Pod closed. Marking finalized");
           await dao.markFinalized(id: pod.id); // persist to DB
@@ -140,25 +144,26 @@ class PodWatcherTask {
     if (_finished || _isDelayed) return;
 
     final elapsed = DateTime.now().difference(_startedAt);
-    const initialWait = Duration(seconds: 30);
-    Duration nextDelay;
 
-    if (elapsed < initialWait) {
-      // Do not poll yet; wait until 30s mark
-      nextDelay = initialWait - elapsed;
-    } else if (elapsed < const Duration(seconds: 90)) {
-      // 30–90s: poll aggressively
-      nextDelay = const Duration(seconds: 2);
-    } else if (elapsed < const Duration(minutes: 3)) {
-      // Past typical window: back off
-      nextDelay = const Duration(seconds: 6);
-    } else {
-      // Long tail: poll occasionally
-      nextDelay = const Duration(seconds: 12);
+    // 0–30s: no polling; schedule first poll at 30s mark
+    if (elapsed < _kInstantNoPoll) {
+      final wait = _kInstantNoPoll - elapsed;
+      _pollTimer?.cancel();
+      _pollTimer = Timer(wait, () => _pollOnce(onDone: onDone));
+      return;
     }
 
+    // 30–120s: poll every ~3s with a tiny jitter to avoid thundering herd
+    if (elapsed < _kInstantPollCutoff) {
+      final jitterMs = 100 + math.Random.secure().nextInt(400); // 100–499 ms
+      final nextDelay = _kInstantPollEvery + Duration(milliseconds: jitterMs);
+      _pollTimer?.cancel();
+      _pollTimer = Timer(nextDelay, () => _pollOnce(onDone: onDone));
+      return;
+    }
+
+    // >=120s: stop scheduling; rely on the existing 2-minute timeout
     _pollTimer?.cancel();
-    _pollTimer = Timer(nextDelay, () => _pollOnce(onDone: onDone));
   }
 
   Future<void> _pollOnce({VoidCallback? onDone}) async {
@@ -177,6 +182,88 @@ class PodWatcherTask {
     }
 
     _scheduleNextPoll(onDone: onDone);
+  }
+
+  // ---------- Polling (DELAYED ONLY) ----------
+  void _scheduleDelayedPoll({VoidCallback? onDone}) {
+    if (_finished || _isInstant) return;
+    _pollTimer?.cancel();
+    _pollTimer = Timer(const Duration(seconds: 10), () => _pollDelayedOnce(onDone: onDone));
+  }
+
+  Future<void> _pollDelayedOnce({VoidCallback? onDone}) async {
+    if (_finished || _isInstant) return;
+
+    skrLogger.i("[SNAP] Fetching delayed pod from snapshot");
+    final snap = await fetchPodSnapshot(pod.podPda!);
+
+    //If pod snapshot is closed (account data on chain not found)
+    if (snap.isClosedFinalized) {
+      skrLogger.i("[SNAP] pod is finalized");
+      // If pod was never marked delivering, then we need to mark it deliverying first.
+      if (!_seenDelivering) {
+        skrLogger.i("[SNAP] pod has not been delivered. Marking delivering before finalization");
+        onPhase?.call(pod.id, TransactionPhase.delivering);
+        await Future.delayed(const Duration(milliseconds: 200));
+        _seenDelivering = true;
+      }
+      final changed = await dao.markFinalized(id: pod.id);
+      if (changed) {
+        skrLogger.i("[SNAP] finalization marked. Closing out.");
+        onPhase?.call(pod.id, TransactionPhase.completed);
+        _finish(onDone);
+      }
+      return;
+    }
+
+    // If account still exists and is ours, use parsed pod to detect delivering:
+    final live = snap.pod;
+    if (live != null) {
+      final delivering =
+          (live.mode == 0 && live.lastProcess == 1) ||
+          (live.mode != 0 && (live.nextProcess == 1 || live.lastProcess == 1));
+      if (delivering && !_seenDelivering) {
+        _seenDelivering = true;
+        onPhase?.call(pod.id, TransactionPhase.delivering);
+        await dao.markDelivering(id: pod.id);
+      }
+    }
+
+    // final pod = await fetchPodAccount(podPda: pod.podPda!);
+
+    // final info = await rpc.getAccountInfo(pod.podPda!);
+    // if (info.value == null) {
+    //   // Account closed – we definitely finalized.
+    //   skrLogger.i("[Pod Watcher] (delayed) account disappeared, marking finalized");
+    //   await dao.markFinalized(id: pod.id);
+    //   onPhase?.call(pod.id, TransactionPhase.completed);
+    //   _finish(onDone);
+    //   return;
+    // }
+
+    // // Optional: decode here too to catch delivering if WS missed it
+    // final data = info.value!.data;
+    // if (data != null && data.isNotEmpty) {
+    //   try {
+    //     // Depending on your RPC client, data may be already base64 or structured.
+    //     // Ensure this path decodes bytes → model.Pod like in WS section.
+    //     final model.Pod? live = await parseAccountInfoToPod(info.value!);
+    //     if (live != null) {
+    //       final delivering =
+    //           (live.mode == 0 && live.lastProcess == 1) ||
+    //           (live.mode != 0 && (live.nextProcess == 1 || live.lastProcess == 1));
+    //       if (delivering && !_seenDelivering) {
+    //         _seenDelivering = true;
+    //         onPhase?.call(pod.id, TransactionPhase.delivering);
+    //         await dao.markDelivering(id: pod.id);
+    //       }
+    //     }
+    //   } catch (_) {
+    //     /* ignore */
+    //   }
+    // }
+
+    //_scheduleDelayedPoll(onDone: onDone);
   }
 
   void _finish(VoidCallback? onDone) {

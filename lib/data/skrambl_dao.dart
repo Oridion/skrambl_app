@@ -146,27 +146,36 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
 
   // Mark pod as finalized. This means the delivery was successful.
   // This also removes the escape code and unsigned message.
-  Future<void> markFinalized({required String id}) async {
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final existing = await (select(pods)..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<bool> markFinalized({required String id, int? finalizedAtSec}) async {
+    final now = finalizedAtSec ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final finalizedIdx = PodStatus.finalized.index;
 
-    int durationSec = 0; // default
-    final submitTime = existing?.submittingAt;
-    if (submitTime != null) {
-      final d = now - submitTime;
-      durationSec = d >= 0 ? d : 0;
-    }
+    return transaction(() async {
+      final existing = await (select(pods)..where((t) => t.id.equals(id))).getSingleOrNull();
+      if (existing == null) return false;
 
-    await (update(pods)..where((t) => t.id.equals(id))).write(
-      PodsCompanion(
+      final alreadyFinalized = existing.finalizedAt != null || (existing.status >= finalizedIdx);
+
+      // If we already have a finalizedAt, do nothing (idempotent)
+      if (alreadyFinalized) return false;
+
+      // Compute duration only once, based on first finalize
+      int durationSec = existing.submittedAt != null ? (now - existing.submittingAt!).clamp(0, 1 << 31) : 0;
+
+      // Build a minimal write: only set fields we need to change
+      final write = PodsCompanion(
         finalizedAt: Value(now),
-        status: Value(PodStatus.finalized.index),
+        status: Value(finalizedIdx),
         statusMsg: const Value('Finalized'),
-        escapeCode: const Value(null),
-        unsignedMessageB64: const Value(null),
-        durationSeconds: Value(durationSec), // always non-null now
-      ),
-    );
+        // Clear these only if they aren't already null (optional micro-opt)
+        escapeCode: existing.escapeCode == null ? const Value.absent() : const Value(null),
+        unsignedMessageB64: existing.unsignedMessageB64 == null ? const Value.absent() : const Value(null),
+        durationSeconds: Value(durationSec),
+      );
+
+      final rows = await (update(pods)..where((t) => t.id.equals(id))).write(write);
+      return rows > 0;
+    });
   }
 
   // Udpate skrambled delivery duration

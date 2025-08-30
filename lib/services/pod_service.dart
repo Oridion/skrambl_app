@@ -32,6 +32,183 @@ Future<Pod?> parsePod(List<int> bytes) async {
   return pod;
 }
 
+//Tune these to your layout:
+const int _kFixedSize = 150; // fields up to passcode_hash
+const int _kLogEntrySize = 13;
+const int _kMaxEntries = 10;
+const int _kLogsRegionSize = _kLogEntrySize * _kMaxEntries; // 130
+const int _kIndexOffset = _kFixedSize + _kLogsRegionSize; // 280
+const int _kAnchorDisc = 8;
+
+Future<Pod?> fetchPodAccount({
+  required String podPda, // your program id (base58)
+}) async {
+  final rpc = SolanaClientService().rpcClient;
+
+  try {
+    final accountInfo = await rpc.getAccountInfo(
+      podPda,
+      encoding: Encoding.base64,
+      commitment: Commitment.confirmed,
+    );
+
+    final value = accountInfo.value;
+    if (value == null) {
+      // account missing at this commitment
+      return null;
+    }
+
+    // Safety: owner must be your program
+    // Owner check note:
+    // - Only check owner after confirming value != null.
+    // - Owner **must** equal your on-chain program id (not the creator wallet).
+    if (value.owner != programId) {
+      skrLogger.w('Pod owner mismatch (got ${value.owner}), skipping decode');
+      return null;
+    }
+
+    final data = value.data;
+    if (data is! BinaryAccountData) {
+      skrLogger.w('Unexpected data format for pod account');
+      return null;
+    }
+
+    // Raw bytes including Anchor discriminator at the front
+    final raw = Uint8List.fromList(data.data);
+    return _parsePodFromBytes(raw);
+  } catch (e, st) {
+    skrLogger.w('fetchPodAccount error: $e\n$st');
+    return null;
+  }
+}
+
+class PodSnapshot {
+  final Pod? pod;
+  final bool exists; // account exists at the checked commitment
+  final bool ownerMatches; // if exists, does owner == programId ?
+  final bool isClosedFinalized; // final 'closed' proof (value==null at finalized)
+  PodSnapshot({
+    required this.pod,
+    required this.exists,
+    required this.ownerMatches,
+    required this.isClosedFinalized,
+  });
+}
+
+Future<PodSnapshot> fetchPodSnapshot(String podPda) async {
+  final rpc = SolanaClientService().rpcClient;
+
+  try {
+    // 1) Fast path (confirmed)
+    final liveInfo = await rpc.getAccountInfo(
+      podPda,
+      encoding: Encoding.base64,
+      commitment: Commitment.confirmed,
+    );
+
+    Pod? pod;
+    bool exists = false;
+    bool ownerMatches = false;
+    bool isClosedFinalized = false;
+
+    final live = liveInfo.value;
+    if (live != null) {
+      exists = true;
+      ownerMatches = (live.owner == programId);
+
+      if (!ownerMatches) {
+        skrLogger.w('[RPC] Owner mismatch: ${live.owner} != $programId (skip decode)');
+      } else {
+        final data = live.data;
+        if (data is! BinaryAccountData) {
+          // Per your guarantee this shouldn’t happen; log and bail safely.
+          skrLogger.w('[RPC] Unexpected data type: ${data.runtimeType}');
+        } else {
+          final raw = data.data; // Uint8List (includes 8-byte Anchor discriminator)
+          pod = await parsePod(raw); // uses fromAccountData -> fromBuffer
+        }
+      }
+    } else {
+      // 2) Looks closed at confirmed → double-check at finalized
+      final finalInfo = await rpc.getAccountInfo(
+        podPda,
+        encoding: Encoding.base64,
+        commitment: Commitment.finalized,
+      );
+      isClosedFinalized = (finalInfo.value == null);
+    }
+
+    return PodSnapshot(
+      pod: pod,
+      exists: exists,
+      ownerMatches: ownerMatches,
+      isClosedFinalized: isClosedFinalized,
+    );
+  } catch (e, st) {
+    skrLogger.w('fetchPodSnapshot[$podPda] error: $e\n$st');
+    return PodSnapshot(pod: null, exists: false, ownerMatches: false, isClosedFinalized: false);
+  }
+}
+
+/// Decode helper that tolerates different RPC data shapes.
+// Uint8List? _extractBytes(dynamic data) {
+//   // BinaryAccountData (solana package)
+//   if (data is BinaryAccountData) {
+//     return Uint8List.fromList(data.data);
+//   }
+//   // Some clients return ["<base64>", "<encoding>"]
+//   if (data is List && data.isNotEmpty && data.first is String) {
+//     final s = data.first as String;
+//     if (s.isEmpty) return Uint8List(0);
+//     try {
+//       return base64.decode(s);
+//     } catch (_) {
+//       return null;
+//     }
+//   }
+//   return null;
+// }
+
+/// Parses a Pod from raw account bytes (skipping anchor disc and reading logs).
+Pod? _parsePodFromBytes(Uint8List raw) {
+  if (raw.length < _kAnchorDisc + _kFixedSize) {
+    skrLogger.w('Pod too small: ${raw.length}');
+    return null;
+  }
+  final base = _kAnchorDisc;
+
+  // 1) fixed region
+  final fixedSlice = raw.sublist(base, base + _kFixedSize);
+  final decoded = Pod.shortCodec.decode(fixedSlice); // your existing codec
+
+  // 2) logs (compact)
+  final remaining = raw.length - base - _kFixedSize;
+  final logsAvail = remaining.clamp(0, _kLogsRegionSize);
+  final entries = logsAvail ~/ _kLogEntrySize;
+
+  final log = <ActivityEntry>[];
+  for (int i = 0; i < entries; i++) {
+    final start = base + _kFixedSize + i * _kLogEntrySize;
+    final end = start + _kLogEntrySize;
+    try {
+      log.add(ActivityEntry.fromBuffer(raw.sublist(start, end)));
+    } catch (e) {
+      skrLogger.w('Pod log#$i decode error: $e');
+    }
+  }
+
+  // 3) logIndex (if present)
+  int logIndex = 0;
+  final indexAbs = base + _kIndexOffset;
+  if (raw.length > indexAbs) {
+    logIndex = raw[indexAbs];
+  }
+
+  final map = {...decoded, 'log': log, 'logIndex': logIndex};
+  return Pod.fromJson(map);
+}
+
+//Still testing. Maybe no longer needed.
 Future<Pod?> fetchPod(String podPda, String commitment) async {
   final payload = {
     "jsonrpc": "2.0",
@@ -60,90 +237,4 @@ Future<Pod?> fetchPod(String podPda, String commitment) async {
   skrLogger.i('fetchPod[$podPda/$commitment] rawLen=${rawBytes.length}');
 
   return Pod.fromAccountData(rawBytes, debugLabel: '$podPda/$commitment');
-
-  //return Pod.fromBuffer(rawBytes);
-}
-
-//Tune these to your layout:
-const int _kFixedSize = 150; // fields up to passcode_hash
-const int _kLogEntrySize = 13;
-const int _kMaxEntries = 10;
-const int _kLogsRegionSize = _kLogEntrySize * _kMaxEntries; // 130
-const int _kIndexOffset = _kFixedSize + _kLogsRegionSize; // 280
-const int _kAnchorDisc = 8;
-
-Future<Pod?> fetchPodAccount({
-  required String podPda, // your program id (base58)
-  required Commitment commitment,
-}) async {
-  final rpc = SolanaClientService().rpcClient;
-
-  try {
-    final accountInfo = await rpc.getAccountInfo(podPda, encoding: Encoding.base64, commitment: commitment);
-
-    final value = accountInfo.value;
-    if (value == null) {
-      // account missing at this commitment
-      return null;
-    }
-
-    // Safety: owner must be your program
-    // TODO: Not sure if this correct. Owner the creator?
-    if (value.owner != programId) {
-      skrLogger.w('Pod owner mismatch (got ${value.owner}), skipping decode');
-      return null;
-    }
-
-    final data = value.data;
-    if (data is! BinaryAccountData) {
-      skrLogger.w('Unexpected data format for pod account');
-      return null;
-    }
-
-    // Raw bytes including Anchor discriminator at the front
-    final raw = Uint8List.fromList(data.data);
-    if (raw.length < _kAnchorDisc + _kFixedSize) {
-      skrLogger.w('Pod too small: ${raw.length}');
-      return null;
-    }
-
-    // Skip Anchor discriminator
-    final base = _kAnchorDisc;
-
-    // 1) Fixed header slice [base .. base+150)
-    final fixedSlice = raw.sublist(base, base + _kFixedSize);
-    final decoded = Pod.shortCodec.decode(fixedSlice);
-
-    // 2) Logs region up to 10 entries of 13 bytes each
-    final remaining = raw.length - base - _kFixedSize;
-    final logsAvail = remaining.clamp(0, _kLogsRegionSize);
-    final entries = logsAvail ~/ _kLogEntrySize;
-
-    final log = <ActivityEntry>[];
-    for (int i = 0; i < entries; i++) {
-      final start = base + _kFixedSize + i * _kLogEntrySize;
-      final end = start + _kLogEntrySize;
-      final entryBytes = raw.sublist(start, end);
-      try {
-        log.add(ActivityEntry.fromBuffer(entryBytes));
-      } catch (e) {
-        // keep going; treat bad entry as absent
-        skrLogger.w('Pod log#$i decode error: $e');
-      }
-    }
-
-    // 3) logIndex at absolute offset if present
-    int logIndex = 0;
-    final indexAbs = base + _kIndexOffset;
-    if (raw.length > indexAbs) {
-      logIndex = raw[indexAbs];
-    }
-
-    // Build model
-    final map = {...decoded, 'log': log, 'logIndex': logIndex};
-    return Pod.fromJson(map);
-  } catch (e, st) {
-    skrLogger.w('fetchPodAccount error: $e\n$st');
-    return null;
-  }
 }

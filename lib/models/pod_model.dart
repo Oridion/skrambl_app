@@ -189,7 +189,7 @@ class Pod extends BorshObject {
   };
   static String? _encBig(BigInt? v) => v?.toString();
   static const int _kFixedSize = 150;
-  static const int _kLogEntrySize = 19; //  ← updated
+  static const int _kLogEntrySize = 19;
   static const int _kMaxEntries = 10;
   static const int _kLogsRegionSize = _kLogEntrySize * _kMaxEntries; // 190
   static const int _kIndexOffset = _kFixedSize + _kLogsRegionSize; // 340
@@ -216,61 +216,135 @@ class Pod extends BorshObject {
   }
 
   /// Expects data that ALREADY skipped the 8-byte Anchor discriminator.
-  static Pod? fromBuffer(
-    List<int> data, {
-    String debugLabel = '',
-    bool swallowErrors = true, // ← add this
-  }) {
+  static Pod? fromBuffer(List<int> data, {String debugLabel = '', bool swallowErrors = true}) {
+    // Local helper: safe sublist with logging instead of throwing
+    List<int> safeSublist(List<int> src, int start, int end) {
+      final total = src.length;
+      if (start < 0 || end < 0 || start > end) {
+        skrLogger.e('Pod.decode[$debugLabel] safeSublist invalid range: [$start, $end)');
+        return const <int>[];
+      }
+      if (end > total) {
+        skrLogger.w(
+          'Pod.decode[$debugLabel] safeSublist truncated: '
+          'requested [$start, $end) > total=$total; clamping.',
+        );
+        end = total;
+        if (start >= end) return const <int>[];
+      }
+      return src.sublist(start, end);
+    }
+
     try {
-      final int totalLen = data.length;
-      //skrLogger.i('Pod.decode[$debugLabel] postDiscLen=$totalLen');
+      final int totalLen = data.length; // post-disc length expected
+      skrLogger.i('┌─ Pod.decode[$debugLabel]');
+      skrLogger.i(
+        '│ totalLen(post-disc)=$totalLen  '
+        '(need ≥ $_kMinTotal = $_kFixedSize + $_kLogsRegionSize + 1)',
+      );
 
       if (totalLen < _kMinTotal) {
-        skrLogger.w('Pod.decode[$debugLabel] too small post-disc: have=$totalLen, need>=$_kMinTotal');
+        skrLogger.w('│ too small post-disc: have=$totalLen, need≥$_kMinTotal → abort');
+        skrLogger.i('└─ Pod.decode[$debugLabel] END (too small)');
         return null;
       }
 
-      // 1) Decode the 150-byte fixed header with shortCodec
-      skrLogger.i('💡 Pod.decode[$debugLabel] fixed[0..$_kFixedSize) start');
-      final fixedPart = data.sublist(0, _kFixedSize);
-      final fixed = shortCodec.decode(fixedPart); // Map<String, dynamic>
+      // 1) Fixed header decode (0..150)
+      skrLogger.i('│ header: bytes [0..$_kFixedSize) len=$_kFixedSize');
+      final fixedPart = safeSublist(data, 0, _kFixedSize);
+      if (fixedPart.length != _kFixedSize) {
+        skrLogger.w('│ header slice shorter than expected: ${fixedPart.length}');
+      }
+      Map<String, dynamic> fixed;
+      try {
+        fixed = shortCodec.decode(fixedPart);
+        skrLogger.i(
+          '│ header decode OK: '
+          'version=${fixed['version']} lastProcess=${fixed['lastProcess']} delay=${fixed['delay']}',
+        );
+      } catch (e) {
+        skrLogger.e('│ header decode ERROR: $e');
+        skrLogger.i('└─ Pod.decode[$debugLabel] END (header decode failed)');
+        return null;
+      }
+
+      // 2) Logs region: compute available and entry size
+      // We expect a reserved region for logs of size _kLogsRegionSize and 1 trailing byte for logIndex.
+      final int reservedLogs = _kLogsRegionSize; // typical max region size
+      final int tailBytes = 1; // logIndex byte
+      final int logsAvailRaw = (totalLen - _kFixedSize - tailBytes);
+      // If account is longer than min, cap to reserved region so we don’t read beyond.
+      final int logsAvail = math.min(math.max(logsAvailRaw, 0), reservedLogs);
+
+      // Decide entry size: prefer 19, else 13 when it divides cleanly. Probe if ambiguous.
+      int entrySize = 19;
+      if (logsAvail % 19 == 0 && logsAvail != 0) {
+        entrySize = 19;
+      } else if (logsAvail % 13 == 0 && logsAvail != 0) {
+        entrySize = 13;
+      } else {
+        final canRead19 = totalLen >= (_kFixedSize + 19);
+        final canRead13 = totalLen >= (_kFixedSize + 13);
+        entrySize = canRead19 ? 19 : (canRead13 ? 13 : 19);
+      }
+
+      final int maxEntriesPossible = (logsAvail ~/ entrySize);
+      final int entriesToRead = math.min(_kMaxEntries, maxEntriesPossible);
+
       // skrLogger.i(
-      //   '💡 Pod.decode[$debugLabel] fixed ok: '
-      //   'version=${fixed['version']}, lastProcess=${fixed['lastProcess']}, delay=${fixed['delay']}',
+      //   '│ logs: totalLen=$totalLen  hdr=$_kFixedSize  tail=$tailBytes  '
+      //   'logsAvailRaw=$logsAvailRaw  logsAvail=$logsAvail  '
+      //   'entrySize=$entrySize  entriesToRead=$entriesToRead',
       // );
 
-      // 2) Decode up to 10 log entries (each 19 bytes)
-      final int logsAvail = math.min(totalLen - _kFixedSize, _kLogsRegionSize);
-      final int availableEntries = logsAvail ~/ _kLogEntrySize;
-      //skrLogger.i('Pod.decode[$debugLabel] logsAvail=$logsAvail, entries=$availableEntries');
-
+      // 2a) Decode logs one by one with safe slicing
       final logs = <ActivityEntry>[];
-      for (int i = 0; i < availableEntries; i++) {
-        final start = _kFixedSize + i * _kLogEntrySize;
-        final end = start + _kLogEntrySize; // ≤ 340
-        final slice = data.sublist(start, end);
-        if (slice.length != _kLogEntrySize) {
-          skrLogger.w('Pod.decode[$debugLabel] log#$i size=${slice.length} expected=$_kLogEntrySize');
+      for (int i = 0; i < entriesToRead; i++) {
+        final start = _kFixedSize + i * entrySize;
+        final end = start + entrySize;
+        final slice = safeSublist(data, start, end);
+        //skrLogger.i('│   log#$i slice=[$start,$end) actualLen=${slice.length}');
+        if (slice.length != entrySize) {
+          skrLogger.w('│   log#$i slice length mismatch: expected=$entrySize got=${slice.length}');
         }
+
         try {
-          logs.add(ActivityEntry.fromBuffer(slice)); // expects 19 bytes
+          if (entrySize == 19) {
+            logs.add(ActivityEntry.fromBuffer(slice));
+          } else {
+            // legacy 13 → manual decode: u8 + [u8;4] + i64
+            if (slice.length == 13) {
+              final action = slice[0];
+              final to4 = slice.sublist(1, 5);
+              final time = borsh.i64.decode(slice.sublist(5, 13));
+              final to10 = List<int>.filled(10, 0)..setRange(0, to4.length, to4);
+              logs.add(ActivityEntry(action: action, to: to10, time: time));
+            } else {
+              skrLogger.w('│   log#$i legacy decode skipped (len=${slice.length})');
+            }
+          }
+          skrLogger.i('│   log#$i decode OK');
         } catch (e) {
-          skrLogger.w('Pod.decode[$debugLabel] log#$i decode error: $e');
+          skrLogger.w('│   log#$i decode ERROR: $e');
         }
       }
 
-      // 3) logIndex at absolute offset 340 (if present)
+      // 3) Read logIndex after the reserved log region (fixed position by spec)
+      final int indexPos =
+          _kIndexOffset; // = _kFixedSize + (_kLogEntrySize * _kMaxEntries) if constants match
       int logIndex = 0;
-      if (totalLen > _kIndexOffset) {
-        logIndex = data[_kIndexOffset];
-        //skrLogger.i('💡 Pod.decode[$debugLabel] logIndex=$logIndex @$_kIndexOffset');
+      if (totalLen > indexPos) {
+        logIndex = data[indexPos];
+        if (logIndex < 0 || logIndex >= _kMaxEntries) {
+          skrLogger.w('│ logIndex out of range @ $indexPos: $logIndex (max=$_kMaxEntries); clamping');
+          logIndex = logIndex % _kMaxEntries;
+        }
+        skrLogger.i('│ logIndex=$logIndex @ byte $indexPos');
       } else {
-        // skrLogger.i(
-        //   '💡 Pod.decode[$debugLabel] no logIndex; totalLen=$totalLen <= indexOffset=$_kIndexOffset',
-        // );
+        skrLogger.w('│ no logIndex byte: totalLen=$totalLen ≤ indexPos=$indexPos');
       }
 
-      // Build the Pod DIRECTLY (do NOT call Pod.fromJson here)
+      // 4) Build Pod object
       final pod = Pod(
         accountType: fixed['accountType'],
         version: fixed['version'],
@@ -285,18 +359,21 @@ class Pod extends BorshObject {
         landAt: fixed['landAt'],
         createdAt: fixed['createdAt'],
         lastProcessAt: fixed['lastProcessAt'],
-        lamports: fixed['lamports'], // Borsh u64 -> BigInt already
+        lamports: fixed['lamports'],
         location: List<int>.from(fixed['location']),
         destination: List<int>.from(fixed['destination']),
         passcodeHash: List<int>.from(fixed['passcodeHash']),
-        log: logs, // <-- use the decoded ActivityEntry list
+        log: logs,
         logIndex: logIndex,
       );
 
-      //skrLogger.i('Pod.decode[$debugLabel] success: entries=${logs.length}, lastProcess=${pod.lastProcess}');
+      skrLogger.i('│ success: entries=${logs.length}, lastProcess=${pod.lastProcess}, mode=${pod.mode}');
+      skrLogger.i('└─ Pod.decode[$debugLabel] END');
       return pod;
     } catch (e, st) {
-      skrLogger.e('Pod.decode[$debugLabel] exception: $e\n$st');
+      skrLogger.e('│ Pod.decode[$debugLabel] EXCEPTION: $e\n$st');
+      skrLogger.i('└─ Pod.decode[$debugLabel] END (exception)');
+      if (!swallowErrors) rethrow;
       return null;
     }
   }
