@@ -17,71 +17,43 @@ class SeedVaultSessionManager extends ChangeNotifier {
   Future<void> initialize() async {
     if (_isInitializing) return;
     _isInitializing = true;
-    bool changed = false;
+
+    _isAvailable = await SeedVault.instance.isAvailable(allowSimulated: true);
+    if (_isAvailable) {
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
+    _hasPermission = await SeedVault.instance.checkPermission();
+
+    skrLogger.i('SeedVault isAvailable: $_isAvailable');
+    skrLogger.i('SeedVault has permission: $_hasPermission');
+
+    if (!_isAvailable || !_hasPermission) {
+      _authToken = null;
+      notifyListeners();
+      return;
+    }
 
     try {
-      final avail = await SeedVault.instance.isAvailable(allowSimulated: true);
-      if (_isAvailable != avail) {
-        _isAvailable = avail;
-        changed = true;
-      }
-
-      if (_isAvailable) {
-        await Future.delayed(const Duration(milliseconds: 300));
-      }
-
-      final perm = await SeedVault.instance.checkPermission();
-      if (_hasPermission != perm) {
-        _hasPermission = perm;
-        changed = true;
-      }
-
-      skrLogger.i('SeedVault isAvailable: $_isAvailable');
-      skrLogger.i('SeedVault has permission: $_hasPermission');
-
-      if (!_isAvailable || !_hasPermission) {
-        if (_authToken != null) {
-          _authToken = null;
-          changed = true;
+      final authorizedSeeds = await SeedVault.instance.getAuthorizedSeeds();
+      if (authorizedSeeds.isNotEmpty) {
+        final seed = authorizedSeeds.first;
+        final token = seed[WalletContractV1.authorizedSeedsAuthToken] as AuthToken?;
+        if (token != null) {
+          skrLogger.i("✅ Restoring token from seed: $token");
+          _authToken = token;
+          await validateToken(); // Only if token exists
         }
-        if (changed) notifyListeners();
-        return;
+      } else {
+        skrLogger.w('⚠️ No authorized seeds yet — waiting for user to authorize.');
+        _authToken = null; // Don't request inside init — do that manually in UI
       }
-
-      try {
-        final authorizedSeeds = await SeedVault.instance.getAuthorizedSeeds();
-        if (authorizedSeeds.isNotEmpty) {
-          final seed = authorizedSeeds.first;
-          final token = seed[WalletContractV1.authorizedSeedsAuthToken] as AuthToken?;
-          if (token != null && token != _authToken) {
-            _authToken = token;
-            changed = true;
-            skrLogger.i("Restoring token from seed: $token");
-            // Don’t throw away permission if token is invalid; just clear token.
-            final ok = await validateToken();
-            if (!ok) {
-              changed = true;
-            }
-          }
-        } else {
-          skrLogger.w('No authorized seeds yet — waiting for user to authorize.');
-          if (_authToken != null) {
-            _authToken = null;
-            changed = true;
-          }
-        }
-      } catch (e) {
-        skrLogger.e('SeedVault init error: $e');
-        if (_authToken != null) {
-          _authToken = null;
-          changed = true;
-        }
-      }
-
-      if (changed) notifyListeners();
-    } finally {
-      _isInitializing = false; // <-- critical
+    } catch (e) {
+      skrLogger.e('SeedVault init error: $e');
+      _authToken = null;
     }
+
+    notifyListeners();
   }
 
   /// Always returns a valid token, re-requesting if necessary
@@ -104,7 +76,6 @@ class SeedVaultSessionManager extends ChangeNotifier {
   }
 
   void setAuthToken(AuthToken token) {
-    if (_authToken == token) return;
     _authToken = token;
     notifyListeners();
   }
@@ -112,16 +83,14 @@ class SeedVaultSessionManager extends ChangeNotifier {
   /// Manually prompt for authorization (e.g., on user action)
   Future<bool> requestAuthorization() async {
     try {
-      final token = await SeedVault.instance.authorizeSeed(Purpose.signSolanaTransaction);
-      _authToken = token;
+      _authToken = await SeedVault.instance.authorizeSeed(Purpose.signSolanaTransaction);
       _hasPermission = true;
       notifyListeners();
       return true;
     } catch (e) {
       debugPrint('Authorization failed: $e');
       _authToken = null;
-      // Don’t assume permission revoked; re-check:
-      _hasPermission = await SeedVault.instance.checkPermission();
+      _hasPermission = false;
       notifyListeners();
       return false;
     }
@@ -129,35 +98,26 @@ class SeedVaultSessionManager extends ChangeNotifier {
 
   ///Call before any action to make sure the token is valid.
   Future<bool> validateToken() async {
-    final token = _authToken;
-    if (token == null) return false;
+    if (_authToken == null) return false;
+
     try {
-      await SeedVault.instance.getAccounts(authToken: token);
+      // Try a lightweight call to check validity
+      await SeedVault.instance.getAccounts(authToken: _authToken!);
       skrLogger.i("AuthToken VALID");
       return true;
     } catch (e) {
       debugPrint("Token validation failed: $e");
       _authToken = null;
-      // Re-check permission; token invalid != permission revoked
-      _hasPermission = await SeedVault.instance.checkPermission();
+      _hasPermission = false;
       notifyListeners();
       return false;
     }
   }
 
-  /// Convenience: ensure you have a valid token, trying init → validate → request if needed.
-  Future<AuthToken?> ensureValidToken(BuildContext context) async {
-    await initialize(); // will no-op if already init’d, thanks to guard+finally
-    if (await validateToken()) {
-      // existing token good?
-      return _authToken;
-    }
-    return getValidTokenFromManager(context); // interactive path
-  }
-
   /// Clear current session (e.g., on logout or error)
   void reset() {
     _authToken = null;
+    _hasPermission = false;
     notifyListeners();
   }
 }
