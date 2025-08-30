@@ -163,21 +163,6 @@ class PodsHeader extends StatelessWidget {
       ),
     );
   }
-
-  //   Widget _chip(BuildContext context, {required String label, required PodsFilter value}) {
-  //     final isSelected = selected == value;
-  //     return ChoiceChip(
-  //       label: Text(label),
-  //       selected: isSelected,
-  //       onSelected: (ok) {
-  //         if (ok) onFilterChanged(value);
-  //       },
-  //       showCheckmark: false,
-  //       shape: StadiumBorder(
-  //         side: BorderSide(color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey.shade300),
-  //       ),
-  //     );
-  //   }
 }
 
 class _EmptyPodsAllPage extends StatelessWidget {

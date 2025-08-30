@@ -53,7 +53,7 @@ class PodRow extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Colors.black26),
+              //const Icon(Icons.chevron_right_rounded, color: Colors.black26),
             ],
           ),
         ),

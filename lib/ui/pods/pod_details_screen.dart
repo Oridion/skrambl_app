@@ -81,9 +81,9 @@ class PodDetailsScreen extends StatelessWidget {
               final pod = snap.data;
               if (pod == null) return const SizedBox.shrink();
 
-              final status = PodStatus.values[pod.status];
-              final isDraft = status == PodStatus.drafting;
-              if (!isDraft) return const SizedBox.shrink();
+              // final status = PodStatus.values[pod.status];
+              // final isDraft = status == PodStatus.drafting;
+              // if (!isDraft) return const SizedBox.shrink();
 
               return IconButton(
                 tooltip: 'Delete draft',

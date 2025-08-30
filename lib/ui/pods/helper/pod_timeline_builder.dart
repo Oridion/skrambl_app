@@ -9,9 +9,9 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
   final items = <TimelineItem>[];
   final status = PodStatus.values[pod.status];
   final draftedAt = dateTimeOrNull(pod.draftedAt);
-  final submittedAt = dateTimeOrNullSeconds(pod.submittedAt);
-  final skrambledAt = dateTimeOrNullSeconds(pod.skrambledAt);
-  final finalizedAt = dateTimeOrNullSeconds(pod.finalizedAt);
+  final submittedAt = dateTimeOrNull(pod.submittedAt);
+  final skrambledAt = dateTimeOrNull(pod.skrambledAt);
+  final finalizedAt = dateTimeOrNull(pod.finalizedAt);
   final d = pod.submitDuration;
   final submittedSubtitle = d == null
       ? 'Submitted to network'

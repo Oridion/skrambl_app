@@ -12,7 +12,6 @@ import 'package:skrambl_app/ui/burners/widgets/pod_row.dart';
 import 'package:skrambl_app/utils/formatters.dart';
 import 'package:skrambl_app/utils/solana.dart';
 import 'package:skrambl_app/utils/util.dart';
-//import 'package:skrambl_app/ui/burners/widgets/debug.dart';
 
 class BurnerDetailsScreen extends StatefulWidget {
   final String pubkey; // burner address
@@ -46,18 +45,6 @@ class _BurnerDetailsScreenState extends State<BurnerDetailsScreen> {
       _appliedSelection = true;
     });
   }
-
-  // Restore selected wallet to previous
-  // void _restorePreviousSelection() {
-  //   if (_restored) return;
-  //   _restored = true;
-
-  //   if (_prevPubkey != null && _prevBurnerIndex != null) {
-  //     _selected.selectBurner(_prevPubkey!, _prevBurnerIndex!);
-  //   } else {
-  //     _selected.selectPrimary();
-  //   }
-  // }
 
   @override
   void dispose() {
