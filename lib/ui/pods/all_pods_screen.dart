@@ -171,14 +171,11 @@ class _EmptyPodsAllPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
       child: Container(
         width: double.infinity,
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 220, 220, 220),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 22),
+
+        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 22),
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
