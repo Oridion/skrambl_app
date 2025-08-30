@@ -57,6 +57,15 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _feeMeta = const VerificationMeta('fee');
+  @override
+  late final GeneratedColumn<int> fee = GeneratedColumn<int>(
+    'fee',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _modeMeta = const VerificationMeta('mode');
   @override
   late final GeneratedColumn<int> mode = GeneratedColumn<int>(
@@ -293,6 +302,7 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
     creator,
     podId,
     lamports,
+    fee,
     mode,
     delaySeconds,
     showMemo,
@@ -358,6 +368,14 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
       );
     } else if (isInserting) {
       context.missing(_lamportsMeta);
+    }
+    if (data.containsKey('fee')) {
+      context.handle(
+        _feeMeta,
+        fee.isAcceptableOrUnknown(data['fee']!, _feeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_feeMeta);
     }
     if (data.containsKey('mode')) {
       context.handle(
@@ -546,6 +564,10 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
         DriftSqlType.int,
         data['${effectivePrefix}lamports'],
       )!,
+      fee: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fee'],
+      )!,
       mode: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}mode'],
@@ -641,6 +663,7 @@ class Pod extends DataClass implements Insertable<Pod> {
   final String creator;
   final int? podId;
   final int lamports;
+  final int fee;
   final int mode;
   final int delaySeconds;
   final bool showMemo;
@@ -667,6 +690,7 @@ class Pod extends DataClass implements Insertable<Pod> {
     required this.creator,
     this.podId,
     required this.lamports,
+    required this.fee,
     required this.mode,
     required this.delaySeconds,
     required this.showMemo,
@@ -700,6 +724,7 @@ class Pod extends DataClass implements Insertable<Pod> {
       map['pod_id'] = Variable<int>(podId);
     }
     map['lamports'] = Variable<int>(lamports);
+    map['fee'] = Variable<int>(fee);
     map['mode'] = Variable<int>(mode);
     map['delay_seconds'] = Variable<int>(delaySeconds);
     map['show_memo'] = Variable<bool>(showMemo);
@@ -756,6 +781,7 @@ class Pod extends DataClass implements Insertable<Pod> {
           ? const Value.absent()
           : Value(podId),
       lamports: Value(lamports),
+      fee: Value(fee),
       mode: Value(mode),
       delaySeconds: Value(delaySeconds),
       showMemo: Value(showMemo),
@@ -812,6 +838,7 @@ class Pod extends DataClass implements Insertable<Pod> {
       creator: serializer.fromJson<String>(json['creator']),
       podId: serializer.fromJson<int?>(json['podId']),
       lamports: serializer.fromJson<int>(json['lamports']),
+      fee: serializer.fromJson<int>(json['fee']),
       mode: serializer.fromJson<int>(json['mode']),
       delaySeconds: serializer.fromJson<int>(json['delaySeconds']),
       showMemo: serializer.fromJson<bool>(json['showMemo']),
@@ -847,6 +874,7 @@ class Pod extends DataClass implements Insertable<Pod> {
       'creator': serializer.toJson<String>(creator),
       'podId': serializer.toJson<int?>(podId),
       'lamports': serializer.toJson<int>(lamports),
+      'fee': serializer.toJson<int>(fee),
       'mode': serializer.toJson<int>(mode),
       'delaySeconds': serializer.toJson<int>(delaySeconds),
       'showMemo': serializer.toJson<bool>(showMemo),
@@ -876,6 +904,7 @@ class Pod extends DataClass implements Insertable<Pod> {
     String? creator,
     Value<int?> podId = const Value.absent(),
     int? lamports,
+    int? fee,
     int? mode,
     int? delaySeconds,
     bool? showMemo,
@@ -902,6 +931,7 @@ class Pod extends DataClass implements Insertable<Pod> {
     creator: creator ?? this.creator,
     podId: podId.present ? podId.value : this.podId,
     lamports: lamports ?? this.lamports,
+    fee: fee ?? this.fee,
     mode: mode ?? this.mode,
     delaySeconds: delaySeconds ?? this.delaySeconds,
     showMemo: showMemo ?? this.showMemo,
@@ -932,6 +962,7 @@ class Pod extends DataClass implements Insertable<Pod> {
       creator: data.creator.present ? data.creator.value : this.creator,
       podId: data.podId.present ? data.podId.value : this.podId,
       lamports: data.lamports.present ? data.lamports.value : this.lamports,
+      fee: data.fee.present ? data.fee.value : this.fee,
       mode: data.mode.present ? data.mode.value : this.mode,
       delaySeconds: data.delaySeconds.present
           ? data.delaySeconds.value
@@ -985,6 +1016,7 @@ class Pod extends DataClass implements Insertable<Pod> {
           ..write('creator: $creator, ')
           ..write('podId: $podId, ')
           ..write('lamports: $lamports, ')
+          ..write('fee: $fee, ')
           ..write('mode: $mode, ')
           ..write('delaySeconds: $delaySeconds, ')
           ..write('showMemo: $showMemo, ')
@@ -1016,6 +1048,7 @@ class Pod extends DataClass implements Insertable<Pod> {
     creator,
     podId,
     lamports,
+    fee,
     mode,
     delaySeconds,
     showMemo,
@@ -1046,6 +1079,7 @@ class Pod extends DataClass implements Insertable<Pod> {
           other.creator == this.creator &&
           other.podId == this.podId &&
           other.lamports == this.lamports &&
+          other.fee == this.fee &&
           other.mode == this.mode &&
           other.delaySeconds == this.delaySeconds &&
           other.showMemo == this.showMemo &&
@@ -1074,6 +1108,7 @@ class PodsCompanion extends UpdateCompanion<Pod> {
   final Value<String> creator;
   final Value<int?> podId;
   final Value<int> lamports;
+  final Value<int> fee;
   final Value<int> mode;
   final Value<int> delaySeconds;
   final Value<bool> showMemo;
@@ -1101,6 +1136,7 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     this.creator = const Value.absent(),
     this.podId = const Value.absent(),
     this.lamports = const Value.absent(),
+    this.fee = const Value.absent(),
     this.mode = const Value.absent(),
     this.delaySeconds = const Value.absent(),
     this.showMemo = const Value.absent(),
@@ -1129,6 +1165,7 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     required String creator,
     this.podId = const Value.absent(),
     required int lamports,
+    required int fee,
     required int mode,
     this.delaySeconds = const Value.absent(),
     this.showMemo = const Value.absent(),
@@ -1153,6 +1190,7 @@ class PodsCompanion extends UpdateCompanion<Pod> {
   }) : id = Value(id),
        creator = Value(creator),
        lamports = Value(lamports),
+       fee = Value(fee),
        mode = Value(mode),
        status = Value(status),
        destination = Value(destination),
@@ -1163,6 +1201,7 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     Expression<String>? creator,
     Expression<int>? podId,
     Expression<int>? lamports,
+    Expression<int>? fee,
     Expression<int>? mode,
     Expression<int>? delaySeconds,
     Expression<bool>? showMemo,
@@ -1191,6 +1230,7 @@ class PodsCompanion extends UpdateCompanion<Pod> {
       if (creator != null) 'creator': creator,
       if (podId != null) 'pod_id': podId,
       if (lamports != null) 'lamports': lamports,
+      if (fee != null) 'fee': fee,
       if (mode != null) 'mode': mode,
       if (delaySeconds != null) 'delay_seconds': delaySeconds,
       if (showMemo != null) 'show_memo': showMemo,
@@ -1223,6 +1263,7 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     Value<String>? creator,
     Value<int?>? podId,
     Value<int>? lamports,
+    Value<int>? fee,
     Value<int>? mode,
     Value<int>? delaySeconds,
     Value<bool>? showMemo,
@@ -1251,6 +1292,7 @@ class PodsCompanion extends UpdateCompanion<Pod> {
       creator: creator ?? this.creator,
       podId: podId ?? this.podId,
       lamports: lamports ?? this.lamports,
+      fee: fee ?? this.fee,
       mode: mode ?? this.mode,
       delaySeconds: delaySeconds ?? this.delaySeconds,
       showMemo: showMemo ?? this.showMemo,
@@ -1292,6 +1334,9 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     }
     if (lamports.present) {
       map['lamports'] = Variable<int>(lamports.value);
+    }
+    if (fee.present) {
+      map['fee'] = Variable<int>(fee.value);
     }
     if (mode.present) {
       map['mode'] = Variable<int>(mode.value);
@@ -1367,6 +1412,7 @@ class PodsCompanion extends UpdateCompanion<Pod> {
           ..write('creator: $creator, ')
           ..write('podId: $podId, ')
           ..write('lamports: $lamports, ')
+          ..write('fee: $fee, ')
           ..write('mode: $mode, ')
           ..write('delaySeconds: $delaySeconds, ')
           ..write('showMemo: $showMemo, ')
@@ -1988,6 +2034,7 @@ typedef $$PodsTableCreateCompanionBuilder =
       required String creator,
       Value<int?> podId,
       required int lamports,
+      required int fee,
       required int mode,
       Value<int> delaySeconds,
       Value<bool> showMemo,
@@ -2017,6 +2064,7 @@ typedef $$PodsTableUpdateCompanionBuilder =
       Value<String> creator,
       Value<int?> podId,
       Value<int> lamports,
+      Value<int> fee,
       Value<int> mode,
       Value<int> delaySeconds,
       Value<bool> showMemo,
@@ -2070,6 +2118,11 @@ class $$PodsTableFilterComposer extends Composer<_$LocalDatabase, $PodsTable> {
 
   ColumnFilters<int> get lamports => $composableBuilder(
     column: $table.lamports,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fee => $composableBuilder(
+    column: $table.fee,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2208,6 +2261,11 @@ class $$PodsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get fee => $composableBuilder(
+    column: $table.fee,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get mode => $composableBuilder(
     column: $table.mode,
     builder: (column) => ColumnOrderings(column),
@@ -2333,6 +2391,9 @@ class $$PodsTableAnnotationComposer
   GeneratedColumn<int> get lamports =>
       $composableBuilder(column: $table.lamports, builder: (column) => column);
 
+  GeneratedColumn<int> get fee =>
+      $composableBuilder(column: $table.fee, builder: (column) => column);
+
   GeneratedColumn<int> get mode =>
       $composableBuilder(column: $table.mode, builder: (column) => column);
 
@@ -2449,6 +2510,7 @@ class $$PodsTableTableManager
                 Value<String> creator = const Value.absent(),
                 Value<int?> podId = const Value.absent(),
                 Value<int> lamports = const Value.absent(),
+                Value<int> fee = const Value.absent(),
                 Value<int> mode = const Value.absent(),
                 Value<int> delaySeconds = const Value.absent(),
                 Value<bool> showMemo = const Value.absent(),
@@ -2476,6 +2538,7 @@ class $$PodsTableTableManager
                 creator: creator,
                 podId: podId,
                 lamports: lamports,
+                fee: fee,
                 mode: mode,
                 delaySeconds: delaySeconds,
                 showMemo: showMemo,
@@ -2505,6 +2568,7 @@ class $$PodsTableTableManager
                 required String creator,
                 Value<int?> podId = const Value.absent(),
                 required int lamports,
+                required int fee,
                 required int mode,
                 Value<int> delaySeconds = const Value.absent(),
                 Value<bool> showMemo = const Value.absent(),
@@ -2532,6 +2596,7 @@ class $$PodsTableTableManager
                 creator: creator,
                 podId: podId,
                 lamports: lamports,
+                fee: fee,
                 mode: mode,
                 delaySeconds: delaySeconds,
                 showMemo: showMemo,

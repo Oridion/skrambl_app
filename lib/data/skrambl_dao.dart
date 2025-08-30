@@ -64,6 +64,7 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
     required int podId,
     required String podPda,
     required int lamports,
+    required int feeLamports,
     required int mode,
     required int delaySeconds,
     required String destination,
@@ -84,6 +85,7 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
         podId: Value(podId),
         podPda: Value(podPda),
         lamports: lamports,
+        fee: feeLamports,
         mode: mode,
         delaySeconds: Value(delaySeconds),
         showMemo: Value(showMemo),
@@ -229,6 +231,7 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
         creator: creator,
         destination: destination,
         lamports: lamports,
+        fee: 0,
         // Standard markers:
         mode: 5, // 5 = standard
         delaySeconds: const Value(0),

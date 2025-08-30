@@ -13,6 +13,7 @@ class Pods extends Table {
 
   // User args at launch
   IntColumn get lamports => integer()();
+  IntColumn get fee => integer()();
   IntColumn get mode => integer()(); // 0=instant, 1=delay...
   IntColumn get delaySeconds => integer().withDefault(const Constant(0))();
   BoolColumn get showMemo => boolean().withDefault(const Constant(false))();

@@ -119,34 +119,15 @@ class AppLifecycleHandler extends StatefulWidget {
 }
 
 class _AppLifecycleHandlerState extends State<AppLifecycleHandler> with WidgetsBindingObserver {
+  bool _booting = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Warm burner cache once app is up and Providers exist
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final repo = context.read<BurnerRepository>();
-      await repo.warmCacheFromDb();
-
-      if (!mounted) return;
-      final seedVault = context.read<SeedVaultSessionManager>();
-      if (seedVault.authToken == null) {
-        await seedVault.initialize();
-      }
-
-      final token = seedVault.authToken;
-      if (token != null) {
-        final pk = await SeedVaultService.getPublicKey(authToken: token);
-        if (pk != null && mounted) {
-          context.read<SelectedWalletProvider>().setPrimary(pk.toBase58());
-          skrLogger.i("Set primary to ${pk.toBase58()}");
-        }
-      }
-
-      if (!mounted) return;
-      await context.read<NetworkFeeProvider>().refresh();
-    });
+    // Run once after providers exist
+    WidgetsBinding.instance.addPostFrameCallback((_) => _boot('first-frame'));
   }
 
   @override
@@ -160,15 +141,54 @@ class _AppLifecycleHandlerState extends State<AppLifecycleHandler> with WidgetsB
     final watcher = context.read<PodWatcherManager>();
     if (state == AppLifecycleState.resumed) {
       watcher.start();
-      final seedVault = Provider.of<SeedVaultSessionManager>(context, listen: false);
-      final wp = Provider.of<WalletProvider>(context, listen: false);
-
-      if (seedVault.authToken == null) {
-        seedVault.initialize();
-        wp.setAccount(null);
-      }
+      _boot('resume'); // ← rerun post-approval init on return from Seed Vault
     }
-    if (state == AppLifecycleState.paused) watcher.stop();
+    if (state == AppLifecycleState.paused) {
+      watcher.stop();
+    }
+  }
+
+  Future<void> _boot(String reason) async {
+    if (!mounted || _booting) return;
+    _booting = true;
+    try {
+      // Warm burner cache (idempotent)
+      await context.read<BurnerRepository>().warmCacheFromDb();
+
+      if (!mounted) return;
+      final seedVault = context.read<SeedVaultSessionManager>();
+      // Ensure session is (re)initialized — on first install this flips after approval
+      await seedVault.initialize();
+
+      final token = seedVault.authToken;
+      if (token == null) {
+        // No session yet; clear wallet so UI reflects locked state
+        if (!mounted) return;
+        context.read<WalletProvider>().setAccount(null);
+        skrLogger.i('[boot:$reason] seed vault not ready (no authToken)');
+        return;
+      }
+
+      // We *do* have a session now — hydrate primary wallet every time we (re)boot
+      final pk = await SeedVaultService.getPublicKey(authToken: token);
+      if (pk != null && mounted) {
+        final base58 = pk.toBase58();
+        context.read<SelectedWalletProvider>().setPrimary(base58);
+        // Ensure WalletProvider points at it (your proxy provider already reacts,
+        // but this keeps things explicit if selection was null)
+        context.read<WalletProvider>().setAccount(base58);
+        skrLogger.i('[boot:$reason] primary set to $base58');
+      }
+
+      // Refresh fees (safe to call repeatedly)
+      if (mounted) {
+        await context.read<NetworkFeeProvider>().refresh();
+      }
+    } catch (e, st) {
+      skrLogger.w('[boot:$reason] failed: $e\n$st');
+    } finally {
+      _booting = false;
+    }
   }
 
   @override

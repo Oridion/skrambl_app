@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/ui/send/screens/standard/standard_summary_screen.dart';
 import 'package:skrambl_app/ui/send/widgets/with_wallet_balance.dart';
 
@@ -255,6 +256,7 @@ class _SendControllerState extends State<SendController> {
       podId: podId,
       podPda: podPDA.toBase58(),
       lamports: (_formModel.amount! * lamportsPerSol).floor(),
+      feeLamports: (_formModel.fee * AppConstants.lamportsPerSol).toInt(),
       mode: _formModel.delaySeconds == 0 ? 0 : 1, // 0=instant, 1=delay
       delaySeconds: _formModel.delaySeconds,
       showMemo: false,
