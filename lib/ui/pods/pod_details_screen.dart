@@ -152,6 +152,7 @@ class PodDetailsScreen extends StatelessWidget {
                           PodDetailRow(
                             'PDA',
                             shortenPubkey(pod.podPda!, length: 8),
+                            copyText: pod.podPda!,
                             copyable: true,
                             linkable: true,
                           ),

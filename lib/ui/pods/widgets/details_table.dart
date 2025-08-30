@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skrambl_app/utils/formatters.dart';
+import 'package:skrambl_app/utils/logger.dart';
 import 'package:skrambl_app/utils/solana.dart';
 
 class PodDetailsTable extends StatelessWidget {
@@ -22,6 +23,7 @@ class PodDetailsTable extends StatelessWidget {
 class PodDetailRow extends StatelessWidget {
   final String title;
   final String value;
+  final String copyText;
   final bool copyable;
   final bool linkable;
   final bool monospace;
@@ -30,6 +32,7 @@ class PodDetailRow extends StatelessWidget {
     this.title,
     this.value, {
     super.key,
+    this.copyText = '',
     this.copyable = false,
     this.linkable = false,
     this.monospace = false,
@@ -38,24 +41,23 @@ class PodDetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+
+    skrLogger.i(value);
     return Container(
       height: 26,
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
-            child: Text(
-              shortenPubkey(title, length: 8),
-              style: t.labelMedium?.copyWith(color: Colors.black54),
-            ),
+            width: 90,
+            child: Text(title, style: t.labelMedium?.copyWith(color: Colors.black54)),
           ),
           Expanded(
             child: Text(
               value,
-              style: t.bodyMedium?.copyWith(fontSize: 14),
+              style: t.bodyMedium?.copyWith(fontSize: 13),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
               softWrap: false,
@@ -63,14 +65,14 @@ class PodDetailRow extends StatelessWidget {
           ),
           if (copyable)
             SizedBox(
-              width: 30,
+              width: 22,
               child: IconButton(
-                icon: const Icon(Icons.copy, size: 14),
+                icon: const Icon(Icons.copy, size: 13),
                 tooltip: 'Copy $title',
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: value));
+                  await Clipboard.setData(ClipboardData(text: copyText));
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$title copied')));
                   }
@@ -80,10 +82,10 @@ class PodDetailRow extends StatelessWidget {
 
           if (linkable)
             SizedBox(
-              width: 30,
+              width: 22,
               child: IconButton(
                 tooltip: 'View on explorer',
-                icon: const Icon(Icons.open_in_new, size: 14),
+                icon: const Icon(Icons.open_in_new, size: 13),
                 onPressed: () => openAccountOnSolanaFM(context, title),
               ),
             ),

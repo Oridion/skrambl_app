@@ -19,7 +19,7 @@ class SectionWrapper extends StatelessWidget {
     this.trailing,
     this.outerPadding = const EdgeInsets.only(bottom: 15),
     this.contentPadding = const EdgeInsets.fromLTRB(12, 7, 12, 20),
-    this.labelPadding = const EdgeInsets.fromLTRB(14, 10, 0, 3),
+    this.labelPadding = const EdgeInsets.fromLTRB(12, 10, 0, 3),
     this.backgroundColor,
     this.borderColor,
   });
