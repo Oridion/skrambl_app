@@ -1,7 +1,6 @@
 // lib/ui/shared/filter_chip_small.dart
 import 'package:flutter/material.dart';
 import 'package:skrambl_app/ui/shared/solana_logo.dart';
-import 'package:skrambl_app/utils/formatters.dart';
 
 class FilterChipSmall extends StatelessWidget {
   final String label;
@@ -55,7 +54,7 @@ class MonoChip extends StatelessWidget {
         children: [
           Text(
             text,
-            style: const TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 11, color: Colors.black87, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -87,7 +86,7 @@ class SolMonoChip extends StatelessWidget {
           SizedBox(width: 4),
           Text(
             text,
-            style: const TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 11, color: Colors.black87, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -106,46 +105,7 @@ class DelayChip extends StatelessWidget {
       decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8)),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-}
-
-class AmountChip extends StatelessWidget {
-  final double sol;
-  final String? usd;
-
-  const AmountChip({super.key, required this.sol, this.usd});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    final hasUsd = (usd != null && usd!.isNotEmpty);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SolanaLogo(size: 14, color: Colors.white),
-          const SizedBox(width: 6),
-          Text(
-            formatSol(sol),
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-          ),
-          if (hasUsd) ...[
-            const SizedBox(width: 8),
-            Text('•', style: t.bodySmall?.copyWith(color: Colors.white70)),
-            const SizedBox(width: 8),
-            Text('$usd', style: t.bodySmall?.copyWith(color: Colors.white70)),
-          ],
-        ],
+        style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
       ),
     );
   }

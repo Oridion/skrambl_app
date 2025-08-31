@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'package:skrambl_app/constants/app.dart';
@@ -42,6 +43,7 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
 
   double? _amountSol = 0;
   int _delaySeconds = 0;
+  bool _extendedDelay = false; // false = 0..60m, true = 0..24h
 
   // fees from Universe (lamports)
   int? _baseFeeLamports;
@@ -111,8 +113,40 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
   // ---- Helpers ----
   String get delayText {
     if (_delaySeconds == 0) return 'Immediate';
-    final minutes = (_delaySeconds / 60).toStringAsFixed(0);
-    return 'Delay: $minutes min';
+
+    final minutesTotal = _delaySeconds ~/ 60;
+    final hours = minutesTotal ~/ 60;
+    final minutes = minutesTotal % 60;
+
+    if (hours > 0 && minutes > 0) {
+      return '${hours}h ${minutes}m';
+    } else if (hours > 0) {
+      return '${hours}h';
+    } else {
+      return '${minutes}m';
+    }
+  }
+
+  String get etaText {
+    if (_delaySeconds == 0) return 'Now';
+
+    final now = DateTime.now();
+    final eta = now.add(Duration(seconds: _delaySeconds));
+
+    // Compare days (ignore time) to say Today/Tomorrow/Weekday/etc.
+    DateTime dOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+    final today = dOnly(now);
+    final etaDay = dOnly(eta);
+    final dayDiff = etaDay.difference(today).inDays;
+
+    final time = DateFormat.jm().format(eta); // e.g., 2:37 PM
+
+    if (dayDiff == 0) return 'Today $time';
+    if (dayDiff == 1) return 'Tomorrow $time';
+    if (dayDiff > 1 && dayDiff < 7) {
+      return '${DateFormat.E().format(eta)} $time'; // Mon 2:37 PM
+    }
+    return '${DateFormat.MMMd().format(eta)} $time'; // Sep 3 2:37 PM
   }
 
   // Max send (keeps SOL for fees)
@@ -158,6 +192,14 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
       _amountSol = parsed;
       _privacyFeeSol = delaySol;
       _errorText = error;
+    });
+  }
+
+  void _setExtended(bool v) {
+    setState(() {
+      _extendedDelay = v;
+      final maxSecs = _extendedDelay ? 24 * 60 * 60 : 60 * 60; // 86400 or 3600
+      if (_delaySeconds > maxSecs) _delaySeconds = maxSecs; // clamp if needed
     });
   }
 
@@ -288,6 +330,8 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                             onMaxPressed: fillMax,
                           ),
                           const SizedBox(height: 26),
+
+                          //Delay
                           Container(
                             padding: const EdgeInsets.fromLTRB(24, 26, 24, 30),
                             decoration: BoxDecoration(
@@ -298,9 +342,33 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Delay amount',
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                // Title + range toggle
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      'Delay amount',
+                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                    ),
+                                    Row(
+                                      children: [
+                                        const Text('24h', style: TextStyle(fontSize: 12)),
+                                        SizedBox(width: 3),
+                                        SizedBox(
+                                          width: 40,
+                                          height: 28,
+                                          child: FittedBox(
+                                            fit: BoxFit.fill,
+                                            child: Switch(
+                                              value: _extendedDelay,
+                                              onChanged: _setExtended,
+                                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 6),
                                 const Text(
@@ -322,45 +390,86 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                                   ),
                                   child: Slider(
                                     min: 0,
-                                    max: 3600,
-                                    divisions: 12, // 0,5,10,...,60 min steps
-                                    value: _delaySeconds.toDouble(),
-                                    label: delayText,
+                                    max: _extendedDelay ? 24 * 60 * 60 : 60 * 60, // seconds
+                                    divisions: _extendedDelay ? (24 * 60 * 60) ~/ 300 : 12, // 5-min steps
+                                    value: _delaySeconds.clamp(0, _extendedDelay ? 86400 : 3600).toDouble(),
+                                    label: delayText, // you already format this
                                     onChanged: (v) {
-                                      setState(() => _delaySeconds = v.round());
+                                      setState(() => _delaySeconds = v.round()); // keep seconds
                                       _recalc();
                                     },
                                     onChangeEnd: (_) => HapticFeedback.selectionClick(),
                                   ),
                                 ),
+                                // Tick labels adapt to the range
                                 Padding(
                                   padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: const [
-                                      Text('0m', style: TextStyle(fontSize: 11, color: Colors.black45)),
-                                      Text('15m', style: TextStyle(fontSize: 11, color: Colors.black45)),
-                                      Text('30m', style: TextStyle(fontSize: 11, color: Colors.black45)),
-                                      Text('45m', style: TextStyle(fontSize: 11, color: Colors.black45)),
-                                      Text('60m', style: TextStyle(fontSize: 11, color: Colors.black45)),
-                                    ],
+                                    children: _extendedDelay
+                                        ? const [
+                                            Text('0h', style: TextStyle(fontSize: 11, color: Colors.black45)),
+                                            Text('6h', style: TextStyle(fontSize: 11, color: Colors.black45)),
+                                            Text(
+                                              '12h',
+                                              style: TextStyle(fontSize: 11, color: Colors.black45),
+                                            ),
+                                            Text(
+                                              '18h',
+                                              style: TextStyle(fontSize: 11, color: Colors.black45),
+                                            ),
+                                            Text(
+                                              '24h',
+                                              style: TextStyle(fontSize: 11, color: Colors.black45),
+                                            ),
+                                          ]
+                                        : const [
+                                            Text('0m', style: TextStyle(fontSize: 11, color: Colors.black45)),
+                                            Text(
+                                              '15m',
+                                              style: TextStyle(fontSize: 11, color: Colors.black45),
+                                            ),
+                                            Text(
+                                              '30m',
+                                              style: TextStyle(fontSize: 11, color: Colors.black45),
+                                            ),
+                                            Text(
+                                              '45m',
+                                              style: TextStyle(fontSize: 11, color: Colors.black45),
+                                            ),
+                                            Text(
+                                              '60m',
+                                              style: TextStyle(fontSize: 11, color: Colors.black45),
+                                            ),
+                                          ],
                                   ),
                                 ),
                                 const SizedBox(height: 20),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    DelayChip(text: delayText),
+                                    DelayChip(text: 'Delay: $delayText'),
                                     const SizedBox(width: 5),
                                     MonoChip(text: hops == 2 ? '2 hops' : '~$hops hops'),
                                     const SizedBox(width: 5),
                                     SolMonoChip(text: '${formatSol(_privacyFeeSol)} Fee'),
                                   ],
                                 ),
+                                SizedBox(height: 14),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.schedule, size: 14, color: Colors.black54),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'ETA: $etaText',
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 20),
                         ],
                       ),
                     ),

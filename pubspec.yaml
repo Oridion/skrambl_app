@@ -1,5 +1,5 @@
 name: skrambl_app
-description: "A new Flutter project."
+description: "A seed vault wallet that can scramble your Solana transfers to make their path harder to trace."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -114,7 +114,7 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 flutter_native_splash:
-  color: "#f9f9f9" # Background color
+  color: "#f7f7f7" # Background color
   image: assets/splash/skrambl-logo.png
   android: true
   ios: true
@@ -125,5 +125,5 @@ flutter_icons:
   android: true
   ios: false
   image_path: assets/icons/skrambl-logo.png
-  adaptive_icon_background: "#f9f9f9"
+  adaptive_icon_background: "#f7f7f7"
   adaptive_icon_foreground: assets/icons/skrambl-logo.png
