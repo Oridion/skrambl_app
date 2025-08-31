@@ -87,10 +87,10 @@ class AmountHeader extends StatelessWidget {
                         style: const TextStyle(fontSize: 13, color: Colors.white70),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     if (_hasUsd(solUsdPrice))
                       Text(
-                        '=  ${_formatUsd(total, solUsdPrice!)} USD',
+                        '= ${_formatUsd(total, solUsdPrice!)} USD',
                         style: TextStyle(fontSize: 12, color: Colors.white.withOpacityCompat(0.75)),
                       ),
                   ],
