@@ -423,13 +423,25 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(Icons.schedule, size: 14, color: Colors.black54),
-                                    const SizedBox(width: 6),
+                                    const Icon(Icons.schedule, size: 12, color: Colors.black54),
+                                    const SizedBox(width: 3),
                                     Text(
                                       'ETA: $etaText',
                                       style: const TextStyle(fontSize: 12, color: Colors.black87),
                                     ),
                                   ],
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'The estimated time of arrival is based on when the transaction lands on-chain. '
+                                  'Actual timing may vary depending on Solana finalization.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.black54,
+                                    fontStyle: FontStyle.italic,
+                                    height: 1.3,
+                                  ),
                                 ),
                               ],
                             ),
