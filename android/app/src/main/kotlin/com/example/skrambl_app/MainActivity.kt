@@ -1,4 +1,4 @@
-package com.example.skrambl_app
+package com.oridion.skrambl
 
 import io.flutter.embedding.android.FlutterActivity
 

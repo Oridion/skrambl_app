@@ -1,53 +1,58 @@
 publisher:
-  name: <<YOUR_PUBLISHER_NAME>>
-  website: <<URL_OF_PUBLISHER_WEBSITE>>
-  email: <<EMAIL_ADDRESS_TO_CONTACT_PUBLISHER>>
+  name: Oridion
+  website: https://oridion.xyz
+  email: oridion.xyz@gmail.com
 app:
-  name: <<APP_NAME>>
+  name: SKRAMBL
   address: ''
-  android_package: <<ANDROID_PACKAGE_NAME>>
+  android_package: com.oridion.skrambl 
   urls:
-    license_url: <<URL_OF_APP_LICENSE_OR_TERMS_OF_SERVICE>>
-    copyright_url: <<URL_OF_COPYRIGHT_DETAILS_FOR_APP>>
-    privacy_policy_url: <<URL_OF_APP_PRIVACY_POLICY>>
-    website: <<URL_OF_APP_WEBSITE>>
+    license_url: https://oridion.xyz/license
+    copyright_url: https://oridion.xyz/copyright
+    privacy_policy_url: https://oridion.xyz/privacy
+    website: https://oridion.xyz
   media:
     - purpose: icon
-      uri: <<RELATIVE_PATH_TO_APP_ICON>>
+      uri: media/icon-512.png
 release:
   address: ''
   media:
     - purpose: icon
-      uri: <<RELATIVE_PATH_TO_RELEASE_ICON>>
+      uri: media/icon-512.png
     - purpose: banner
-      uri: <<RELATIVE_PATH_TO_BANNER>>
+      uri: media/banner-1200x600.png
     - purpose: featureGraphic
-      uri: <<RELATIVE_PATH_TO_FEATURE_GRAPHIC>>
+      uri: media/feature-1200x1200.png
     - purpose: screenshot
-      uri: <<RELATIVE_PATH_TO_SCREENSHOT1>>
+      uri: media/screenshot-01.png
     - purpose: screenshot
-      uri: <<RELATIVE_PATH_TO_SCREENSHOT2>>
+      uri: media/screenshot-02.png
     - purpose: screenshot
-      uri: <<RELATIVE_PATH_TO_SCREENSHOT3>>
+      uri: media/screenshot-03.png
     - purpose: screenshot
-      uri: <<RELATIVE_PATH_TO_SCREENSHOT4>>
-    - purpose: video
-      uri: <<RELATIVE_PATH_TO_VIDEO1>>
+      uri: media/screenshot-04.png
+    - purpose: screenshot
+      uri: media/screenshot-05.png
+    - purpose: screenshot
+      uri: media/screenshot-06.png
+    - purpose: screenshot
+      uri: media/screenshot-07.png
+    - purpose: screenshot
+      uri: media/screenshot-08.png
   files:
     - purpose: install
-      uri: <<RELATIVE_PATH_TO_APK>>
+      uri: build/app/outputs/flutter-apk/app-release.apk
   catalog:
     en-US:
-      name: <<APP_NAME>>
-      short_description: <<SHORT_APP_DESCRIPTION>>
-      long_description: <<LONG_APP_DESCRIPTION>>
-      new_in_version: <<WHATS_NEW_IN_THIS_VERSION>>
-      saga_features: <<ANY_FEATURES_ONLY_AVAILBLE_WHEN_RUNNING_ON_SAGA>>
+      name: SKRAMBL
+      short_description: "Send SOL with added obfuscation and control."
+      long_description: "SKRAMBL lets you send SOL through obfuscated transaction paths with optional delays, making transfers harder to trace while keeping the experience simple and user-friendly. Powered by Oridion."
+      new_in_version: "Initial release of SKRAMBL for Seeker."
+      saga_features: "Secure transaction signing with Seed Vault."
 solana_mobile_dapp_publisher_portal:
-  google_store_package: <<ANDROID_PACKAGE_NAME_OF_GOOGLE_PLAY_STORE_VERSION_IF_DIFFERENT>>
-  testing_instructions: <<TESTING_INSTRUCTIONS>>
-  alpha_testers:
-    - address: <<genesis token wallet address>>
-      comment: <<Optional. For internal use only>>
-    - address: <<genesis token wallet address>>
-      comment: <<Optional. For internal use only>>
+  google_store_package: com.oridion.skrambl
+  testing_instructions: |
+    1. Install the release APK.
+    2. Open SKRAMBL and create a parent wallet (Seed Vault required).
+    3. Fund wallet with SOL.
+    4. Test sending a standard transfer and a SKRAMBLED transfer with delay.

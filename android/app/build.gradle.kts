@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.skrambl_app"
+    namespace = "com.oridion.skrambl"
     compileSdk = flutter.compileSdkVersion
     //ndkVersion = flutter.ndkVersion
     ndkVersion = "27.0.12077973"
@@ -21,21 +21,36 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.skrambl_app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.oridion.skrambl"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            // Fixed path inside the project:
+            storeFile = rootProject.file("app/skrambl-release-key.jks")
+
+            // Read secrets from ~/.gradle/gradle.properties (or env if you prefer)
+            fun prop(name: String) =
+                System.getenv(name) ?: project.findProperty(name) as String?
+
+            storePassword = prop("SKRAMBL_UPLOAD_STORE_PASSWORD")
+                ?: throw GradleException("Missing SKRAMBL_UPLOAD_STORE_PASSWORD")
+            keyAlias = prop("SKRAMBL_UPLOAD_KEY_ALIAS")
+                ?: throw GradleException("Missing SKRAMBL_UPLOAD_KEY_ALIAS")
+            keyPassword = prop("SKRAMBL_UPLOAD_KEY_PASSWORD")
+                ?: throw GradleException("Missing SKRAMBL_UPLOAD_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

@@ -43,4 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+
+android/app/skrambl-release-key.jks
+/publishing/config.yaml
 /publishing/node_modules
+/publishing/.env
+/publishing/*.json
