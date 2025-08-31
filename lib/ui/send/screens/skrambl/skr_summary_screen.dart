@@ -29,19 +29,7 @@ class SkrambledSummaryScreen extends StatelessWidget {
     this.darkBg = false,
   });
 
-  String get delayText {
-    final d = formModel.delaySeconds;
-    if (d == 0) return 'Immediate';
-    if (d < 60) return '$d sec';
-    final min = (d / 60).round();
-    return '$min min';
-  }
-
-  String _etaHint(int delaySeconds) {
-    if (delaySeconds == 0) return 'ETA: ~instant after hop';
-    final m = math.max(1, (delaySeconds / 60).round());
-    return 'ETA: ~${m}m after launch';
-  }
+  String get delayText => getDelayText(formModel.delaySeconds);
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +131,7 @@ class SkrambledSummaryScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _etaHint(formModel.delaySeconds),
+                          'ETA: ${getETAText(formModel.delaySeconds)}',
                           style: theme.textTheme.bodySmall?.copyWith(color: onBgMuted),
                         ),
                         const SizedBox(height: 4),

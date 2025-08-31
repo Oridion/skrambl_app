@@ -111,43 +111,8 @@ class _SkrambledAmountScreenState extends State<SkrambledAmountScreen> {
   }
 
   // ---- Helpers ----
-  String get delayText {
-    if (_delaySeconds == 0) return 'Immediate';
-
-    final minutesTotal = _delaySeconds ~/ 60;
-    final hours = minutesTotal ~/ 60;
-    final minutes = minutesTotal % 60;
-
-    if (hours > 0 && minutes > 0) {
-      return '${hours}h ${minutes}m';
-    } else if (hours > 0) {
-      return '${hours}h';
-    } else {
-      return '${minutes}m';
-    }
-  }
-
-  String get etaText {
-    if (_delaySeconds == 0) return 'Now';
-
-    final now = DateTime.now();
-    final eta = now.add(Duration(seconds: _delaySeconds));
-
-    // Compare days (ignore time) to say Today/Tomorrow/Weekday/etc.
-    DateTime dOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-    final today = dOnly(now);
-    final etaDay = dOnly(eta);
-    final dayDiff = etaDay.difference(today).inDays;
-
-    final time = DateFormat.jm().format(eta); // e.g., 2:37 PM
-
-    if (dayDiff == 0) return 'Today $time';
-    if (dayDiff == 1) return 'Tomorrow $time';
-    if (dayDiff > 1 && dayDiff < 7) {
-      return '${DateFormat.E().format(eta)} $time'; // Mon 2:37 PM
-    }
-    return '${DateFormat.MMMd().format(eta)} $time'; // Sep 3 2:37 PM
-  }
+  String get delayText => getDelayText(_delaySeconds);
+  String get etaText => getETAText(_delaySeconds);
 
   // Max send (keeps SOL for fees)
   double _computeMaxSendableSol({
