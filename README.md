@@ -93,6 +93,6 @@ Analysis tools exploit:
 
 ---
 
-[![SKRAMBL Demo](https://img.youtube.com/vi/QREn8qQmtyU/0.jpg)](https://youtube.com/shorts/V_B_B4QPfFI)  
+[![SKRAMBL Demo](https://img.youtube.com/vi/QREn8qQmtyU/0.jpg)](https://youtube.com/shorts/X5Mw2dXq76o)  
 
 **Oridion Program ID**: `ord1qJZ3DB52s9NoG8nuoacW85aCyNvECa5kAqcBVBu`
