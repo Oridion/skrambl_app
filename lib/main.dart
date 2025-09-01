@@ -202,7 +202,6 @@ class SkramblApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final seedVault = Provider.of<SeedVaultSessionManager>(context);
     final seedVaultAvailable = seedVault.isAvailable;
-
     return MaterialApp(
       title: 'SKRAMBL',
       debugShowCheckedModeBanner: false,
@@ -227,7 +226,7 @@ class SkramblApp extends StatelessWidget {
           foregroundColor: Colors.black,
           systemOverlayStyle: SystemUiOverlayStyle.dark,
           titleTextStyle: GoogleFonts.spaceGrotesk(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.w600,
             color: Colors.black,
           ),

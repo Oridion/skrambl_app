@@ -43,7 +43,6 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
   String? _error;
   bool _isValid = false;
   Timer? _debounce;
-  String? _lastPersisted;
   bool _isNextLoading = false;
 
   // Burner mode
@@ -63,6 +62,7 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
       if (_tabCtrl.indexIsChanging) return;
       setState(() {
         _mode = _tabCtrl.index == 0 ? DestinationMode.address : DestinationMode.burner;
+        _error = null; // clear any prior error when switching modes
       });
     });
 
@@ -77,16 +77,6 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
           _isValid = valid;
           if (_error != null && valid) _error = null;
         });
-
-        // NEW: if valid, reflect into form + persist upstream once
-        if (valid) {
-          if (widget.formModel.destinationWallet != current) {
-            widget.formModel.destinationWallet = current;
-          }
-          if (_lastPersisted != current) {
-            _lastPersisted = current;
-          }
-        }
       });
     });
 
@@ -114,27 +104,24 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
 
   void _handleNext() {
     if (_mode == DestinationMode.address) {
+      final addr = _addressCtrl.text.trim();
       if (!_isValid) {
         setState(() => _error = 'Invalid wallet address');
         return;
       }
-      final addr = _addressCtrl.text.trim();
       widget.formModel.destinationWallet = addr;
       widget.formModel.isDestinationBurner = false;
-
-      // belt & suspenders
-      if (_lastPersisted != addr) {
-        _lastPersisted = addr;
-      }
     } else {
-      if (_selectedBurnerAddress == null) return;
-      final addr = _selectedBurnerAddress!;
-      widget.formModel.destinationWallet = addr;
-      widget.formModel.isDestinationBurner = true;
-
-      if (_lastPersisted != addr) {
-        _lastPersisted = addr;
+      // Burner mode
+      if (_selectedBurnerAddress == null) {
+        // Optional: give user feedback
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Select a burner wallet to continue')));
+        return;
       }
+      widget.formModel.destinationWallet = _selectedBurnerAddress!;
+      widget.formModel.isDestinationBurner = true;
     }
 
     FocusScope.of(context).unfocus();
@@ -175,6 +162,10 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
                   controller: _addressCtrl,
                   isValid: _isValid,
                   error: _error,
+                  onClear: () {
+                    widget.formModel.destinationWallet = null;
+                    widget.formModel.isDestinationBurner = false;
+                  },
                   onPaste: () async {
                     final data = await Clipboard.getData('text/plain');
                     if (data?.text != null) {
@@ -289,9 +280,13 @@ class _SendDestinationScreenState extends State<SendDestinationScreen> with Tick
                     selected: selected,
                     onTap: () {
                       HapticFeedback.selectionClick();
-                      setState(() => _selectedBurnerAddress = b.pubkey);
-                      widget.formModel.destinationWallet = b.pubkey;
-                      _lastPersisted = b.pubkey;
+                      setState(() {
+                        if (_selectedBurnerAddress == b.pubkey) {
+                          _selectedBurnerAddress = null; // deselect if tapped again
+                        } else {
+                          _selectedBurnerAddress = b.pubkey;
+                        }
+                      });
                     },
                   );
                 },
@@ -341,12 +336,14 @@ class _AddressTab extends StatelessWidget {
   final bool isValid;
   final String? error;
   final VoidCallback onPaste;
+  final VoidCallback onClear;
 
   const _AddressTab({
     required this.controller,
     required this.isValid,
     required this.error,
     required this.onPaste,
+    required this.onClear,
   });
 
   @override
@@ -378,6 +375,7 @@ class _AddressTab extends StatelessWidget {
                     tooltip: 'Clear',
                     onPressed: () {
                       controller.clear();
+                      onClear();
                     },
                   ),
                 IconButton(icon: const Icon(Icons.paste), tooltip: 'Paste', onPressed: onPaste),
