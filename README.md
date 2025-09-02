@@ -1,9 +1,9 @@
 # **SKRAMBL** 🛰️  
-*A stealth layer for your SOL.*
+*A Privacy tool to scramble your SOL.*
 
-SKRAMBL is a **privacy-first Solana wallet** that routes transactions through the **Oridion protocol** before they reach their destination — making it significantly harder to trace fund origins.  
+SKRAMBL is a **privacy tool** that routes transactions through the **Oridion protocol** before they reach their destination — making it significantly harder to trace fund origins.  
 
-Unlike traditional mixers, SKRAMBL doesn’t just shuffle funds. It leverages **planetary hops** and **delayed pods** to break transaction history patterns — while remaining **non-custodial**, **transparent**, and **user-controlled**.  
+Unlike traditional mixers, SKRAMBL doesn’t mix funds. It leverages **planetary hops** and **delayed pods** to break transaction history patterns — while remaining **non-custodial**, **transparent**, and **user-controlled**.  
 
 ---
 
@@ -12,7 +12,8 @@ Unlike traditional mixers, SKRAMBL doesn’t just shuffle funds. It leverages **
 1. **Generate a Pod**  
    - Choose the **amount**, **destination wallet**, and an optional **delay**.  
    - SKRAMBL builds a **Pod account** on-chain using your **Seed Vault**-secured key.  
-   - The Pod acts as a stealth package, holding delivery details until release.  
+   - The Pod acts as a stealth package, holding delivery details until release. 
+   - Once a pod has been signed and submitted, it is set in stone and cannot be altered by anyone not even the Oridion system. 
 
 2. **Scramble Through Oridion**  
    - SOL is routed through randomized **planet hops**.  
@@ -36,15 +37,14 @@ Each hop and delay adds uncertainty, breaking direct traceability between sender
 - **Variable delays** to disrupt timing analysis  
 - **Seed Vault integration** keeps keys secured on-device  
 - **Flat fees** (not a % of transfer amount)  
-- **Optional memos** for human-readable tracking  
 
 ---
 
 ## 📱 **App Features**
-- **One-tap “Send SKRAMBLed”**  
+- **Easy UI to “Send SKRAMBLed”**  
   Simple form for destination, amount, and delay — SKRAMBL handles the rest.  
 
-- **Real-time Transaction Status**  
+- **Real-time Transaction Status Updates**  
   Clear phases in the UI:  
   1. **Sending** – Pod transaction created  
   2. **Confirming** – Solana finalization  
@@ -53,7 +53,8 @@ Each hop and delay adds uncertainty, breaking direct traceability between sender
   5. **Completed** – funds delivered  
 
 - **Burner Wallets**  
-  Generate throwaway wallets directly in SKRAMBL for high-anonymity payments.  
+  Generate real throwaway wallets directly in SKRAMBL for high-anonymity payments.
+  Unlike common burner wallets, you can generate burner wallets with funds without any link to your primary wallet.  
 
 ---
 
@@ -62,10 +63,10 @@ Each hop and delay adds uncertainty, breaking direct traceability between sender
 - **Wallet Security**: Solana Mobile Seed Vault SDK  
 - **Blockchain**:  
   - Solana Mainnet via Helius RPC  
-  - Oridion Anchor Program for Pod creation, routing, and delivery  
+  - Verified Oridion Anchor Program for Pod creation, routing, and delivery  
 - **Backend**:  
-  - AWS Lambda (Rust) + SQS for hop processing  
-  - EventBridge for automation scheduling  
+  - AWS Lambda (Rust) + SQS for hop processing
+  - EventBridge for 100% automated hop processing and delivery
 
 ---
 
@@ -76,7 +77,7 @@ Analysis tools exploit:
 3. **Amount fingerprinting** (unique transfer sizes)  
 
 **SKRAMBL neutralizes these:**  
-- **Direct Link Breakage** – hops through unrelated PDAs sever sender-recipient ties.  
+- **Direct Link Breakage** – multiple radomized hops through PDAs.  
 - **Timing Obfuscation** – delays randomize send/receive windows.  
 - **Amount Mixing** – internal routing disrupts amount fingerprinting.  
 - **Self-Destructing Pods** – Pod accounts close after delivery, leaving only historic traces.  
