@@ -98,4 +98,4 @@ Analysis tools exploit:
 
 **Oridion Program ID**: `ord1qJZ3DB52s9NoG8nuoacW85aCyNvECa5kAqcBVBu`  
 
-🌐 **Website**: [https://skrambl.io](https://skrambl.io)  
+🌐 **Website**: [https://skrambl.xyz](https://skrambl.xyz)  
