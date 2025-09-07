@@ -32,6 +32,7 @@ class PodWatcherManager with ChangeNotifier {
     if (_started) return;
     _started = true;
 
+    //mode = 5 is standard. (1 = delay, 2 = instant)
     _sub = dao.watchPendingNonStandardPods().listen((pods) {
       // Only watch non-standard pods (mode != 5) that have a PDA
       final watchable = pods.where((p) => p.mode != 5 && p.podPda != null).toList();

@@ -48,6 +48,7 @@ class SeedVaultSessionManager extends ChangeNotifier {
         skrLogger.w('⚠️ No authorized seeds yet — waiting for user to authorize.');
         _authToken = null; // Don't request inside init — do that manually in UI
       }
+      skrLogger.i("[SV] Ready");
     } catch (e) {
       skrLogger.e('SeedVault init error: $e');
       _authToken = null;

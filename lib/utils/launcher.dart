@@ -36,9 +36,8 @@ bool isSolanaAddress(String address) {
 String modeLabel(int mode) {
   // 0=Instant, 1=Delay, extend if you add more modes
   switch (mode) {
-    case 0:
-      return 'SKRAMBLED';
     case 1:
+    case 2:
       return 'SKRAMBLED';
     case 5:
       return 'STANDARD';

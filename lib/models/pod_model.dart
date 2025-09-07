@@ -1,5 +1,6 @@
 import 'dart:math' as math;
-
+import 'dart:typed_data';
+import 'package:convert/convert.dart';
 import 'package:skrambl_app/models/activity_model.dart';
 import 'package:skrambl_app/utils/logger.dart';
 import 'package:solana_borsh/borsh.dart';
@@ -364,4 +365,18 @@ class Pod extends BorshObject {
       return null;
     }
   }
+}
+
+extension PodTicket on Pod {
+  /// 16-byte ticket stored in the first half of `passcodeHash`.
+  /// Returns null if not set (all zeros or too short).
+  Uint8List? get ticketBytes16 {
+    if (passcodeHash.length < 16) return null;
+    final t = Uint8List.fromList(passcodeHash.sublist(0, 16));
+    final isAllZero = t.every((b) => b == 0);
+    return isAllZero ? null : t;
+  }
+
+  /// Hex string of the ticket, or null if not set.
+  String? get ticketHex => ticketBytes16 == null ? null : hex.encode(ticketBytes16!);
 }

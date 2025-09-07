@@ -53,6 +53,8 @@ dependencies:
   flutter_svg: ^2.2.0
   timeline_tile: ^2.0.0
   auto_size_text: ^3.0.0
+  crypto: ^3.0.6
+  bs58: ^1.0.2
 
 
   # The following adds the Cupertino Icons font to your application.

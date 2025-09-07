@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/providers/seed_vault_session_manager.dart';
+import 'package:skrambl_app/utils/logger.dart';
 import 'package:solana/solana.dart';
 import 'package:solana_seed_vault/solana_seed_vault.dart';
 
@@ -92,6 +93,11 @@ class SeedVaultService {
     int index = defaultIndex,
   }) async {
     final uri = getWalletUri(index);
+
+    //Test get derivation path.
+    final raw = getWalletUri(index);
+    skrLogger.i(raw);
+
     final result = await SeedVault.instance.requestPublicKeys(authToken: authToken, derivationPaths: [uri]);
     if (result.isEmpty || result.first.publicKeyEncoded == null) {
       throw Exception("❌ No public key returned");

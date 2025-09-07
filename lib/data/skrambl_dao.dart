@@ -34,7 +34,7 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
         .watch();
   }
 
-  ///Watch only non standard pods
+  ///Watch only non standard pods - (Standard pod mode is 5)
   Stream<List<Pod>> watchPendingNonStandardPods() {
     return (select(pods)
           ..where(

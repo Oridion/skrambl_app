@@ -20,7 +20,7 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
   String draftedDetails;
   if (pod.mode == 5) {
     draftedDetails = "Standard delivery drafted ";
-  } else if (pod.mode == 0) {
+  } else if (pod.mode == 2) {
     draftedDetails = "Skrambled immediate delivery drafted ";
     // fallback if other modes
   } else {

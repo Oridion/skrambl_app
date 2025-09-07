@@ -3,14 +3,18 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui';
+//import 'package:convert/convert.dart';
 import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
 import 'package:skrambl_app/providers/transaction_status_provider.dart';
+import 'package:skrambl_app/providers/watch/land_book.watcher.dart';
 import 'package:skrambl_app/services/pod_service.dart';
+//import 'package:skrambl_app/solana/book/book_service.dart';
 import 'package:skrambl_app/solana/solana_client_service.dart';
 import 'package:skrambl_app/solana/solana_ws_service.dart';
 import 'package:skrambl_app/utils/logger.dart';
 import 'package:skrambl_app/models/pod_model.dart' as model;
+//import 'package:solana/base58.dart';
 
 class PodWatcherTask {
   final PodDao dao;
@@ -81,32 +85,33 @@ class PodWatcherTask {
           return;
         }
 
-        // ---- Closed / zeroed? (Helius pattern) ----
-        final lamports = (acct['lamports'] as num?)?.toInt() ?? -1;
-        final owner = acct['owner'] as String? ?? '';
-        final space = (acct['space'] as num?)?.toInt() ?? -1;
         final data = acct['data'];
 
-        final emptyData = data is List && data.isNotEmpty && (data.first as String?)?.isEmpty == true;
-        final isSystemOwner = owner == '11111111111111111111111111111111';
-        final isZeroed = lamports == 0 && space == 0 && isSystemOwner && emptyData;
+        // ---- Closed / zeroed? (Helius pattern) ----
+        //final lamports = (acct['lamports'] as num?)?.toInt() ?? -1;
+        //final owner = acct['owner'] as String? ?? '';
+        //final space = (acct['space'] as num?)?.toInt() ?? -1;
+
+        //final emptyData = data is List && data.isNotEmpty && (data.first as String?)?.isEmpty == true;
+        //final isSystemOwner = owner == '11111111111111111111111111111111';
+        //final isZeroed = lamports == 0 && space == 0 && isSystemOwner && emptyData;
 
         // Account closed => finalized
-        if (isZeroed) {
-          skrLogger.i("[WS] account is zeroed out");
-          // If we never showed delivering, briefly surface it for UX continuity
-          if (!_seenDelivering) {
-            skrLogger.i("[WS] Pod delivering was never seen. Marking delivering");
-            onPhase?.call(pod.id, TransactionPhase.delivering);
-            await Future.delayed(const Duration(milliseconds: 250));
-            _seenDelivering = true;
-          }
-          skrLogger.i("[WS] Pod closed. Marking finalized");
-          await dao.markFinalized(id: pod.id); // persist to DB
-          onPhase?.call(pod.id, TransactionPhase.completed); // immediate UI update
-          _finish(onDone);
-          return;
-        }
+        // if (isZeroed) {
+        //   skrLogger.i("[WS] account is zeroed out");
+        //   // If we never showed delivering, briefly surface it for UX continuity
+        //   if (!_seenDelivering) {
+        //     skrLogger.i("[WS] Pod delivering was never seen. Marking delivering");
+        //     onPhase?.call(pod.id, TransactionPhase.delivering);
+        //     await Future.delayed(const Duration(milliseconds: 250));
+        //     _seenDelivering = true;
+        //   }
+        //   skrLogger.i("[WS] Pod closed. Marking finalized");
+        //   await dao.markFinalized(id: pod.id); // persist to DB
+        //   onPhase?.call(pod.id, TransactionPhase.completed); // immediate UI update
+        //   _finish(onDone);
+        //   return;
+        // }
 
         // Detect delivering stage depending on mode
         // ---- Live account: decode to detect "delivering" ----
@@ -114,19 +119,39 @@ class PodWatcherTask {
           try {
             final b64 = data.first as String;
             final bytes = base64.decode(b64);
-            final model.Pod? live = await parsePod(bytes);
-            if (live == null) return;
+            final model.Pod? livePod = await parsePod(bytes);
+            if (livePod == null) return;
 
             //skrLogger.i(jsonEncode(live.toJson()));
 
-            // If it is delivering.
+            // (1 = delay, 2 = instant)
+            // Set delivering if instant and last process was hop OR
+            // set delivering if delay and next process is land.
             final delivering =
-                (live.mode == 0 && live.lastProcess == 1) || // instant: lastProcess==1
-                (live.mode != 0 && live.nextProcess == 1); // delayed: nextProcess==1
+                (livePod.mode == 2 && livePod.lastProcess == 1) || // instant: lastProcess==1
+                (livePod.mode != 2 && livePod.nextProcess == 1); // delayed: nextProcess==1
+
             if (delivering && !_seenDelivering) {
               _seenDelivering = true;
               onPhase?.call(pod.id, TransactionPhase.delivering);
               await dao.markDelivering(id: pod.id);
+
+              final ticket = livePod.ticketBytes16;
+              if (ticket == null) {
+                skrLogger.i("[POD WATCHER] ERROR! TICKET WAS NOT FOUND ON LIVE POD");
+                return;
+              }
+              // Start listening to book to see if ticket if found in the land book.
+              final watcher = LandBookWatcher(ws: ws, targetTicket: ticket);
+              await watcher.start(
+                onFinalized: () {
+                  // ticket removed → mark completed/finalized
+                  dao.markFinalized(id: pod.id); // persist to DB
+                  onPhase?.call(pod.id, TransactionPhase.completed);
+                  _finish(onDone);
+                },
+              );
+
               return;
             }
           } catch (e) {
@@ -220,50 +245,14 @@ class PodWatcherTask {
     final live = snap.pod;
     if (live != null) {
       final delivering =
-          (live.mode == 0 && live.lastProcess == 1) ||
-          (live.mode != 0 && (live.nextProcess == 1 || live.lastProcess == 1));
+          (live.mode == 2 && live.lastProcess == 1) ||
+          (live.mode != 2 && (live.nextProcess == 1 || live.lastProcess == 1));
       if (delivering && !_seenDelivering) {
         _seenDelivering = true;
         onPhase?.call(pod.id, TransactionPhase.delivering);
         await dao.markDelivering(id: pod.id);
       }
     }
-
-    // final pod = await fetchPodAccount(podPda: pod.podPda!);
-
-    // final info = await rpc.getAccountInfo(pod.podPda!);
-    // if (info.value == null) {
-    //   // Account closed – we definitely finalized.
-    //   skrLogger.i("[Pod Watcher] (delayed) account disappeared, marking finalized");
-    //   await dao.markFinalized(id: pod.id);
-    //   onPhase?.call(pod.id, TransactionPhase.completed);
-    //   _finish(onDone);
-    //   return;
-    // }
-
-    // // Optional: decode here too to catch delivering if WS missed it
-    // final data = info.value!.data;
-    // if (data != null && data.isNotEmpty) {
-    //   try {
-    //     // Depending on your RPC client, data may be already base64 or structured.
-    //     // Ensure this path decodes bytes → model.Pod like in WS section.
-    //     final model.Pod? live = await parseAccountInfoToPod(info.value!);
-    //     if (live != null) {
-    //       final delivering =
-    //           (live.mode == 0 && live.lastProcess == 1) ||
-    //           (live.mode != 0 && (live.nextProcess == 1 || live.lastProcess == 1));
-    //       if (delivering && !_seenDelivering) {
-    //         _seenDelivering = true;
-    //         onPhase?.call(pod.id, TransactionPhase.delivering);
-    //         await dao.markDelivering(id: pod.id);
-    //       }
-    //     }
-    //   } catch (_) {
-    //     /* ignore */
-    //   }
-    // }
-
-    //_scheduleDelayedPoll(onDone: onDone);
   }
 
   void _finish(VoidCallback? onDone) {
