@@ -144,9 +144,9 @@ class PodWatcherTask {
               // Start listening to book to see if ticket if found in the land book.
               final watcher = LandBookWatcher(ws: ws, targetTicket: ticket);
               await watcher.start(
-                onFinalized: () {
+                onFinalized: () async {
                   // ticket removed → mark completed/finalized
-                  dao.markFinalized(id: pod.id); // persist to DB
+                  await dao.markFinalized(id: pod.id); // persist to DB
                   onPhase?.call(pod.id, TransactionPhase.completed);
                   _finish(onDone);
                 },
