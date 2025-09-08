@@ -1,4 +1,5 @@
 {
     "editor.wordWrapColumn": 160,
-    "html.format.wrapLineLength": 180
+    "html.format.wrapLineLength": 180,
+    "postman.settings.dotenv-detection-notification-visibility": false
 }

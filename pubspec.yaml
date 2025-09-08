@@ -55,6 +55,7 @@ dependencies:
   auto_size_text: ^3.0.0
   crypto: ^3.0.6
   bs58: ^1.0.2
+  expandable: ^5.0.1
 
 
   # The following adds the Cupertino Icons font to your application.

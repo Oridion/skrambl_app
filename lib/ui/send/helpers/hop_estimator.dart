@@ -53,7 +53,7 @@ String getETAText(int delaySeconds) {
   if (dayDiff == 0) return 'Today $time';
   if (dayDiff == 1) return 'Tomorrow $time';
   if (dayDiff > 1 && dayDiff < 7) {
-    return '${DateFormat.E().format(eta)} $time'; // Mon 2:37 PM
+    return '${DateFormat.E().format(eta)} $time'.toUpperCase(); // Mon 2:37 PM
   }
-  return '${DateFormat.MMMd().format(eta)} $time'; // Sep 3 2:37 PM
+  return '${DateFormat.MMMd().format(eta)} $time'.toUpperCase(); // Sep 3 2:37 PM
 }

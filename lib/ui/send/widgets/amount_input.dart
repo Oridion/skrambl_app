@@ -34,26 +34,6 @@ class AmountInput extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            const Text('Send amount', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            if (!isBalanceLoading && walletBalance > 0) ...[
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 6, 0),
-                child: Text(
-                  'Balance: ${formatSol(walletBalance, maxDecimals: 6)} SOL',
-                  style: const TextStyle(fontSize: 13, color: Colors.black87),
-                ),
-              ),
-            ],
-          ],
-        ),
-
-        const SizedBox(height: 8),
-
         TextField(
           autofocus: false,
           controller: controller,
@@ -120,6 +100,16 @@ class AmountInput extends StatelessWidget {
             suffixIconConstraints: const BoxConstraints(minWidth: 72),
             errorText: errorText,
           ),
+        ),
+
+        SizedBox(height: 8),
+
+        // 🚨 Disclaimer about traceability when using custom amount
+        const Text(
+          'Using a custom amount may reduce your privacy. '
+          'Common preset amounts are harder to trace, but unique values can be fingerprinted '
+          'and linked to your activity.',
+          style: TextStyle(fontSize: 12, color: Colors.black54, fontStyle: FontStyle.italic, height: 1.3),
         ),
       ],
     );
