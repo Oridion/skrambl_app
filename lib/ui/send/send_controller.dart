@@ -204,11 +204,6 @@ class _SendControllerState extends State<SendController> {
     final userWallet = await SeedVaultService.getPublicKey(
       authToken: token, // ← use `token`, not `widget.authToken`
     );
-    if (userWallet == null) {
-      skrLogger.e("❌ Failed to fetch public key.");
-      setState(() => _isSubmitting = false);
-      return;
-    }
 
     // Build the payload
     const lamportsPerSol = 1000000000;

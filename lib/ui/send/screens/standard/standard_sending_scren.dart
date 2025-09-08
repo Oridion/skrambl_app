@@ -74,23 +74,12 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
 
     final int? burnerIdx = widget.form.userBurnerIndex;
     late final Ed25519HDPublicKey sender;
-    Uri? resolvedBurnerPath;
 
     try {
       if (burnerIdx == null) {
-        final pk = await SeedVaultService.getPublicKey(authToken: authToken);
-        if (pk == null) throw Exception('Failed to get public key');
-        sender = pk;
+        sender = await SeedVaultService.getPublicKey(authToken: authToken);
       } else {
-        resolvedBurnerPath = await SeedVaultService.resolvePathForIndex(
-          index: burnerIdx,
-          purpose: Purpose.signSolanaTransaction,
-        );
-        final exposed = await SeedVaultService.exposeAndGetPubkeyAtIndex(
-          authToken: authToken,
-          index: burnerIdx,
-        );
-        sender = Ed25519HDPublicKey.fromBase58(exposed);
+        sender = await SeedVaultService.getPublicKey(authToken: authToken, accountIndex: burnerIdx);
       }
     } catch (e, st) {
       skrLogger.e('Resolve wallet failed: $e\n$st');
@@ -145,15 +134,15 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
 
     late Uint8List signature;
     try {
-      if (resolvedBurnerPath == null) {
+      if (burnerIdx == null) {
         // Primary
         signature = await SeedVaultService.signMessage(messageBytes: messageBytes, authToken: authToken);
       } else {
         // Burner with explicit path
-        signature = await SeedVaultService.signMessageWithResolvedPath(
+        signature = await SeedVaultService.signMessage(
           authToken: authToken,
           messageBytes: messageBytes,
-          resolvedPath: resolvedBurnerPath,
+          accountIndex: burnerIdx,
         );
       }
       if (signature.length != 64) throw Exception('Invalid signature length');
@@ -312,7 +301,7 @@ class _StandardSendingScreenState extends State<StandardSendingScreen> {
 
       final freshMsg = await _buildSystemTransferSignable(
         recentBlockhash: recent.value.blockhash,
-        from: sender!,
+        from: sender,
         to: dest,
         lamports: lamports,
       );

@@ -2,38 +2,103 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:skrambl_app/providers/seed_vault_session_manager.dart';
-import 'package:skrambl_app/utils/logger.dart';
 import 'package:solana/solana.dart';
 import 'package:solana_seed_vault/solana_seed_vault.dart';
 
-/// This is the main service class used to interact with the seed vault
-/// throughout the application.
+import 'package:skrambl_app/providers/seed_vault_session_manager.dart';
+
 class SeedVaultService {
-  //Resolve the derivation path
-  static Future<Uri> resolvePathForIndex({required int index, required Purpose purpose}) async {
-    final raw = getWalletUri(index);
-    return SeedVault.instance.resolveDerivationPath(derivationPath: raw, purpose: purpose);
+  static const int defaultIndex = 0;
+
+  // --- Core builders ---------------------------------------------------------
+
+  /// BIP-44 (3 segments ONLY): bip44:/44'/501'/{account}'
+  static Uri _bip44AccountUri(int account) => Bip44DerivationPath.toUri([
+    BipLevel(index: 44, hardened: true),
+    BipLevel(index: 501, hardened: true),
+    BipLevel(index: account, hardened: true),
+  ]);
+
+  static void assertBip44Has3Segments(Uri u) {
+    // Expect: scheme 'bip44', path like "/44'/501'/{account}'"
+    final path = u.path; // e.g. "/44'/501'/0'"
+    final segs = path.split('/').where((s) => s.isNotEmpty).toList();
+    assert(u.scheme == 'bip44', 'Expected bip44, got ${u.scheme}');
+    assert(segs.length == 3, 'Expected 3 segments, got ${segs.length}: $path');
   }
 
-  // Expose and get the publick key at index (for burner wallet)
+  static Future<Uri> _resolve({required int accountIndex, required Purpose purpose}) {
+    final raw = _bip44AccountUri(accountIndex);
+    // TEMP: log + assert
+    // ignore: avoid_print
+    print('[SV] resolve IN  : $raw');
+    assertBip44Has3Segments(raw);
+    return SeedVault.instance.resolveDerivationPath(derivationPath: raw, purpose: purpose).then((u) {
+      // ignore: avoid_print
+      print('[SV] resolve OUT : $u'); // should be bip32:/m/44'/501'/{acct}'/0'
+      return u;
+    });
+  }
+
+  // --- Auth helpers ----------------------------------------------------------
+
+  static Future<bool> requestPermission() => SeedVault.instance.checkPermission();
+
+  static Future<AuthToken> getAuthToken() => SeedVault.instance.authorizeSeed(Purpose.signSolanaTransaction);
+
+  static Future<AuthToken?> getValidToken(BuildContext context) async {
+    final session = Provider.of<SeedVaultSessionManager>(context, listen: false);
+    if (session.authToken != null) return session.authToken;
+    final ok = await session.requestAuthorization();
+    return ok ? session.authToken : null;
+  }
+
+  static Future<AuthToken> reauthorize() => SeedVault.instance.authorizeSeed(Purpose.signSolanaTransaction);
+
+  // --- Account discovery -----------------------------------------------------
+
+  static Future getAccounts(AuthToken token) => SeedVault.instance.getParsedAccounts(token);
+
+  /// Get public key (primary = account 0) via **resolved** path.
+  static Future<Ed25519HDPublicKey> getPublicKey({
+    required AuthToken authToken,
+    int accountIndex = defaultIndex,
+  }) async {
+    final resolved = await _resolve(accountIndex: accountIndex, purpose: Purpose.signSolanaTransaction);
+    final res = await SeedVault.instance.requestPublicKeys(authToken: authToken, derivationPaths: [resolved]);
+    final pk = res.first.publicKeyEncoded ?? (throw Exception('No public key returned for $resolved'));
+    return Ed25519HDPublicKey.fromBase58(pk);
+  }
+
+  /// Convenience (string form).
+  static Future<String?> getPublicKeyString({
+    required AuthToken authToken,
+    int accountIndex = defaultIndex,
+  }) async {
+    final resolved = await _resolve(accountIndex: accountIndex, purpose: Purpose.signSolanaTransaction);
+    final res = await SeedVault.instance.requestPublicKeys(authToken: authToken, derivationPaths: [resolved]);
+    return res.isNotEmpty ? res.first.publicKeyEncoded : null;
+  }
+
+  /// Burner flow: expose + get pubkey at a specific account index (still resolved).
   static Future<String> exposeAndGetPubkeyAtIndex({required AuthToken authToken, required int index}) async {
-    final resolved = await resolvePathForIndex(index: index, purpose: Purpose.signSolanaTransaction);
+    final resolved = await _resolve(accountIndex: index, purpose: Purpose.signSolanaTransaction);
     final res = await SeedVault.instance.requestPublicKeys(authToken: authToken, derivationPaths: [resolved]);
     final pk = res.first.publicKeyEncoded;
-    if (pk == null) {
-      throw Exception('No public key returned for $resolved');
-    }
+    if (pk == null) throw Exception('No public key returned for $resolved');
     return pk;
   }
 
-  // Explicitly sign a single message with a specific resolved derivation path
-  static Future<Uint8List> signMessageWithResolvedPath({
+  // --- Signing ---------------------------------------------------------------
+
+  /// Sign using the **resolved** canonical path.
+  static Future<Uint8List> signMessage({
     required AuthToken authToken,
     required Uint8List messageBytes,
-    required Uri resolvedPath,
+    int accountIndex = defaultIndex,
   }) async {
-    final req = SigningRequest(payload: messageBytes, requestedSignatures: [resolvedPath]);
+    final resolved = await _resolve(accountIndex: accountIndex, purpose: Purpose.signSolanaTransaction);
+    final req = SigningRequest(payload: messageBytes, requestedSignatures: [resolved]);
     final out = await SeedVault.instance.signMessages(authToken: authToken, signingRequests: [req]);
     final sig = out.first.signatures.firstOrNull;
     if (sig == null || sig.length != 64) {
@@ -42,88 +107,16 @@ class SeedVaultService {
     return sig;
   }
 
-  /// Helper function to always get a valid token.
-  /// final token = await getValidToken(context);
-  /// if (token == null) return; // User denied
-  static Future<AuthToken?> getValidToken(BuildContext context) async {
-    final session = Provider.of<SeedVaultSessionManager>(context, listen: false);
-    if (session.authToken != null) return session.authToken;
-
-    final success = await session.requestAuthorization();
-    return success ? session.authToken : null;
-  }
-
-  static const int defaultIndex = 0;
-
-  /// Get accounts
-  static Future getAccounts(AuthToken authToken) async {
-    final accounts = await SeedVault.instance.getParsedAccounts(authToken);
-    // You can assume these are secure, permissioned, and belong to SKRAMBL's app context.
-    return accounts;
-  }
-
-  /// Requests permission from user to use Seed Vault
-  static Future<bool> requestPermission() async {
-    return await SeedVault.instance.checkPermission();
-  }
-
-  /// Gets the AuthToken (required for most Seed Vault operations)
-  static Future<AuthToken> getAuthToken() async {
-    return await SeedVault.instance.authorizeSeed(Purpose.signSolanaTransaction);
-  }
-
-  /// Derives a single hardened path URI
-  static Uri getWalletUri(int index) {
-    return Bip44DerivationPath.toUri([
-      BipLevel(index: 44, hardened: true),
-      BipLevel(index: 501, hardened: true),
-      BipLevel(index: index, hardened: true),
-    ]);
-  }
-
-  /// Requests a single public key using a derived path
-  static Future<String?> getPublicKeyString({required AuthToken authToken, int index = defaultIndex}) async {
-    final uri = getWalletUri(index);
-    final result = await SeedVault.instance.requestPublicKeys(authToken: authToken, derivationPaths: [uri]);
-    return result.isNotEmpty ? result.first.publicKeyEncoded : null;
-  }
-
-  static Future<Ed25519HDPublicKey?> getPublicKey({
+  /// If you already have a **resolved** path from elsewhere, use this.
+  static Future<Uint8List> signMessageWithResolvedPath({
     required AuthToken authToken,
-    int index = defaultIndex,
-  }) async {
-    final uri = getWalletUri(index);
-
-    //Test get derivation path.
-    final raw = getWalletUri(index);
-    skrLogger.i(raw);
-
-    final result = await SeedVault.instance.requestPublicKeys(authToken: authToken, derivationPaths: [uri]);
-    if (result.isEmpty || result.first.publicKeyEncoded == null) {
-      throw Exception("❌ No public key returned");
-    }
-    final encoded = result.first.publicKeyEncoded!;
-    return Ed25519HDPublicKey.fromBase58(encoded);
-  }
-
-  static Future<Uint8List> signMessage({
     required Uint8List messageBytes,
-    required AuthToken authToken,
-    int index = defaultIndex,
+    required Uri resolvedPath,
   }) async {
-    final uri = getWalletUri(index);
-
-    final signingRequest = SigningRequest(payload: messageBytes, requestedSignatures: [uri]);
-
-    final result = await SeedVault.instance.signMessages(
-      authToken: authToken,
-      signingRequests: [signingRequest],
-    );
-
-    if (result.isEmpty || result.first.signatures.isEmpty) {
-      throw Exception("Message signing failed or returned empty result");
-    }
-
-    return result.first.signatures.first;
+    final req = SigningRequest(payload: messageBytes, requestedSignatures: [resolvedPath]);
+    final out = await SeedVault.instance.signMessages(authToken: authToken, signingRequests: [req]);
+    final sig = out.first.signatures.firstOrNull;
+    if (sig == null || sig.length != 64) throw Exception('Invalid signature');
+    return sig;
   }
 }

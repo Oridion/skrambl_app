@@ -171,7 +171,7 @@ class _AppLifecycleHandlerState extends State<AppLifecycleHandler> with WidgetsB
 
       // We *do* have a session now — hydrate primary wallet every time we (re)boot
       final pk = await SeedVaultService.getPublicKey(authToken: token);
-      if (pk != null && mounted) {
+      if (mounted) {
         final base58 = pk.toBase58();
         context.read<SelectedWalletProvider>().setPrimary(base58);
         // Ensure WalletProvider points at it (your proxy provider already reacts,
