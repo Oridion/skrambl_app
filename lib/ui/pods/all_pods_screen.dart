@@ -1,15 +1,16 @@
-// lib/ui/pods/pods_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skrambl_app/constants/app.dart';
 import 'package:skrambl_app/data/local_database.dart';
 import 'package:skrambl_app/data/skrambl_dao.dart';
-import 'package:skrambl_app/data/skrambl_entity.dart';
 import 'package:skrambl_app/ui/pods/pod_details_screen.dart';
 import 'package:skrambl_app/ui/shared/chips.dart';
 import 'package:skrambl_app/ui/shared/pod_card.dart';
 
-enum PodsFilter { all, active, finalized, failed }
+/// New filter set: ALL / SKRAMBLED / STANDARD
+// ...imports unchanged...
+
+enum PodsFilter { all, skrambled, standard }
 
 class AllPods extends StatefulWidget {
   const AllPods({super.key});
@@ -21,16 +22,49 @@ class AllPods extends StatefulWidget {
 class _AllPodsState extends State<AllPods> {
   PodsFilter _filter = PodsFilter.all;
 
+  // Keeps the same Stream; no flash.
+  final _scrollCtrl = ScrollController();
+  int _refreshNonce = 0; // forces a lightweight rebuild without changing the stream
+
+  Future<void> _scrollToTop() async {
+    if (!_scrollCtrl.hasClients) return;
+    await _scrollCtrl.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+  }
+
+  Future<void> _onReselect() async {
+    // Optional: haptic click for UX feedback
+    // HapticFeedback.selectionClick();
+
+    // Gentle "refresh": rebuild filtered list, keep the same stream → no loading flash.
+    if (mounted) setState(() => _refreshNonce++);
+
+    // Scroll to top so refreshed content is immediately visible.
+    await _scrollToTop();
+
+    // If you have a DAO refresh/sync method, you can call it here.
+    // final dao = context.read<PodDao>();
+    // await dao.refreshAll(); // (Only if it exists; otherwise omit)
+  }
+
+  void _onFilterTap(PodsFilter next) {
+    if (next == _filter) {
+      _onReselect();
+    } else {
+      setState(() => _filter = next);
+      _scrollToTop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dao = context.read<PodDao>();
 
     return Scaffold(
       appBar: AppBar(
-        leading: Text(''),
+        leading: const SizedBox.shrink(),
         title: const Text('All Deliveries'),
-        titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black87),
-        titleSpacing: 0, // matches horizontal padding
+        titleTextStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black87),
+        titleSpacing: 0,
       ),
       body: StreamBuilder<List<Pod>>(
         stream: dao.watchAll(),
@@ -42,49 +76,39 @@ class _AllPodsState extends State<AllPods> {
           final pods = snapshot.data ?? const <Pod>[];
           if (pods.isEmpty) return const _EmptyPodsAllPage();
 
-          // --- counts for header ---
-          int activeCount = pods.where((p) {
-            final s = PodStatus.values[p.status];
-            return s == PodStatus.launching ||
-                s == PodStatus.submitted ||
-                s == PodStatus.scrambling ||
-                s == PodStatus.delivering;
-          }).length;
-          int finalizedCount = pods.where((p) => PodStatus.values[p.status] == PodStatus.finalized).length;
-          int failedCount = pods.where((p) => PodStatus.values[p.status] == PodStatus.failed).length;
+          final skrambledCount = pods.where(isSkrambledPod).length;
+          final standardCount = pods.length - skrambledCount;
 
-          // --- filtering ---
+          // _refreshNonce is referenced so a reselect triggers a rebuild without changing streams
+          // (no-op use to silence analyzer about unused variable)
+          // ignore: unused_local_variable
+          final _ = _refreshNonce;
+
           final filtered = pods.where((p) {
-            final s = PodStatus.values[p.status];
             switch (_filter) {
               case PodsFilter.all:
                 return true;
-              case PodsFilter.active:
-                return s == PodStatus.launching ||
-                    s == PodStatus.submitted ||
-                    s == PodStatus.scrambling ||
-                    s == PodStatus.delivering;
-              case PodsFilter.finalized:
-                return s == PodStatus.finalized;
-              case PodsFilter.failed:
-                return s == PodStatus.failed;
+              case PodsFilter.skrambled:
+                return isSkrambledPod(p);
+              case PodsFilter.standard:
+                return !isSkrambledPod(p);
             }
           }).toList();
 
           return CustomScrollView(
+            controller: _scrollCtrl,
             slivers: [
               const SliverPadding(padding: EdgeInsets.only(bottom: 8)),
               SliverToBoxAdapter(
                 child: PodsHeader(
                   total: pods.length,
-                  active: activeCount,
-                  finalized: finalizedCount,
-                  failed: failedCount,
+                  skrambled: skrambledCount,
+                  standard: standardCount,
                   selected: _filter,
-                  onFilterChanged: (f) => setState(() => _filter = f),
+                  onFilterChanged: _onFilterTap, // <-- handles both change and reselect
+                  onReselect: _onReselect, // <-- optional explicit reselect hook (used internally)
                 ),
               ),
-              // space between header and list
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 sliver: SliverList.builder(
@@ -105,57 +129,61 @@ class _AllPodsState extends State<AllPods> {
       ),
     );
   }
+
+  bool isSkrambledPod(Pod p) => p.mode == 1 || p.mode == 3;
 }
 
 class PodsHeader extends StatelessWidget {
   final int total;
-  final int active;
-  final int finalized;
-  final int failed;
+  final int skrambled;
+  final int standard;
   final PodsFilter selected;
   final ValueChanged<PodsFilter> onFilterChanged;
+  final VoidCallback? onReselect;
 
   const PodsHeader({
     super.key,
     required this.total,
-    required this.active,
-    required this.finalized,
-    required this.failed,
+    required this.skrambled,
+    required this.standard,
     required this.selected,
     required this.onFilterChanged,
+    this.onReselect,
   });
+
+  void _handleTap(PodsFilter target) {
+    if (target == selected) {
+      onReselect?.call();
+    } else {
+      onFilterChanged(target);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Wrap(
             spacing: 4,
             runSpacing: 0,
             children: [
-              // Inside Wrap():
               FilterChipSmall(
-                label: 'All • $total',
+                label: 'ALL • $total',
                 selected: selected == PodsFilter.all,
-                onSelected: () => onFilterChanged(PodsFilter.all),
+                onSelected: () => _handleTap(PodsFilter.all),
               ),
               FilterChipSmall(
-                label: 'Active • $active',
-                selected: selected == PodsFilter.active,
-                onSelected: () => onFilterChanged(PodsFilter.active),
+                label: 'SKRAMBLED • $skrambled',
+                selected: selected == PodsFilter.skrambled,
+                onSelected: () => _handleTap(PodsFilter.skrambled),
               ),
               FilterChipSmall(
-                label: 'Completed • $finalized',
-                selected: selected == PodsFilter.finalized,
-                onSelected: () => onFilterChanged(PodsFilter.finalized),
-              ),
-              FilterChipSmall(
-                label: 'Failed • $failed',
-                selected: selected == PodsFilter.failed,
-                onSelected: () => onFilterChanged(PodsFilter.failed),
+                label: 'STANDARD • $standard',
+                selected: selected == PodsFilter.standard,
+                onSelected: () => _handleTap(PodsFilter.standard),
               ),
             ],
           ),
@@ -164,6 +192,8 @@ class PodsHeader extends StatelessWidget {
     );
   }
 }
+
+// _EmptyPodsAllPage unchanged...
 
 class _EmptyPodsAllPage extends StatelessWidget {
   const _EmptyPodsAllPage();
@@ -174,7 +204,6 @@ class _EmptyPodsAllPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
       child: Container(
         width: double.infinity,
-
         padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 22),
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,

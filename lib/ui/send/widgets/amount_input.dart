@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skrambl_app/ui/shared/solana_logo.dart';
 import 'package:skrambl_app/utils/colors.dart';
-import 'package:skrambl_app/utils/formatters.dart';
 
 class AmountInput extends StatelessWidget {
   final TextEditingController controller;

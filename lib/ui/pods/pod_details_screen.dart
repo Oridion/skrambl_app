@@ -154,14 +154,18 @@ class PodDetailsScreen extends StatelessWidget {
                             shortenPubkey(pod.podPda!, length: 8),
                             copyText: pod.podPda!,
                             copyable: true,
-                            linkable: true,
+                          ),
+
+                        if (pod.lastSig != null)
+                          PodDetailRow(
+                            'TX',
+                            shortenPubkey(pod.launchSig.toString(), length: 10),
+                            copyText: pod.launchSig.toString(),
+                            copyable: true,
                           ),
                       ],
                     ),
                   ),
-
-                  // ===== ACTIONS =====
-                  //PodActionsBar(pda: pod.podPda, signature: pod.launchSig),
                 ],
               );
             },
