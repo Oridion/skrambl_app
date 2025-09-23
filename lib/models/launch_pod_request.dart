@@ -17,6 +17,7 @@ class LaunchPodRequest {
     required this.returnType,
   });
 
+  // Used when sendng JSON to the API
   Map<String, dynamic> toJson() => {
     'id': id,
     'lamports': lamports,

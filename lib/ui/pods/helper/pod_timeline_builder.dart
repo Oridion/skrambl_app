@@ -14,8 +14,8 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
   final finalizedAt = dateTimeOrNull(pod.finalizedAt);
   final d = pod.submitDuration;
   final submittedSubtitle = d == null
-      ? 'Submitted to network'
-      : 'Submitted to network (${formatDurationShort(d)})';
+      ? 'Transaction confirmed on network'
+      : 'Transaction confirmed on network (${formatDurationShort(d)})';
 
   String draftedDetails;
   if (pod.mode == 5) {
@@ -113,7 +113,7 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
     items.add(
       TimelineItem(
         title: 'Finalized',
-        subtitle: 'Delivery to ${shortenPubkey(pod.destination)} completed successfully and finalized',
+        subtitle: 'Delivery to ${shortenPubkey(pod.destination)} completed successfully',
         color: Colors.green,
         isLoading: false,
         at: finalizedAt,

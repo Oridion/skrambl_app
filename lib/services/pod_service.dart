@@ -8,11 +8,6 @@ import 'package:skrambl_app/solana/solana_client_service.dart';
 import 'package:solana/dto.dart';
 import 'package:skrambl_app/utils/logger.dart';
 
-/// Layout constants
-const int _kAnchorDisc = 8;
-const int _kPaddedStructSize = 184; // after 8-byte alignment
-const int _kAccountSize = _kAnchorDisc + _kPaddedStructSize; // 192
-
 /// Parse a Pod from raw account bytes (including discriminator).
 Future<Pod?> parsePod(List<int> raw) async {
   final pod = Pod.fromAccountData(raw);
@@ -25,7 +20,6 @@ Future<Pod?> parsePod(List<int> raw) async {
 /// Fetch a Pod account by PDA.
 Future<Pod?> fetchPodAccount({required String podPda}) async {
   final rpc = SolanaClientService().rpcClient;
-
   try {
     final accountInfo = await rpc.getAccountInfo(
       podPda,
@@ -34,23 +28,13 @@ Future<Pod?> fetchPodAccount({required String podPda}) async {
     );
 
     final value = accountInfo.value;
-    if (value == null) {
-      return null; // account missing
-    }
-
-    if (value.owner != programId) {
-      skrLogger.w('Pod owner mismatch (got ${value.owner}), skipping decode');
-      return null;
-    }
+    if (value == null || value.owner != programId) return null;
 
     final data = value.data;
-    if (data is! BinaryAccountData) {
-      skrLogger.w('Unexpected data format for pod account');
-      return null;
-    }
+    if (data is! BinaryAccountData) return null;
 
-    final raw = Uint8List.fromList(data.data); // includes discriminator
-    return _parsePodFromBytes(raw);
+    final raw = Uint8List.fromList(data.data); // includes disc
+    return Pod.fromAccountData(raw, debugLabel: podPda);
   } catch (e, st) {
     skrLogger.w('fetchPodAccount error: $e\n$st');
     return null;
@@ -122,49 +106,6 @@ Future<PodSnapshot> fetchPodSnapshot(String podPda) async {
   } catch (e, st) {
     skrLogger.w('fetchPodSnapshot[$podPda] error: $e\n$st');
     return PodSnapshot(pod: null, exists: false, ownerMatches: false, isClosedFinalized: false);
-  }
-}
-
-/// Internal: decode from raw bytes (skips discriminator)
-Pod? _parsePodFromBytes(Uint8List raw) {
-  if (raw.length < _kAccountSize) {
-    skrLogger.w('Pod too small: ${raw.length}, need ≥ $_kAccountSize');
-    return null;
-  }
-
-  final base = _kAnchorDisc;
-  final fixedSlice = raw.sublist(base, base + _kPaddedStructSize);
-
-  skrLogger.i(
-    'Pod.decode: rawLen=${raw.length}, '
-    'expect≥$_kAccountSize, slice=[${base}..${base + _kPaddedStructSize})',
-  );
-
-  try {
-    final decoded = Pod.structCodec.decode(fixedSlice);
-    return Pod(
-      accountType: decoded['accountType'],
-      version: decoded['version'],
-      mode: decoded['mode'],
-      nextProcess: decoded['nextProcess'],
-      lastProcess: decoded['lastProcess'],
-      isInTransit: decoded['isInTransit'],
-      id: decoded['id'],
-      hops: decoded['hops'],
-      delay: decoded['delay'],
-      nextProcessAt: decoded['nextProcessAt'],
-      landAt: decoded['landAt'],
-      createdAt: decoded['createdAt'],
-      lastProcessAt: decoded['lastProcessAt'],
-      lamports: BigInt.from(decoded['lamports']),
-      location: List<int>.from(decoded['location']),
-      destination: List<int>.from(decoded['destination']),
-      passcodeHash: List<int>.from(decoded['passcodeHash']),
-      authority: List<int>.from(decoded['authority']),
-    );
-  } catch (e) {
-    skrLogger.e('Pod decode error: $e');
-    return null;
   }
 }
 

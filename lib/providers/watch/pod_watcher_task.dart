@@ -87,32 +87,6 @@ class PodWatcherTask {
 
         final data = acct['data'];
 
-        // ---- Closed / zeroed? (Helius pattern) ----
-        //final lamports = (acct['lamports'] as num?)?.toInt() ?? -1;
-        //final owner = acct['owner'] as String? ?? '';
-        //final space = (acct['space'] as num?)?.toInt() ?? -1;
-
-        //final emptyData = data is List && data.isNotEmpty && (data.first as String?)?.isEmpty == true;
-        //final isSystemOwner = owner == '11111111111111111111111111111111';
-        //final isZeroed = lamports == 0 && space == 0 && isSystemOwner && emptyData;
-
-        // Account closed => finalized
-        // if (isZeroed) {
-        //   skrLogger.i("[WS] account is zeroed out");
-        //   // If we never showed delivering, briefly surface it for UX continuity
-        //   if (!_seenDelivering) {
-        //     skrLogger.i("[WS] Pod delivering was never seen. Marking delivering");
-        //     onPhase?.call(pod.id, TransactionPhase.delivering);
-        //     await Future.delayed(const Duration(milliseconds: 250));
-        //     _seenDelivering = true;
-        //   }
-        //   skrLogger.i("[WS] Pod closed. Marking finalized");
-        //   await dao.markFinalized(id: pod.id); // persist to DB
-        //   onPhase?.call(pod.id, TransactionPhase.completed); // immediate UI update
-        //   _finish(onDone);
-        //   return;
-        // }
-
         // Detect delivering stage depending on mode
         // ---- Live account: decode to detect "delivering" ----
         if (data is List && data.isNotEmpty && data.first is String) {

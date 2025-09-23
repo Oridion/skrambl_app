@@ -141,17 +141,19 @@ class PodDetailsScreen extends StatelessWidget {
                     child: PodDetailsTable(
                       rows: [
                         PodDetailRow('TYPE', modeLabel(pod.mode)),
+                        if (pod.mode != 5) PodDetailRow('DELAY', delayLabel(pod.delaySeconds)),
 
                         if (pod.submittedAt != null)
-                          PodDetailRow('SUBMITTED', formatEpochSecLocal(pod.submittedAt!)),
+                          PodDetailRow('CREATED', formatEpochSecLocal(pod.submittedAt!)),
 
-                        if (pod.mode != 5) PodDetailRow('DELAY', delayLabel(pod.delaySeconds)),
+                        if (pod.finalizedAt != null)
+                          PodDetailRow('FINALIZED', formatEpochSecLocal(pod.finalizedAt!)),
                         // PodDetailRow('CREATOR', shortenPubkey(pod.creator)),
                         // PodDetailRow('DESTINATION', shortenPubkey(pod.destination), copyable: true),
                         if (pod.podPda != null)
                           PodDetailRow(
                             'PDA',
-                            shortenPubkey(pod.podPda!, length: 8),
+                            shortenPubkey(pod.podPda!, length: 6),
                             copyText: pod.podPda!,
                             copyable: true,
                           ),
@@ -159,7 +161,7 @@ class PodDetailsScreen extends StatelessWidget {
                         if (pod.lastSig != null)
                           PodDetailRow(
                             'TX',
-                            shortenPubkey(pod.launchSig.toString(), length: 10),
+                            shortenPubkey(pod.launchSig.toString(), length: 6),
                             copyText: pod.launchSig.toString(),
                             copyable: true,
                           ),
