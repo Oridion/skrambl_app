@@ -3,7 +3,6 @@ class LaunchPodRequest {
   final int lamports;
   final int delay;
   final String userWallet;
-  final int showMemo;
   final String destination;
   final String passcode;
   final String returnType;
@@ -13,7 +12,6 @@ class LaunchPodRequest {
     required this.lamports,
     required this.delay,
     required this.userWallet,
-    required this.showMemo,
     required this.destination,
     required this.passcode,
     required this.returnType,
@@ -24,7 +22,6 @@ class LaunchPodRequest {
     'lamports': lamports,
     'delay': delay,
     'user_wallet': userWallet,
-    'show_memo': showMemo,
     'destination': destination,
     'passcode': passcode,
     'return_type': returnType,

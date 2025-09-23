@@ -72,7 +72,6 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
     required bool isCreatorBurner,
     required bool isDestinationBurner,
     required String unsignedBase64Tx,
-    bool showMemo = false,
     PodStatus initialStatus = PodStatus.drafting,
   }) async {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -88,7 +87,6 @@ class PodDao extends DatabaseAccessor<LocalDatabase> with _$PodDaoMixin {
         fee: feeLamports,
         mode: mode,
         delaySeconds: Value(delaySeconds),
-        showMemo: Value(showMemo),
         escapeCode: Value(escapeCode),
         destination: destination,
         status: initialStatus.index,

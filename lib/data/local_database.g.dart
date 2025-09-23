@@ -87,21 +87,6 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
-  static const VerificationMeta _showMemoMeta = const VerificationMeta(
-    'showMemo',
-  );
-  @override
-  late final GeneratedColumn<bool> showMemo = GeneratedColumn<bool>(
-    'show_memo',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("show_memo" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
   static const VerificationMeta _escapeCodeMeta = const VerificationMeta(
     'escapeCode',
   );
@@ -305,7 +290,6 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
     fee,
     mode,
     delaySeconds,
-    showMemo,
     escapeCode,
     status,
     statusMsg,
@@ -392,12 +376,6 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
           data['delay_seconds']!,
           _delaySecondsMeta,
         ),
-      );
-    }
-    if (data.containsKey('show_memo')) {
-      context.handle(
-        _showMemoMeta,
-        showMemo.isAcceptableOrUnknown(data['show_memo']!, _showMemoMeta),
       );
     }
     if (data.containsKey('escape_code')) {
@@ -576,10 +554,6 @@ class $PodsTable extends Pods with TableInfo<$PodsTable, Pod> {
         DriftSqlType.int,
         data['${effectivePrefix}delay_seconds'],
       )!,
-      showMemo: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}show_memo'],
-      )!,
       escapeCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}escape_code'],
@@ -666,7 +640,6 @@ class Pod extends DataClass implements Insertable<Pod> {
   final int fee;
   final int mode;
   final int delaySeconds;
-  final bool showMemo;
   final String? escapeCode;
   final int status;
   final String? statusMsg;
@@ -693,7 +666,6 @@ class Pod extends DataClass implements Insertable<Pod> {
     required this.fee,
     required this.mode,
     required this.delaySeconds,
-    required this.showMemo,
     this.escapeCode,
     required this.status,
     this.statusMsg,
@@ -727,7 +699,6 @@ class Pod extends DataClass implements Insertable<Pod> {
     map['fee'] = Variable<int>(fee);
     map['mode'] = Variable<int>(mode);
     map['delay_seconds'] = Variable<int>(delaySeconds);
-    map['show_memo'] = Variable<bool>(showMemo);
     if (!nullToAbsent || escapeCode != null) {
       map['escape_code'] = Variable<String>(escapeCode);
     }
@@ -784,7 +755,6 @@ class Pod extends DataClass implements Insertable<Pod> {
       fee: Value(fee),
       mode: Value(mode),
       delaySeconds: Value(delaySeconds),
-      showMemo: Value(showMemo),
       escapeCode: escapeCode == null && nullToAbsent
           ? const Value.absent()
           : Value(escapeCode),
@@ -841,7 +811,6 @@ class Pod extends DataClass implements Insertable<Pod> {
       fee: serializer.fromJson<int>(json['fee']),
       mode: serializer.fromJson<int>(json['mode']),
       delaySeconds: serializer.fromJson<int>(json['delaySeconds']),
-      showMemo: serializer.fromJson<bool>(json['showMemo']),
       escapeCode: serializer.fromJson<String?>(json['escapeCode']),
       status: serializer.fromJson<int>(json['status']),
       statusMsg: serializer.fromJson<String?>(json['statusMsg']),
@@ -877,7 +846,6 @@ class Pod extends DataClass implements Insertable<Pod> {
       'fee': serializer.toJson<int>(fee),
       'mode': serializer.toJson<int>(mode),
       'delaySeconds': serializer.toJson<int>(delaySeconds),
-      'showMemo': serializer.toJson<bool>(showMemo),
       'escapeCode': serializer.toJson<String?>(escapeCode),
       'status': serializer.toJson<int>(status),
       'statusMsg': serializer.toJson<String?>(statusMsg),
@@ -907,7 +875,6 @@ class Pod extends DataClass implements Insertable<Pod> {
     int? fee,
     int? mode,
     int? delaySeconds,
-    bool? showMemo,
     Value<String?> escapeCode = const Value.absent(),
     int? status,
     Value<String?> statusMsg = const Value.absent(),
@@ -934,7 +901,6 @@ class Pod extends DataClass implements Insertable<Pod> {
     fee: fee ?? this.fee,
     mode: mode ?? this.mode,
     delaySeconds: delaySeconds ?? this.delaySeconds,
-    showMemo: showMemo ?? this.showMemo,
     escapeCode: escapeCode.present ? escapeCode.value : this.escapeCode,
     status: status ?? this.status,
     statusMsg: statusMsg.present ? statusMsg.value : this.statusMsg,
@@ -967,7 +933,6 @@ class Pod extends DataClass implements Insertable<Pod> {
       delaySeconds: data.delaySeconds.present
           ? data.delaySeconds.value
           : this.delaySeconds,
-      showMemo: data.showMemo.present ? data.showMemo.value : this.showMemo,
       escapeCode: data.escapeCode.present
           ? data.escapeCode.value
           : this.escapeCode,
@@ -1019,7 +984,6 @@ class Pod extends DataClass implements Insertable<Pod> {
           ..write('fee: $fee, ')
           ..write('mode: $mode, ')
           ..write('delaySeconds: $delaySeconds, ')
-          ..write('showMemo: $showMemo, ')
           ..write('escapeCode: $escapeCode, ')
           ..write('status: $status, ')
           ..write('statusMsg: $statusMsg, ')
@@ -1051,7 +1015,6 @@ class Pod extends DataClass implements Insertable<Pod> {
     fee,
     mode,
     delaySeconds,
-    showMemo,
     escapeCode,
     status,
     statusMsg,
@@ -1082,7 +1045,6 @@ class Pod extends DataClass implements Insertable<Pod> {
           other.fee == this.fee &&
           other.mode == this.mode &&
           other.delaySeconds == this.delaySeconds &&
-          other.showMemo == this.showMemo &&
           other.escapeCode == this.escapeCode &&
           other.status == this.status &&
           other.statusMsg == this.statusMsg &&
@@ -1111,7 +1073,6 @@ class PodsCompanion extends UpdateCompanion<Pod> {
   final Value<int> fee;
   final Value<int> mode;
   final Value<int> delaySeconds;
-  final Value<bool> showMemo;
   final Value<String?> escapeCode;
   final Value<int> status;
   final Value<String?> statusMsg;
@@ -1139,7 +1100,6 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     this.fee = const Value.absent(),
     this.mode = const Value.absent(),
     this.delaySeconds = const Value.absent(),
-    this.showMemo = const Value.absent(),
     this.escapeCode = const Value.absent(),
     this.status = const Value.absent(),
     this.statusMsg = const Value.absent(),
@@ -1168,7 +1128,6 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     required int fee,
     required int mode,
     this.delaySeconds = const Value.absent(),
-    this.showMemo = const Value.absent(),
     this.escapeCode = const Value.absent(),
     required int status,
     this.statusMsg = const Value.absent(),
@@ -1204,7 +1163,6 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     Expression<int>? fee,
     Expression<int>? mode,
     Expression<int>? delaySeconds,
-    Expression<bool>? showMemo,
     Expression<String>? escapeCode,
     Expression<int>? status,
     Expression<String>? statusMsg,
@@ -1233,7 +1191,6 @@ class PodsCompanion extends UpdateCompanion<Pod> {
       if (fee != null) 'fee': fee,
       if (mode != null) 'mode': mode,
       if (delaySeconds != null) 'delay_seconds': delaySeconds,
-      if (showMemo != null) 'show_memo': showMemo,
       if (escapeCode != null) 'escape_code': escapeCode,
       if (status != null) 'status': status,
       if (statusMsg != null) 'status_msg': statusMsg,
@@ -1266,7 +1223,6 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     Value<int>? fee,
     Value<int>? mode,
     Value<int>? delaySeconds,
-    Value<bool>? showMemo,
     Value<String?>? escapeCode,
     Value<int>? status,
     Value<String?>? statusMsg,
@@ -1295,7 +1251,6 @@ class PodsCompanion extends UpdateCompanion<Pod> {
       fee: fee ?? this.fee,
       mode: mode ?? this.mode,
       delaySeconds: delaySeconds ?? this.delaySeconds,
-      showMemo: showMemo ?? this.showMemo,
       escapeCode: escapeCode ?? this.escapeCode,
       status: status ?? this.status,
       statusMsg: statusMsg ?? this.statusMsg,
@@ -1343,9 +1298,6 @@ class PodsCompanion extends UpdateCompanion<Pod> {
     }
     if (delaySeconds.present) {
       map['delay_seconds'] = Variable<int>(delaySeconds.value);
-    }
-    if (showMemo.present) {
-      map['show_memo'] = Variable<bool>(showMemo.value);
     }
     if (escapeCode.present) {
       map['escape_code'] = Variable<String>(escapeCode.value);
@@ -1415,7 +1367,6 @@ class PodsCompanion extends UpdateCompanion<Pod> {
           ..write('fee: $fee, ')
           ..write('mode: $mode, ')
           ..write('delaySeconds: $delaySeconds, ')
-          ..write('showMemo: $showMemo, ')
           ..write('escapeCode: $escapeCode, ')
           ..write('status: $status, ')
           ..write('statusMsg: $statusMsg, ')
@@ -2037,7 +1988,6 @@ typedef $$PodsTableCreateCompanionBuilder =
       required int fee,
       required int mode,
       Value<int> delaySeconds,
-      Value<bool> showMemo,
       Value<String?> escapeCode,
       required int status,
       Value<String?> statusMsg,
@@ -2067,7 +2017,6 @@ typedef $$PodsTableUpdateCompanionBuilder =
       Value<int> fee,
       Value<int> mode,
       Value<int> delaySeconds,
-      Value<bool> showMemo,
       Value<String?> escapeCode,
       Value<int> status,
       Value<String?> statusMsg,
@@ -2133,11 +2082,6 @@ class $$PodsTableFilterComposer extends Composer<_$LocalDatabase, $PodsTable> {
 
   ColumnFilters<int> get delaySeconds => $composableBuilder(
     column: $table.delaySeconds,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get showMemo => $composableBuilder(
-    column: $table.showMemo,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2276,11 +2220,6 @@ class $$PodsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get showMemo => $composableBuilder(
-    column: $table.showMemo,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get escapeCode => $composableBuilder(
     column: $table.escapeCode,
     builder: (column) => ColumnOrderings(column),
@@ -2402,9 +2341,6 @@ class $$PodsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<bool> get showMemo =>
-      $composableBuilder(column: $table.showMemo, builder: (column) => column);
-
   GeneratedColumn<String> get escapeCode => $composableBuilder(
     column: $table.escapeCode,
     builder: (column) => column,
@@ -2513,7 +2449,6 @@ class $$PodsTableTableManager
                 Value<int> fee = const Value.absent(),
                 Value<int> mode = const Value.absent(),
                 Value<int> delaySeconds = const Value.absent(),
-                Value<bool> showMemo = const Value.absent(),
                 Value<String?> escapeCode = const Value.absent(),
                 Value<int> status = const Value.absent(),
                 Value<String?> statusMsg = const Value.absent(),
@@ -2541,7 +2476,6 @@ class $$PodsTableTableManager
                 fee: fee,
                 mode: mode,
                 delaySeconds: delaySeconds,
-                showMemo: showMemo,
                 escapeCode: escapeCode,
                 status: status,
                 statusMsg: statusMsg,
@@ -2571,7 +2505,6 @@ class $$PodsTableTableManager
                 required int fee,
                 required int mode,
                 Value<int> delaySeconds = const Value.absent(),
-                Value<bool> showMemo = const Value.absent(),
                 Value<String?> escapeCode = const Value.absent(),
                 required int status,
                 Value<String?> statusMsg = const Value.absent(),
@@ -2599,7 +2532,6 @@ class $$PodsTableTableManager
                 fee: fee,
                 mode: mode,
                 delaySeconds: delaySeconds,
-                showMemo: showMemo,
                 escapeCode: escapeCode,
                 status: status,
                 statusMsg: statusMsg,

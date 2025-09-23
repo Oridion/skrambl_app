@@ -16,7 +16,6 @@ class Pods extends Table {
   IntColumn get fee => integer()();
   IntColumn get mode => integer()(); // 0=instant, 1=delay...
   IntColumn get delaySeconds => integer().withDefault(const Constant(0))();
-  BoolColumn get showMemo => boolean().withDefault(const Constant(false))();
 
   // escape handling (nullable so we can erase)
   TextColumn get escapeCode => text().nullable()();

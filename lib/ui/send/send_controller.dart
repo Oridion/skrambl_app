@@ -220,7 +220,6 @@ class _SendControllerState extends State<SendController> {
       userWallet: userWallet.toString(),
       delay: _formModel.delaySeconds,
       passcode: passcode,
-      showMemo: 0,
       returnType: "message",
     );
     //skrLogger.i("📦 Payload: $payload");
@@ -254,7 +253,6 @@ class _SendControllerState extends State<SendController> {
       feeLamports: (_formModel.fee * AppConstants.lamportsPerSol).toInt(),
       mode: _formModel.delaySeconds == 0 ? 2 : 1, // 2=instant, 1=delay
       delaySeconds: _formModel.delaySeconds,
-      showMemo: false,
       escapeCode: passcode, // optional, for local recovery
       destination: _formModel.destinationWallet!,
       isCreatorBurner: widget.fromBurnerIndexOverride != null,

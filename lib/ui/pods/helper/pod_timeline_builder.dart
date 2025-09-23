@@ -102,7 +102,7 @@ List<TimelineItem> buildTimeline({required Pod pod}) {
         title: 'Failed',
         subtitle: 'See logs for details',
         color: Colors.red,
-        isLoading: true,
+        isLoading: false,
         at: null,
       ),
     );
